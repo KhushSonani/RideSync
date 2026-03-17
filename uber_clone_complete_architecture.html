@@ -1,0 +1,937 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Uber Clone — Complete MERN Architecture</title>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:#0a0a0b; --surface:#111113; --surface2:#18181c; --surface3:#1e1e24;
+  --border:#27272e; --border2:#35353f;
+  --text:#f0eff4; --muted:#7a7988; --dim:#3d3c4a;
+  --green:#22d07a; --green-dim:#0d3320; --green-mid:#155230;
+  --amber:#f5a623; --amber-dim:#2e1f06; --amber-mid:#4a2e06;
+  --blue:#5b8ef5; --blue-dim:#0d1b3e; --blue-mid:#1a3470;
+  --coral:#ff6b5b; --coral-dim:#2b1310; --coral-mid:#4a1a14;
+  --purple:#9b7ff5; --purple-dim:#1a1040; --purple-mid:#2a1a60;
+  --teal:#38d9d9; --teal-dim:#062428; --teal-mid:#0a3840;
+  --pink:#f06292; --pink-dim:#2b0f1a;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--text);font-family:'JetBrains Mono',monospace;font-size:13px;line-height:1.6;padding:48px 36px;max-width:1020px;margin:0 auto}
+
+/* ── HEADER ── */
+.hdr{margin-bottom:56px;padding-bottom:32px;border-bottom:1px solid var(--border)}
+.hdr-eye{font-family:'Syne',sans-serif;font-size:11px;font-weight:600;letter-spacing:.22em;text-transform:uppercase;color:var(--green);margin-bottom:12px}
+.hdr h1{font-family:'Syne',sans-serif;font-size:44px;font-weight:800;line-height:1.05;margin-bottom:10px}
+.hdr h1 em{color:var(--green);font-style:normal}
+.hdr-sub{color:var(--muted);font-size:13px;margin-bottom:20px}
+.pills{display:flex;gap:7px;flex-wrap:wrap}
+.pill{font-size:11px;padding:4px 12px;border-radius:20px;border:1px solid var(--border2);color:var(--muted);letter-spacing:.04em}
+.pill.hi{border-color:var(--green);color:var(--green);background:var(--green-dim)}
+.pill.hi2{border-color:var(--blue);color:var(--blue);background:var(--blue-dim)}
+.pill.hi3{border-color:var(--purple);color:var(--purple);background:var(--purple-dim)}
+
+/* ── SECTION TITLE ── */
+.stitle{font-family:'Syne',sans-serif;font-size:11px;font-weight:700;letter-spacing:.18em;text-transform:uppercase;color:var(--muted);margin:48px 0 20px;display:flex;align-items:center;gap:10px}
+.stitle::after{content:'';flex:1;height:1px;background:var(--border)}
+.stitle-icon{width:22px;height:22px;border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:11px;flex-shrink:0}
+.stitle:first-of-type{margin-top:0}
+
+/* ── LEGEND ── */
+.legend{display:flex;gap:18px;flex-wrap:wrap;margin-bottom:20px;padding:11px 16px;background:var(--surface);border:1px solid var(--border);border-radius:8px}
+.li{display:flex;align-items:center;gap:7px;font-size:11px;color:var(--muted)}
+.ld{width:9px;height:9px;border-radius:2px;flex-shrink:0}
+
+/* ── FILE TREE ── */
+.tree{background:var(--surface);border:1px solid var(--border);border-radius:12px;overflow:hidden;margin-bottom:36px}
+.tree-bar{display:flex;align-items:center;gap:7px;padding:11px 16px;background:var(--surface2);border-bottom:1px solid var(--border)}
+.dot{width:10px;height:10px;border-radius:50%}
+.dot-r{background:#ff5f57}.dot-y{background:#febc2e}.dot-g{background:#28c840}
+.tree-fn{font-size:11px;color:var(--muted);margin-left:8px}
+.tree-body{padding:20px 24px}
+.tl{display:flex;align-items:baseline;padding:2px 0}
+.ti{color:var(--dim);white-space:pre}
+.tn{color:var(--text)}
+.tn.d{color:var(--blue);font-weight:500}
+.tn.ok{color:var(--green)}
+.tn.fx{color:var(--amber)}
+.tn.add{color:var(--coral)}
+.tn.fe{color:var(--purple)}
+.tc{color:var(--dim);font-size:11.5px;margin-left:8px;font-style:italic}
+.tc.cg{color:var(--green);opacity:.75}
+.tc.ca{color:var(--amber);opacity:.8}
+.tc.cr{color:var(--coral);opacity:.8}
+.tc.cp{color:var(--purple);opacity:.75}
+.tgap{height:6px}
+
+/* ── SCHEMA GRID ── */
+.sg{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:12px}
+.sg2{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;margin-bottom:12px}
+@media(max-width:750px){.sg{grid-template-columns:1fr}.sg2{grid-template-columns:1fr}}
+.sc{border:1px solid var(--border);border-radius:10px;overflow:hidden}
+.sc-head{padding:9px 14px;background:var(--surface2);border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center}
+.sc-name{font-family:'Syne',sans-serif;font-size:13px;font-weight:700;color:var(--text)}
+.sc-file{font-size:10px;color:var(--dim);font-family:'JetBrains Mono',monospace}
+.sc-sect{padding:4px 14px;font-size:10px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--dim);background:var(--surface3);border-bottom:1px solid var(--border);border-top:1px solid var(--border)}
+.sr{padding:6px 14px;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid var(--border);gap:8px}
+.sr:last-child{border-bottom:none}
+.fn{font-size:12px;color:var(--text);font-family:'JetBrains Mono',monospace}
+.fn.fk{color:var(--amber)}
+.fn.nw{color:var(--green)}
+.fn.req{color:var(--coral)}
+.ft{font-size:11px;color:var(--dim);text-align:right}
+.ftag{font-size:9px;padding:1px 5px;border-radius:3px;font-weight:600;flex-shrink:0;border:1px solid}
+.pk{background:var(--amber-dim);color:var(--amber);border-color:var(--amber-mid)}
+.fk2{background:var(--coral-dim);color:var(--coral);border-color:var(--coral-mid)}
+.nwt{background:var(--green-dim);color:var(--green);border-color:var(--green-mid)}
+.mdt{background:var(--blue-dim);color:var(--blue);border-color:var(--blue-mid)}
+
+/* ── SCHEMA RELATION ── */
+.rel-bar{display:flex;align-items:center;gap:12px;padding:10px 16px;background:var(--surface);border:1px solid var(--border);border-radius:8px;margin-bottom:12px;flex-wrap:wrap}
+.rel-box{display:flex;align-items:center;gap:7px}
+.rel-name{font-family:'Syne',sans-serif;font-size:12px;font-weight:700;padding:4px 12px;border-radius:6px}
+.rn-user{background:var(--blue-dim);color:var(--blue);border:1px solid var(--blue-mid)}
+.rn-cap{background:var(--green-dim);color:var(--green);border:1px solid var(--green-mid)}
+.rn-veh{background:var(--amber-dim);color:var(--amber);border:1px solid var(--amber-mid)}
+.rn-ride{background:var(--purple-dim);color:var(--purple);border:1px solid var(--purple-mid)}
+.rel-arrow{color:var(--dim);font-size:14px}
+.rel-label{font-size:11px;color:var(--dim)}
+
+/* ── FLOW ── */
+.flow{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:28px 24px;margin-bottom:16px}
+.fsteps{display:flex;flex-direction:column;gap:0}
+.fstep{display:flex;gap:16px;position:relative}
+.fstep:not(:last-child)::before{content:'';position:absolute;left:15px;top:34px;width:1px;height:calc(100% - 4px);background:var(--border2)}
+.fnum{width:32px;height:32px;border-radius:50%;border:1px solid var(--border2);background:var(--surface2);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:600;color:var(--green);flex-shrink:0;position:relative;z-index:1}
+.fbody{padding:4px 0 26px;flex:1}
+.flabel{font-family:'Syne',sans-serif;font-size:14px;font-weight:700;color:var(--text);margin-bottom:6px}
+.fdesc{color:var(--muted);font-size:12px;line-height:1.7}
+.fcode{background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:10px 14px;margin-top:10px;font-size:11.5px;color:var(--muted);line-height:1.9}
+.fcode .kw{color:var(--purple)}
+.fcode .fn2{color:var(--blue)}
+.fcode .st{color:var(--green)}
+.fcode .cm{color:var(--dim);font-style:italic}
+.fbranch{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px}
+.fbr{border-radius:8px;padding:12px 14px;border:1px solid}
+.fbr-r{background:var(--blue-dim);border-color:var(--blue-mid)}
+.fbr-d{background:var(--green-dim);border-color:var(--green-mid)}
+.fbr-title{font-family:'Syne',sans-serif;font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;margin-bottom:8px}
+.fbr-r .fbr-title{color:var(--blue)}
+.fbr-d .fbr-title{color:var(--green)}
+.fbr-step{font-size:11px;color:var(--muted);padding:2px 0}
+
+/* ── ROUTE TABLE ── */
+.rtw{background:var(--surface);border:1px solid var(--border);border-radius:12px;overflow:hidden;margin-bottom:16px}
+.rt{width:100%;border-collapse:collapse;font-size:12px}
+.rt th{padding:9px 14px;text-align:left;font-size:10px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);background:var(--surface2);border-bottom:1px solid var(--border)}
+.rt td{padding:8px 14px;border-bottom:1px solid var(--border);vertical-align:middle}
+.rt tr:last-child td{border-bottom:none}
+.rt tr:hover td{background:rgba(255,255,255,.018)}
+.rt .sep td{background:var(--surface2);color:var(--dim);font-size:10px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;border-bottom:1px solid var(--border)}
+.mb{display:inline-block;font-size:10px;font-weight:600;padding:2px 7px;border-radius:4px;letter-spacing:.04em;font-family:'JetBrains Mono',monospace;border:1px solid}
+.mg{background:var(--blue-dim);color:var(--blue);border-color:var(--blue-mid)}
+.mp{background:var(--green-dim);color:var(--green);border-color:var(--green-mid)}
+.mpu{background:var(--amber-dim);color:var(--amber);border-color:var(--amber-mid)}
+.md{background:var(--coral-dim);color:var(--coral);border-color:var(--coral-mid)}
+.pc{font-family:'JetBrains Mono',monospace;color:var(--text);font-size:12px}
+.mw{display:inline-block;font-size:10px;padding:2px 7px;border-radius:4px;background:var(--surface2);border:1px solid var(--border2);color:var(--muted);font-family:'JetBrains Mono',monospace;margin:1px}
+.mw.a{border-color:var(--purple);color:var(--purple);background:var(--purple-dim)}
+.mw.r{border-color:var(--teal);color:var(--teal);background:var(--teal-dim)}
+.mw.v{border-color:var(--green);color:var(--green);background:var(--green-dim)}
+.rb{font-size:10px;padding:2px 8px;border-radius:10px;border:1px solid}
+.rb-all{background:var(--surface2);color:var(--muted);border-color:var(--border2)}
+.rb-rider{background:var(--blue-dim);color:var(--blue);border-color:var(--blue-mid)}
+.rb-driver{background:var(--green-dim);color:var(--green);border-color:var(--green-mid)}
+.rb-admin{background:var(--amber-dim);color:var(--amber);border-color:var(--amber-mid)}
+
+/* ── CHECKLIST ── */
+.cl{display:flex;flex-direction:column;gap:8px;margin-bottom:16px}
+.ci{display:flex;align-items:flex-start;gap:14px;padding:14px 16px;background:var(--surface);border:1px solid var(--border);border-radius:10px;transition:border-color .15s}
+.ci:hover{border-color:var(--border2)}
+.ci.ok{border-left:3px solid var(--green)}
+.ci.fx{border-left:3px solid var(--amber)}
+.ci.add{border-left:3px solid var(--coral)}
+.cs{font-size:10px;font-weight:700;padding:3px 9px;border-radius:10px;flex-shrink:0;margin-top:1px;border:1px solid;letter-spacing:.04em}
+.cs-ok{background:var(--green-dim);color:var(--green);border-color:var(--green-mid)}
+.cs-fx{background:var(--amber-dim);color:var(--amber);border-color:var(--amber-mid)}
+.cs-add{background:var(--coral-dim);color:var(--coral);border-color:var(--coral-mid)}
+.cb{flex:1}
+.ct{font-family:'Syne',sans-serif;font-size:13px;font-weight:700;color:var(--text);margin-bottom:4px}
+.cd{font-size:12px;color:var(--muted);line-height:1.65}
+.ic{font-family:'JetBrains Mono',monospace;font-size:11px;background:var(--surface2);border:1px solid var(--border2);border-radius:3px;padding:1px 5px;color:var(--text)}
+
+/* ── VERIFICATION STATUS ── */
+.vs-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin-bottom:14px}
+@media(max-width:700px){.vs-grid{grid-template-columns:repeat(2,1fr)}}
+.vs-card{border-radius:8px;padding:10px 12px;border:1px solid;text-align:center}
+.vs-p{background:var(--amber-dim);border-color:var(--amber-mid)}
+.vs-r{background:var(--blue-dim);border-color:var(--blue-mid)}
+.vs-v{background:var(--green-dim);border-color:var(--green-mid)}
+.vs-x{background:var(--coral-dim);border-color:var(--coral-mid)}
+.vs-e{background:var(--surface2);border-color:var(--border2)}
+.vs-status{font-size:13px;font-weight:600;font-family:'Syne',sans-serif;margin-bottom:4px}
+.vs-p .vs-status{color:var(--amber)}
+.vs-r .vs-status{color:var(--blue)}
+.vs-v .vs-status{color:var(--green)}
+.vs-x .vs-status{color:var(--coral)}
+.vs-e .vs-status{color:var(--muted)}
+.vs-desc{font-size:10px;color:var(--muted);line-height:1.4}
+
+/* ── MIDDLEWARE CHAIN ── */
+.mwchain{display:flex;align-items:center;flex-wrap:wrap;gap:6px;margin-bottom:8px}
+.mwbox{padding:6px 12px;border-radius:6px;font-size:12px;font-weight:500;border:1px solid;font-family:'JetBrains Mono',monospace}
+.mw-auth-box{background:var(--purple-dim);color:var(--purple);border-color:var(--purple-mid)}
+.mw-role-box{background:var(--teal-dim);color:var(--teal);border-color:var(--teal-mid)}
+.mw-ver-box{background:var(--green-dim);color:var(--green);border-color:var(--green-mid)}
+.mw-handler-box{background:var(--surface2);color:var(--text);border-color:var(--border2)}
+.mwarrow{color:var(--dim);font-size:14px}
+.mwlabel{font-size:11px;color:var(--dim);margin-bottom:4px}
+
+/* ── PACKAGES ── */
+.pg{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px}
+@media(max-width:600px){.pg{grid-template-columns:1fr}}
+.pk-grp{background:var(--surface);border:1px solid var(--border);border-radius:10px;overflow:hidden}
+.pk-head{padding:9px 14px;background:var(--surface2);border-bottom:1px solid var(--border);font-family:'Syne',sans-serif;font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);display:flex;align-items:center;gap:7px}
+.pk-dot{width:7px;height:7px;border-radius:50%}
+.pk-row{display:flex;justify-content:space-between;align-items:center;padding:8px 14px;border-bottom:1px solid var(--border);gap:10px}
+.pk-row:last-child{border-bottom:none}
+.pk-name{color:var(--text);font-size:12px;font-weight:500}
+.pk-use{font-size:11px;color:var(--dim);text-align:right}
+
+/* ── INFO BANNERS ── */
+.info{padding:11px 14px;border-radius:8px;font-size:12px;line-height:1.65;margin-bottom:14px;border:1px solid}
+.ib{background:var(--blue-dim);color:#85b7eb;border-color:var(--blue-mid)}
+.ia{background:var(--amber-dim);color:#f5c777;border-color:var(--amber-mid)}
+.ig{background:var(--green-dim);color:#5dcaa5;border-color:var(--green-mid)}
+.ip{background:var(--purple-dim);color:#afa9ec;border-color:var(--purple-mid)}
+
+/* ── CODEBLOCK ── */
+.codeblock{background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:16px 18px;margin-bottom:12px;font-size:12px;line-height:1.9;color:var(--muted);overflow-x:auto}
+.codeblock .kw{color:var(--purple)}
+.codeblock .fn2{color:var(--blue)}
+.codeblock .st{color:var(--green)}
+.codeblock .cm{color:var(--dim);font-style:italic}
+.codeblock .key{color:var(--amber)}
+.codeblock .val{color:var(--coral)}
+
+/* ── ENV ── */
+.env-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-bottom:16px}
+@media(max-width:600px){.env-grid{grid-template-columns:1fr}}
+.env-card{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:12px 14px}
+.env-group{font-size:10px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--dim);margin-bottom:8px}
+.env-row{display:flex;justify-content:space-between;align-items:center;padding:3px 0;gap:8px}
+.env-key{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--amber)}
+.env-val{font-size:11px;color:var(--dim);text-align:right}
+
+/* ── FOOTER ── */
+.footer{margin-top:56px;padding-top:24px;border-top:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px}
+.fl{font-size:11px;color:var(--dim)}.fl span{color:var(--green)}
+.fr{display:flex;gap:7px}
+.ftag{font-size:10px;padding:3px 10px;border-radius:10px;background:var(--surface);border:1px solid var(--border);color:var(--dim)}
+</style>
+</head>
+<body>
+
+<!-- ══════════ HEADER ══════════ -->
+<div class="hdr">
+  <div class="hdr-eye">Final Year Project · MERN Stack</div>
+  <h1>Uber Clone<br><em>Complete Architecture</em></h1>
+  <div class="hdr-sub">Updated with separate Vehicle schema · Captain verification · Document expiry system</div>
+  <div class="pills">
+    <span class="pill hi">MongoDB</span>
+    <span class="pill hi">Express.js</span>
+    <span class="pill hi">React / React Native</span>
+    <span class="pill hi">Node.js</span>
+    <span class="pill hi2">Socket.io</span>
+    <span class="pill hi2">JWT Unified Auth</span>
+    <span class="pill hi3">Captain Verification</span>
+    <span class="pill hi3">Vehicle Schema</span>
+    <span class="pill">Cron Jobs</span>
+    <span class="pill">AWS S3</span>
+  </div>
+</div>
+
+
+<!-- ══════════ 1. FILE STRUCTURE ══════════ -->
+<div class="stitle"><div class="stitle-icon" style="background:#0d1b3e">📁</div>Complete File Structure</div>
+
+<div class="legend">
+  <div class="li"><div class="ld" style="background:var(--green)"></div>Already built by you</div>
+  <div class="li"><div class="ld" style="background:var(--amber)"></div>Fix / update existing</div>
+  <div class="li"><div class="ld" style="background:var(--coral)"></div>New file to add</div>
+  <div class="li"><div class="ld" style="background:var(--purple)"></div>Frontend (React)</div>
+</div>
+
+<div class="tree">
+  <div class="tree-bar">
+    <div class="dot dot-r"></div><div class="dot dot-y"></div><div class="dot dot-g"></div>
+    <span class="tree-fn">uber-clone/</span>
+  </div>
+  <div class="tree-body">
+
+    <div class="tl"><span class="ti">├── </span><span class="tn d">backend/</span></div>
+
+    <div class="tl"><span class="ti">│   ├── </span><span class="tn d">models/</span></div>
+    <div class="tl"><span class="ti">│   │   ├── </span><span class="tn ok">user.model.js</span><span class="tc cg">✓  username, email, password (bcrypt), role, socketId, refreshToken</span></div>
+    <div class="tl"><span class="ti">│   │   ├── </span><span class="tn fx">captain.model.js</span><span class="tc ca">⚠  update: remove vehicle sub-doc → add vehicle ref + license sub-doc + captainVerified + isActive</span></div>
+    <div class="tl"><span class="ti">│   │   ├── </span><span class="tn add">vehicle.model.js</span><span class="tc cr">+  NEW: make, model, color, year, plate, vehicleType, rc, insurance, puc, permit, vehiclePhoto, vehicleVerified</span></div>
+    <div class="tl"><span class="ti">│   │   └── </span><span class="tn fx">ride.model.js</span><span class="tc ca">⚠  update: captain ref → "Captain" (was "User") · add distance + otp fields</span></div>
+
+    <div class="tgap"></div>
+    <div class="tl"><span class="ti">│   ├── </span><span class="tn d">controllers/</span></div>
+    <div class="tl"><span class="ti">│   │   ├── </span><span class="tn fx">user.controller.js</span><span class="tc ca">⚠  update UsersignUp: add Captain.create() branch when role === "driver"</span></div>
+    <div class="tl"><span class="ti">│   │   ├── </span><span class="tn fx">captain.controller.js</span><span class="tc ca">⚠  delete commented captainlogin · add getCaptainProfile, updateStatus · populate vehicle</span></div>
+    <div class="tl"><span class="ti">│   │   ├── </span><span class="tn ok">ride.controller.js</span><span class="tc cg">✓  createRide · getPendingRides · acceptride · completeRide · cancelRide</span></div>
+    <div class="tl"><span class="ti">│   │   └── </span><span class="tn add">admin.controller.js</span><span class="tc cr">+  NEW: verifyCaptain · verifyVehicle · rejectWithNote · getDashboardStats</span></div>
+
+    <div class="tgap"></div>
+    <div class="tl"><span class="ti">│   ├── </span><span class="tn d">middlewares/</span></div>
+    <div class="tl"><span class="ti">│   │   ├── </span><span class="tn ok">auth.middleware.js</span><span class="tc cg">✓  Bearer token → jwt.verify() → req.user</span></div>
+    <div class="tl"><span class="ti">│   │   ├── </span><span class="tn ok">role.middleware.js</span><span class="tc cg">✓  allowCaptainOnly · allowRiderOnly</span></div>
+    <div class="tl"><span class="ti">│   │   └── </span><span class="tn add">verify.middleware.js</span><span class="tc cr">+  NEW: requireVerifiedCaptain — checks captainVerified + vehicleVerified + doc expiry + isActive</span></div>
+
+    <div class="tgap"></div>
+    <div class="tl"><span class="ti">│   ├── </span><span class="tn d">routes/</span></div>
+    <div class="tl"><span class="ti">│   │   ├── </span><span class="tn ok">user.routes.js</span><span class="tc cg">✓  /signup · /login · /profile · /logout</span></div>
+    <div class="tl"><span class="ti">│   │   ├── </span><span class="tn fx">captain.routes.js</span><span class="tc ca">⚠  add /profile + /status + /documents (upload endpoints)</span></div>
+    <div class="tl"><span class="ti">│   │   ├── </span><span class="tn ok">ride.routes.js</span><span class="tc cg">✓  add requireVerifiedCaptain to accept/complete routes</span></div>
+    <div class="tl"><span class="ti">│   │   └── </span><span class="tn add">admin.routes.js</span><span class="tc cr">+  NEW: /captains · /vehicles · /verify · /reject · protected by allowAdminOnly</span></div>
+
+    <div class="tgap"></div>
+    <div class="tl"><span class="ti">│   ├── </span><span class="tn d">services/</span></div>
+    <div class="tl"><span class="ti">│   │   ├── </span><span class="tn ok">user.service.js</span><span class="tc cg">✓  createUser() factory</span></div>
+    <div class="tl"><span class="ti">│   │   ├── </span><span class="tn add">captain.service.js</span><span class="tc cr">+  NEW: createCaptain({ userId, vehicle }) — mirrors user.service.js pattern</span></div>
+    <div class="tl"><span class="ti">│   │   ├── </span><span class="tn add">vehicle.service.js</span><span class="tc cr">+  NEW: createVehicle({ captainId, vehicleData }) — called from UsersignUp driver branch</span></div>
+    <div class="tl"><span class="ti">│   │   └── </span><span class="tn add">ride.service.js</span><span class="tc cr">+  NEW: calculateFare() · findNearbyDrivers(lat, lng, radius)</span></div>
+
+    <div class="tgap"></div>
+    <div class="tl"><span class="ti">│   ├── </span><span class="tn d">utils/</span></div>
+    <div class="tl"><span class="ti">│   │   ├── </span><span class="tn ok">token.js</span><span class="tc cg">✓  generateAccessToken() · generateRefreshToken() · payload: { _id, role }</span></div>
+    <div class="tl"><span class="ti">│   │   └── </span><span class="tn add">upload.js</span><span class="tc cr">+  NEW: multer + S3 config · uploadDocument(fieldName) middleware for file uploads</span></div>
+
+    <div class="tgap"></div>
+    <div class="tl"><span class="ti">│   ├── </span><span class="tn d">cron/</span></div>
+    <div class="tl"><span class="ti">│   │   └── </span><span class="tn add">checkExpiry.js</span><span class="tc cr">+  NEW: daily job · checks insurance/puc/license expiryDate · sets isActive=false · notifies captain</span></div>
+
+    <div class="tgap"></div>
+    <div class="tl"><span class="ti">│   ├── </span><span class="tn ok">db/db.js</span><span class="tc cg">✓  mongoose.connect()</span></div>
+    <div class="tl"><span class="ti">│   ├── </span><span class="tn add">socket.js</span><span class="tc cr">+  NEW: Socket.io init · updateLocation · rideRequest broadcast · rideAccepted notify</span></div>
+    <div class="tl"><span class="ti">│   ├── </span><span class="tn add">app.js</span><span class="tc cr">+  Express setup · mount routers · CORS · cookie-parser · multer error handler</span></div>
+    <div class="tl"><span class="ti">│   └── </span><span class="tn add">server.js</span><span class="tc cr">+  http.createServer(app) · attach Socket.io · start cron · listen on PORT</span></div>
+
+    <div class="tgap"></div><div class="tgap"></div>
+    <div class="tl"><span class="ti">├── </span><span class="tn d">frontend/src/</span><span class="tc cp">  React / React Native</span></div>
+
+    <div class="tgap"></div>
+    <div class="tl"><span class="ti">│   ├── </span><span class="tn fe">pages/</span></div>
+    <div class="tl"><span class="ti">│   │   ├── </span><span class="tn fe">Login.jsx</span><span class="tc cp">  unified form → role from JWT → redirect to /home or /captain-home</span></div>
+    <div class="tl"><span class="ti">│   │   ├── </span><span class="tn fe">Register.jsx</span><span class="tc cp">  vehicle fields appear conditionally when role = "driver"</span></div>
+    <div class="tl"><span class="ti">│   │   ├── </span><span class="tn fe">RiderHome.jsx</span><span class="tc cp">  map + pickup/drop + fare estimate + book ride button</span></div>
+    <div class="tl"><span class="ti">│   │   ├── </span><span class="tn fe">CaptainHome.jsx</span><span class="tc cp">  availability toggle + incoming ride requests + verification status banner</span></div>
+    <div class="tl"><span class="ti">│   │   ├── </span><span class="tn fe">RideTracking.jsx</span><span class="tc cp">  live map marker · ETA · driver vehicle card · complete/cancel</span></div>
+    <div class="tl"><span class="ti">│   │   └── </span><span class="tn fe">DocumentUpload.jsx</span><span class="tc cp">  captain doc upload screen · licence · vehicle docs · status indicators</span></div>
+
+    <div class="tgap"></div>
+    <div class="tl"><span class="ti">│   ├── </span><span class="tn fe">context/</span></div>
+    <div class="tl"><span class="ti">│   │   ├── </span><span class="tn fe">UserContext.jsx</span><span class="tc cp">  { user, token, login(), logout() } · role-based redirect post-login</span></div>
+    <div class="tl"><span class="ti">│   │   └── </span><span class="tn fe">SocketContext.jsx</span><span class="tc cp">  socket.io-client instance · connect on mount · provide globally</span></div>
+
+    <div class="tgap"></div>
+    <div class="tl"><span class="ti">│   ├── </span><span class="tn fe">components/</span></div>
+    <div class="tl"><span class="ti">│   │   ├── </span><span class="tn fe">ProtectedRoute.jsx</span><span class="tc cp">  no token → /login · wrong role → redirect</span></div>
+    <div class="tl"><span class="ti">│   │   ├── </span><span class="tn fe">VerificationBanner.jsx</span><span class="tc cp">  shows captainVerified status + rejection note to captain</span></div>
+    <div class="tl"><span class="ti">│   │   └── </span><span class="tn fe">Navbar.jsx</span><span class="tc cp">  user name + logout + verification badge</span></div>
+
+    <div class="tgap"></div>
+    <div class="tl"><span class="ti">│   └── </span><span class="tn fe">services/</span></div>
+    <div class="tl"><span class="ti">│       ├── </span><span class="tn fe">authService.js</span><span class="tc cp">  axios /signup · /login · sets default Authorization header</span></div>
+    <div class="tl"><span class="ti">│       ├── </span><span class="tn fe">rideService.js</span><span class="tc cp">  axios /rides/* with Bearer token</span></div>
+    <div class="tl"><span class="ti">│       └── </span><span class="tn fe">documentService.js</span><span class="tc cp">  multipart/form-data uploads to /api/captains/documents</span></div>
+
+    <div class="tgap"></div>
+    <div class="tl"><span class="ti">├── </span><span class="tn">.env</span><span class="tc">  all secrets — see .env section below</span></div>
+    <div class="tl"><span class="ti">└── </span><span class="tn">package.json</span></div>
+  </div>
+</div>
+
+
+<!-- ══════════ 2. SCHEMA DESIGN ══════════ -->
+<div class="stitle"><div class="stitle-icon" style="background:#2e1f06">🗂️</div>Schema Design — 4 Models</div>
+
+<div class="rel-bar">
+  <div class="rel-box"><span class="rel-name rn-user">User</span></div>
+  <span class="rel-arrow">←</span><span class="rel-label">user FK</span><span class="rel-arrow">→</span>
+  <div class="rel-box"><span class="rel-name rn-cap">Captain</span></div>
+  <span class="rel-arrow">←</span><span class="rel-label">vehicle FK</span><span class="rel-arrow">→</span>
+  <div class="rel-box"><span class="rel-name rn-veh">Vehicle</span></div>
+  <span class="rel-arrow" style="margin-left:16px">·</span>
+  <div class="rel-box" style="margin-left:8px"><span class="rel-name rn-ride">Ride</span></div>
+  <span class="rel-arrow">←</span><span class="rel-label">rider→User · captain→Captain</span>
+</div>
+
+<div class="sg">
+  <!-- USER -->
+  <div class="sc">
+    <div class="sc-head"><span class="sc-name">User</span><span class="sc-file">user.model.js ✓</span></div>
+    <div class="sr"><span class="fn">_id</span><span class="ft">ObjectId <span class="ftag pk">PK</span></span></div>
+    <div class="sr"><span class="fn">username</span><span class="ft">String unique</span></div>
+    <div class="sr"><span class="fn">email</span><span class="ft">String unique</span></div>
+    <div class="sr"><span class="fn">fullname</span><span class="ft">String</span></div>
+    <div class="sr"><span class="fn">password</span><span class="ft">String select:false</span></div>
+    <div class="sr"><span class="fn">role</span><span class="ft">"rider" | "driver"</span></div>
+    <div class="sr"><span class="fn">socketId</span><span class="ft">String — real-time</span></div>
+    <div class="sr"><span class="fn">refreshToken</span><span class="ft">String</span></div>
+    <div class="sc-sect">methods</div>
+    <div class="sr"><span class="fn">isPasswordCorrect()</span><span class="ft">bcrypt.compare</span></div>
+    <div class="sr"><span class="fn">pre("save")</span><span class="ft">bcrypt hash hook</span></div>
+  </div>
+
+  <!-- CAPTAIN UPDATED -->
+  <div class="sc">
+    <div class="sc-head"><span class="sc-name">Captain</span><span class="sc-file">captain.model.js ⚠ update</span></div>
+    <div class="sc-sect">refs</div>
+    <div class="sr"><span class="fn fk">user</span><span class="ft">ObjectId → User <span class="ftag fk2">FK</span></span></div>
+    <div class="sr"><span class="fn fk">vehicle</span><span class="ft">ObjectId → Vehicle <span class="ftag fk2">FK</span> <span class="ftag nwt">new</span></span></div>
+    <div class="sc-sect">captain documents</div>
+    <div class="sr"><span class="fn nw">license.number</span><span class="ft">String unique</span></div>
+    <div class="sr"><span class="fn nw">license.fileUrl</span><span class="ft">String S3 URL</span></div>
+    <div class="sr"><span class="fn nw">license.expiryDate</span><span class="ft">Date</span></div>
+    <div class="sr"><span class="fn nw">license.status</span><span class="ft">pending|verified|rejected|expired</span></div>
+    <div class="sc-sect">verification</div>
+    <div class="sr"><span class="fn nw">captainVerified</span><span class="ft">pending|under_review|verified|rejected</span></div>
+    <div class="sr"><span class="fn nw">verificationNote</span><span class="ft">String — admin reason</span></div>
+    <div class="sr"><span class="fn nw">isActive</span><span class="ft">Boolean — can take rides</span></div>
+    <div class="sc-sect">runtime</div>
+    <div class="sr"><span class="fn">status</span><span class="ft">available | busy</span></div>
+    <div class="sr"><span class="fn">location</span><span class="ft">{lat, lng}</span></div>
+  </div>
+
+  <!-- VEHICLE NEW -->
+  <div class="sc">
+    <div class="sc-head"><span class="sc-name">Vehicle</span><span class="sc-file">vehicle.model.js + NEW</span></div>
+    <div class="sc-sect">identity</div>
+    <div class="sr"><span class="fn nw">_id</span><span class="ft">ObjectId <span class="ftag pk">PK</span></span></div>
+    <div class="sr"><span class="fn nw">make</span><span class="ft">Toyota, Honda…</span></div>
+    <div class="sr"><span class="fn nw">model</span><span class="ft">Innova, City…</span></div>
+    <div class="sr"><span class="fn nw">color</span><span class="ft">String</span></div>
+    <div class="sr"><span class="fn nw">year</span><span class="ft">Number</span></div>
+    <div class="sr"><span class="fn nw">plate</span><span class="ft">String unique</span></div>
+    <div class="sr"><span class="fn nw">vehicleType</span><span class="ft">car|bike|scooter|auto</span></div>
+    <div class="sr"><span class="fn nw">capacity</span><span class="ft">Number min:1</span></div>
+    <div class="sr"><span class="fn nw">vehiclePhoto</span><span class="ft">String S3 URL</span></div>
+    <div class="sc-sect">documents</div>
+    <div class="sr"><span class="fn nw">rc</span><span class="ft">RCDoc sub-doc</span></div>
+    <div class="sr"><span class="fn nw">insurance</span><span class="ft">InsuranceDoc sub-doc</span></div>
+    <div class="sr"><span class="fn nw">puc</span><span class="ft">PUCDoc sub-doc</span></div>
+    <div class="sr"><span class="fn nw">permit</span><span class="ft">PermitDoc sub-doc</span></div>
+    <div class="sc-sect">verification</div>
+    <div class="sr"><span class="fn nw">vehicleVerified</span><span class="ft">pending|under_review|verified|rejected</span></div>
+    <div class="sr"><span class="fn nw">verificationNote</span><span class="ft">String</span></div>
+  </div>
+</div>
+
+<div class="sg2">
+  <!-- RIDE UPDATED -->
+  <div class="sc">
+    <div class="sc-head"><span class="sc-name">Ride</span><span class="sc-file">ride.model.js ⚠ update</span></div>
+    <div class="sr"><span class="fn">_id</span><span class="ft">ObjectId <span class="ftag pk">PK</span></span></div>
+    <div class="sr"><span class="fn fk">rider</span><span class="ft">ObjectId → User <span class="ftag fk2">FK</span></span></div>
+    <div class="sr"><span class="fn fk">captain</span><span class="ft">ObjectId → Captain <span class="ftag fk2">FK</span> was "User"</span></div>
+    <div class="sr"><span class="fn">pickup</span><span class="ft">String</span></div>
+    <div class="sr"><span class="fn">drop</span><span class="ft">String</span></div>
+    <div class="sr"><span class="fn">fare</span><span class="ft">Number</span></div>
+    <div class="sr"><span class="fn">status</span><span class="ft">pending|accepted|ongoing|completed|cancelled</span></div>
+    <div class="sr"><span class="fn nw">distance</span><span class="ft">Number (km) <span class="ftag nwt">add</span></span></div>
+    <div class="sr"><span class="fn nw">otp</span><span class="ft">String 4-digit <span class="ftag nwt">add</span></span></div>
+  </div>
+
+  <!-- VEHICLE SUB-DOCS -->
+  <div class="sc">
+    <div class="sc-head"><span class="sc-name">Document sub-doc shapes</span><span class="sc-file">inside Vehicle</span></div>
+    <div class="sc-sect">RCDoc</div>
+    <div class="sr"><span class="fn nw">number</span><span class="ft">String</span></div>
+    <div class="sr"><span class="fn nw">ownerName</span><span class="ft">String</span></div>
+    <div class="sr"><span class="fn nw">fileUrl</span><span class="ft">String S3 URL</span></div>
+    <div class="sr"><span class="fn nw">status</span><span class="ft">pending|verified|rejected</span></div>
+    <div class="sc-sect">InsuranceDoc</div>
+    <div class="sr"><span class="fn nw">provider</span><span class="ft">String</span></div>
+    <div class="sr"><span class="fn nw">policyNumber</span><span class="ft">String</span></div>
+    <div class="sr"><span class="fn nw">fileUrl</span><span class="ft">String S3 URL</span></div>
+    <div class="sr"><span class="fn nw">expiryDate</span><span class="ft">Date — checked by cron</span></div>
+    <div class="sr"><span class="fn nw">status</span><span class="ft">pending|verified|rejected|expired</span></div>
+    <div class="sc-sect">PUCDoc</div>
+    <div class="sr"><span class="fn nw">fileUrl</span><span class="ft">String S3 URL</span></div>
+    <div class="sr"><span class="fn nw">expiryDate</span><span class="ft">Date — renews every 6 months</span></div>
+    <div class="sr"><span class="fn nw">status</span><span class="ft">pending|verified|rejected|expired</span></div>
+    <div class="sc-sect">PermitDoc</div>
+    <div class="sr"><span class="fn nw">type</span><span class="ft">yellow-plate commercial</span></div>
+    <div class="sr"><span class="fn nw">fileUrl</span><span class="ft">String S3 URL</span></div>
+    <div class="sr"><span class="fn nw">expiryDate</span><span class="ft">Date</span></div>
+    <div class="sr"><span class="fn nw">status</span><span class="ft">pending|verified|rejected|expired</span></div>
+  </div>
+</div>
+
+
+<!-- ══════════ 3. AUTH FLOW ══════════ -->
+<div class="stitle"><div class="stitle-icon" style="background:#1a1040">🔐</div>Auth Flow — Unified Login, Role-Based Routing</div>
+
+<div class="flow">
+  <div class="fsteps">
+
+    <div class="fstep">
+      <div class="fnum">1</div>
+      <div class="fbody">
+        <div class="flabel">Registration — POST /api/users/signup</div>
+        <div class="fdesc">Single endpoint for both roles. Body always has <code>username, fullname, email, password, role</code>. If role is "driver", body also includes <code>vehicle: { make, model, color, year, plate, vehicleType, capacity }</code>.</div>
+        <div class="fbranch">
+          <div class="fbr fbr-r">
+            <div class="fbr-title">role: "rider"</div>
+            <div class="fbr-step">→ createUser()</div>
+            <div class="fbr-step">→ User saved to DB</div>
+            <div class="fbr-step">→ Return tokens</div>
+            <div class="fbr-step" style="color:var(--dim);margin-top:4px">No Captain / Vehicle doc</div>
+          </div>
+          <div class="fbr fbr-d">
+            <div class="fbr-title">role: "driver"</div>
+            <div class="fbr-step">→ createUser()</div>
+            <div class="fbr-step">→ createVehicle({ captainId, vehicleData })</div>
+            <div class="fbr-step">→ createCaptain({ user._id, vehicle._id })</div>
+            <div class="fbr-step">→ captainVerified: "pending"</div>
+            <div class="fbr-step">→ isActive: false (until verified)</div>
+            <div class="fbr-step">→ Return tokens</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="fstep">
+      <div class="fnum">2</div>
+      <div class="fbody">
+        <div class="flabel">Login — POST /api/users/login (one endpoint, all roles)</div>
+        <div class="fdesc">Finds user by email, verifies password with isPasswordCorrect(), generates both tokens. JWT payload carries role — this is what the frontend uses to route.</div>
+        <div class="fcode">
+          <span class="fn2">User</span>.findOne({ email }).<span class="fn2">select</span>(<span class="st">"+password"</span>)<br>
+          user.<span class="fn2">isPasswordCorrect</span>(password) <span class="cm">// bcrypt.compare</span><br>
+          <span class="fn2">generateAccessToken</span>(user) <span class="cm">// payload: { _id, role }</span><br>
+          <span class="fn2">generateRefreshToken</span>(user)<br>
+          res.<span class="fn2">cookie</span>(<span class="st">"refreshToken"</span>, token, { httpOnly:<span class="kw">true</span>, secure, sameSite:<span class="st">"strict"</span> })<br>
+          res.<span class="fn2">json</span>({ accessToken, user: { _id, role, username, captainVerified? } })
+        </div>
+      </div>
+    </div>
+
+    <div class="fstep">
+      <div class="fnum">3</div>
+      <div class="fbody">
+        <div class="flabel">Frontend role-based redirect</div>
+        <div class="fbranch">
+          <div class="fbr fbr-r">
+            <div class="fbr-title">role: "rider"</div>
+            <div class="fbr-step">→ navigate("/home")</div>
+            <div class="fbr-step">→ RiderHome.jsx</div>
+          </div>
+          <div class="fbr fbr-d">
+            <div class="fbr-title">role: "driver"</div>
+            <div class="fbr-step">→ captainVerified check</div>
+            <div class="fbr-step">if pending/rejected → DocumentUpload.jsx</div>
+            <div class="fbr-step">if verified → CaptainHome.jsx</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="fstep">
+      <div class="fnum">4</div>
+      <div class="fbody">
+        <div class="flabel">Every API request → middleware chain</div>
+        <div class="fdesc">Your existing authUser and role middlewares handle the first two checks. The new requireVerifiedCaptain middleware adds document + expiry validation on ride routes.</div>
+        <div class="fcode">
+          authUser → jwt.verify() → User.findById() → req.user<br>
+          allowCaptainOnly → req.user.role === <span class="st">"driver"</span> ✓ or 403<br>
+          requireVerifiedCaptain → captain.captainVerified === <span class="st">"verified"</span><br>
+          &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;→ vehicle.vehicleVerified === <span class="st">"verified"</span><br>
+          &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;→ insurance.expiryDate &gt; Date.now()<br>
+          &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;→ puc.expiryDate &gt; Date.now()<br>
+          &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;→ license.expiryDate &gt; Date.now()<br>
+          &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;→ captain.isActive === true<br>
+          &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;→ attach req.captain → next()
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+
+<!-- ══════════ 4. VERIFICATION STATES ══════════ -->
+<div class="stitle"><div class="stitle-icon" style="background:#062428">✅</div>Captain & Vehicle Verification States</div>
+
+<div class="info ib">Both Captain and Vehicle have independent verification fields. A captain can only set <code>isActive = true</code> when <strong>both</strong> are "verified" AND no documents are expired.</div>
+
+<div class="vs-grid">
+  <div class="vs-card vs-p">
+    <div class="vs-status">pending</div>
+    <div class="vs-desc">Just registered. Docs uploaded. isActive: false. App shows "Account under review".</div>
+  </div>
+  <div class="vs-card vs-r">
+    <div class="vs-status">under_review</div>
+    <div class="vs-desc">Admin opened docs in dashboard. Captain gets push notification. Still blocked.</div>
+  </div>
+  <div class="vs-card vs-v">
+    <div class="vs-status">verified</div>
+    <div class="vs-desc">All docs pass. Admin sets verified. System auto-sets isActive: true. Captain can drive.</div>
+  </div>
+  <div class="vs-card vs-x">
+    <div class="vs-status">rejected</div>
+    <div class="vs-desc">Doc problem. Admin fills verificationNote. Captain sees reason, re-uploads.</div>
+  </div>
+  <div class="vs-card vs-e">
+    <div class="vs-status">expired</div>
+    <div class="vs-desc">Cron job flips status. isActive: false. Captain notified to renew expired document.</div>
+  </div>
+</div>
+
+
+<!-- ══════════ 5. MIDDLEWARE CHAIN ══════════ -->
+<div class="stitle"><div class="stitle-icon" style="background:#1a1040">🔗</div>Middleware Chain on Ride Routes</div>
+
+<div class="info ia">The new <code>requireVerifiedCaptain</code> middleware sits third in the chain — after role check, before the handler. It populates the vehicle in one query and validates all conditions, returning a specific error message per failure.</div>
+
+<div class="codeblock">
+<span class="cm">// verify.middleware.js — new file</span><br>
+<span class="kw">export const</span> <span class="fn2">requireVerifiedCaptain</span> = <span class="kw">async</span> (req, res, next) => {<br>
+&nbsp;&nbsp;<span class="kw">const</span> captain = <span class="kw">await</span> <span class="fn2">Captain</span>.findOne({ user: req.user._id }).<span class="fn2">populate</span>(<span class="st">"vehicle"</span>)<br>
+&nbsp;&nbsp;<span class="kw">if</span> (!captain) <span class="kw">return</span> res.status(<span class="val">404</span>).<span class="fn2">json</span>({ message: <span class="st">"Captain not found"</span> })<br>
+&nbsp;&nbsp;<span class="kw">if</span> (captain.captainVerified !== <span class="st">"verified"</span>)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="kw">return</span> res.status(<span class="val">403</span>).<span class="fn2">json</span>({ message: <span class="st">"Account not verified yet"</span> })<br>
+&nbsp;&nbsp;<span class="kw">if</span> (!captain.isActive)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="kw">return</span> res.status(<span class="val">403</span>).<span class="fn2">json</span>({ message: <span class="st">"Account is inactive"</span> })<br>
+&nbsp;&nbsp;<span class="kw">const</span> v = captain.vehicle<br>
+&nbsp;&nbsp;<span class="kw">if</span> (!v || v.vehicleVerified !== <span class="st">"verified"</span>)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="kw">return</span> res.status(<span class="val">403</span>).<span class="fn2">json</span>({ message: <span class="st">"Vehicle not verified"</span> })<br>
+&nbsp;&nbsp;<span class="kw">if</span> (<span class="kw">new</span> <span class="fn2">Date</span>(v.insurance.expiryDate) &lt; Date.now())<br>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="kw">return</span> res.status(<span class="val">403</span>).<span class="fn2">json</span>({ message: <span class="st">"Insurance expired — please renew"</span> })<br>
+&nbsp;&nbsp;<span class="kw">if</span> (<span class="kw">new</span> <span class="fn2">Date</span>(v.puc.expiryDate) &lt; Date.now())<br>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="kw">return</span> res.status(<span class="val">403</span>).<span class="fn2">json</span>({ message: <span class="st">"PUC certificate expired"</span> })<br>
+&nbsp;&nbsp;<span class="kw">if</span> (<span class="kw">new</span> <span class="fn2">Date</span>(captain.license.expiryDate) &lt; Date.now())<br>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="kw">return</span> res.status(<span class="val">403</span>).<span class="fn2">json</span>({ message: <span class="st">"Driving licence expired"</span> })<br>
+&nbsp;&nbsp;req.captain = captain <span class="cm">// attach for controllers to use</span><br>
+&nbsp;&nbsp;<span class="fn2">next</span>()<br>
+}
+</div>
+
+<div class="mwlabel">Route guard chain on protected ride routes:</div>
+<div class="mwchain">
+  <span class="mwbox mw-auth-box">authUser</span>
+  <span class="mwarrow">→</span>
+  <span class="mwbox mw-role-box">allowCaptainOnly</span>
+  <span class="mwarrow">→</span>
+  <span class="mwbox mw-ver-box">requireVerifiedCaptain</span>
+  <span class="mwarrow">→</span>
+  <span class="mwbox mw-handler-box">getPendingRides / acceptride / completeRide</span>
+</div>
+
+
+<!-- ══════════ 6. API ROUTES ══════════ -->
+<div class="stitle"><div class="stitle-icon" style="background:#062428">🔄</div>Complete API Routes</div>
+
+<div class="rtw">
+  <table class="rt">
+    <thead><tr><th>Method</th><th>Path</th><th>Handler</th><th>Middleware</th><th>Access</th></tr></thead>
+    <tbody>
+      <tr class="sep"><td colspan="5">Auth — all roles</td></tr>
+      <tr>
+        <td><span class="mb mp">POST</span></td><td class="pc">/api/users/signup</td>
+        <td class="pc">UsersignUp</td><td>—</td><td><span class="rb rb-all">public</span></td>
+      </tr>
+      <tr>
+        <td><span class="mb mp">POST</span></td><td class="pc">/api/users/login</td>
+        <td class="pc">Userlogin</td><td>—</td><td><span class="rb rb-all">public</span></td>
+      </tr>
+      <tr>
+        <td><span class="mb mg">GET</span></td><td class="pc">/api/users/profile</td>
+        <td class="pc">getUserProfile</td><td><span class="mw a">authUser</span></td><td><span class="rb rb-all">any role</span></td>
+      </tr>
+      <tr>
+        <td><span class="mb mp">POST</span></td><td class="pc">/api/users/logout</td>
+        <td class="pc">Userlogout</td><td><span class="mw a">authUser</span></td><td><span class="rb rb-all">any role</span></td>
+      </tr>
+
+      <tr class="sep"><td colspan="5">Captain — driver only</td></tr>
+      <tr>
+        <td><span class="mb mg">GET</span></td><td class="pc">/api/captains/profile</td>
+        <td class="pc">getCaptainProfile</td><td><span class="mw a">authUser</span> <span class="mw r">allowCaptainOnly</span></td><td><span class="rb rb-driver">driver</span></td>
+      </tr>
+      <tr>
+        <td><span class="mb mpu">PUT</span></td><td class="pc">/api/captains/status</td>
+        <td class="pc">updateStatus</td><td><span class="mw a">authUser</span> <span class="mw r">allowCaptainOnly</span> <span class="mw v">requireVerified</span></td><td><span class="rb rb-driver">driver</span></td>
+      </tr>
+      <tr>
+        <td><span class="mb mp">POST</span></td><td class="pc">/api/captains/documents/license</td>
+        <td class="pc">uploadLicense</td><td><span class="mw a">authUser</span> <span class="mw r">allowCaptainOnly</span></td><td><span class="rb rb-driver">driver</span></td>
+      </tr>
+      <tr>
+        <td><span class="mb mp">POST</span></td><td class="pc">/api/captains/documents/vehicle</td>
+        <td class="pc">uploadVehicleDocs</td><td><span class="mw a">authUser</span> <span class="mw r">allowCaptainOnly</span></td><td><span class="rb rb-driver">driver</span></td>
+      </tr>
+
+      <tr class="sep"><td colspan="5">Rides</td></tr>
+      <tr>
+        <td><span class="mb mp">POST</span></td><td class="pc">/api/rides/create</td>
+        <td class="pc">createRide</td><td><span class="mw a">authUser</span> <span class="mw r">allowRiderOnly</span></td><td><span class="rb rb-rider">rider</span></td>
+      </tr>
+      <tr>
+        <td><span class="mb mg">GET</span></td><td class="pc">/api/rides/pending</td>
+        <td class="pc">getPendingRides</td><td><span class="mw a">authUser</span> <span class="mw r">allowCaptainOnly</span> <span class="mw v">requireVerified</span></td><td><span class="rb rb-driver">driver</span></td>
+      </tr>
+      <tr>
+        <td><span class="mb mp">POST</span></td><td class="pc">/api/rides/accept/:id</td>
+        <td class="pc">acceptride</td><td><span class="mw a">authUser</span> <span class="mw r">allowCaptainOnly</span> <span class="mw v">requireVerified</span></td><td><span class="rb rb-driver">driver</span></td>
+      </tr>
+      <tr>
+        <td><span class="mb mp">POST</span></td><td class="pc">/api/rides/complete/:id</td>
+        <td class="pc">completeRide</td><td><span class="mw a">authUser</span> <span class="mw r">allowCaptainOnly</span> <span class="mw v">requireVerified</span></td><td><span class="rb rb-driver">driver</span></td>
+      </tr>
+      <tr>
+        <td><span class="mb mp">POST</span></td><td class="pc">/api/rides/cancel/:id</td>
+        <td class="pc">cancelRide</td><td><span class="mw a">authUser</span></td><td><span class="rb rb-all">any role</span></td>
+      </tr>
+
+      <tr class="sep"><td colspan="5">Admin — admin role only</td></tr>
+      <tr>
+        <td><span class="mb mg">GET</span></td><td class="pc">/api/admin/captains</td>
+        <td class="pc">listPendingCaptains</td><td><span class="mw a">authUser</span> <span class="mw r">allowAdminOnly</span></td><td><span class="rb rb-admin">admin</span></td>
+      </tr>
+      <tr>
+        <td><span class="mb mpu">PUT</span></td><td class="pc">/api/admin/captains/:id/verify</td>
+        <td class="pc">verifyCaptain</td><td><span class="mw a">authUser</span> <span class="mw r">allowAdminOnly</span></td><td><span class="rb rb-admin">admin</span></td>
+      </tr>
+      <tr>
+        <td><span class="mb mpu">PUT</span></td><td class="pc">/api/admin/vehicles/:id/verify</td>
+        <td class="pc">verifyVehicle</td><td><span class="mw a">authUser</span> <span class="mw r">allowAdminOnly</span></td><td><span class="rb rb-admin">admin</span></td>
+      </tr>
+      <tr>
+        <td><span class="mb mpu">PUT</span></td><td class="pc">/api/admin/captains/:id/reject</td>
+        <td class="pc">rejectWithNote</td><td><span class="mw a">authUser</span> <span class="mw r">allowAdminOnly</span></td><td><span class="rb rb-admin">admin</span></td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+
+<!-- ══════════ 7. CRON JOB ══════════ -->
+<div class="stitle"><div class="stitle-icon" style="background:#2e1f06">⏰</div>Daily Expiry Cron Job</div>
+
+<div class="codeblock">
+<span class="cm">// cron/checkExpiry.js — runs every day at midnight using node-cron</span><br>
+<span class="kw">import</span> cron <span class="kw">from</span> <span class="st">'node-cron'</span><br>
+<span class="kw">import</span> { Vehicle } <span class="kw">from</span> <span class="st">'../models/vehicle.model.js'</span><br>
+<span class="kw">import</span> { Captain } <span class="kw">from</span> <span class="st">'../models/captain.model.js'</span><br><br>
+cron.<span class="fn2">schedule</span>(<span class="st">'0 0 * * *'</span>, <span class="kw">async</span> () => {<br>
+&nbsp;&nbsp;<span class="kw">const</span> now = <span class="kw">new</span> <span class="fn2">Date</span>()<br><br>
+
+&nbsp;&nbsp;<span class="cm">// 1. Find vehicles with expired insurance</span><br>
+&nbsp;&nbsp;<span class="kw">const</span> expiredInsurance = <span class="kw">await</span> Vehicle.<span class="fn2">find</span>({<br>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="st">"insurance.expiryDate"</span>: { $lt: now },<br>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="st">"insurance.status"</span>: { $ne: <span class="st">"expired"</span> }<br>
+&nbsp;&nbsp;})<br>
+&nbsp;&nbsp;<span class="kw">for</span> (<span class="kw">const</span> v <span class="kw">of</span> expiredInsurance) {<br>
+&nbsp;&nbsp;&nbsp;&nbsp;v.insurance.status = <span class="st">"expired"</span><br>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="kw">await</span> v.<span class="fn2">save</span>()<br>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="kw">await</span> Captain.<span class="fn2">findOneAndUpdate</span>(<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;{ vehicle: v._id },<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;{ isActive: <span class="kw">false</span> }<br>
+&nbsp;&nbsp;&nbsp;&nbsp;)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="cm">// TODO: send push notification to captain</span><br>
+&nbsp;&nbsp;}<br><br>
+
+&nbsp;&nbsp;<span class="cm">// 2. Find vehicles with expired PUC (same pattern)</span><br>
+&nbsp;&nbsp;<span class="cm">// 3. Find captains with expired driving licence (same pattern)</span><br>
+})
+</div>
+
+
+<!-- ══════════ 8. BUILD ORDER ══════════ -->
+<div class="stitle"><div class="stitle-icon" style="background:#062428">⚡</div>Build Order</div>
+
+<div class="cl">
+  <div class="ci ok">
+    <span class="cs cs-ok">done</span>
+    <div class="cb">
+      <div class="ct">1. User model + auth.middleware + role.middleware + token.js</div>
+      <div class="cd"><span class="ic">isPasswordCorrect()</span>, pre-save bcrypt, <span class="ic">authUser</span>, <span class="ic">allowCaptainOnly</span>, <span class="ic">allowRiderOnly</span>, <span class="ic">generateAccessToken</span> — all solid, zero changes needed.</div>
+    </div>
+  </div>
+  <div class="ci ok">
+    <span class="cs cs-ok">done</span>
+    <div class="cb">
+      <div class="ct">2. ride.controller.js — all 5 functions</div>
+      <div class="cd"><span class="ic">createRide</span> · <span class="ic">getPendingRides</span> · <span class="ic">acceptride</span> · <span class="ic">completeRide</span> · <span class="ic">cancelRide</span> — complete.</div>
+    </div>
+  </div>
+  <div class="ci fx">
+    <span class="cs cs-fx">fix</span>
+    <div class="cb">
+      <div class="ct">3. Create vehicle.model.js — new separate schema</div>
+      <div class="cd">Move vehicle identity fields (make, model, color, year, plate, vehicleType, capacity) plus all document sub-docs (rc, insurance, puc, permit) and <span class="ic">vehicleVerified</span> into their own model file.</div>
+    </div>
+  </div>
+  <div class="ci fx">
+    <span class="cs cs-fx">fix</span>
+    <div class="cb">
+      <div class="ct">4. Update captain.model.js — replace vehicle sub-doc with FK</div>
+      <div class="cd">Remove the inline <span class="ic">vehicle</span> sub-document block. Add <span class="ic">vehicle: { type: ObjectId, ref: "Vehicle" }</span>. Add <span class="ic">license</span> sub-doc, <span class="ic">captainVerified</span> enum, <span class="ic">verificationNote</span>, and <span class="ic">isActive: Boolean</span>.</div>
+    </div>
+  </div>
+  <div class="ci fx">
+    <span class="cs cs-fx">fix</span>
+    <div class="cb">
+      <div class="ct">5. Update UsersignUp — driver branch creates Vehicle + Captain</div>
+      <div class="cd">After <span class="ic">createUser()</span>, if <span class="ic">role === "driver"</span>: call <span class="ic">createVehicle(vehicleData)</span>, then <span class="ic">createCaptain({ user._id, vehicle._id })</span>. Captain starts with <span class="ic">captainVerified: "pending"</span> and <span class="ic">isActive: false</span>.</div>
+    </div>
+  </div>
+  <div class="ci fx">
+    <span class="cs cs-fx">fix</span>
+    <div class="cb">
+      <div class="ct">6. Update ride.model.js — captain ref + new fields</div>
+      <div class="cd">Change <span class="ic">captain</span> field from <span class="ic">ref: "User"</span> to <span class="ic">ref: "Captain"</span>. Add <span class="ic">distance: Number</span> and <span class="ic">otp: String</span> fields.</div>
+    </div>
+  </div>
+  <div class="ci fx">
+    <span class="cs cs-fx">fix</span>
+    <div class="cb">
+      <div class="ct">7. Delete captainlogin from captain.controller.js</div>
+      <div class="cd">The commented-out block is dead code. <span class="ic">Userlogin</span> already handles both roles via JWT <span class="ic">role</span> payload. Remove it to keep the codebase clean.</div>
+    </div>
+  </div>
+  <div class="ci add">
+    <span class="cs cs-add">add</span>
+    <div class="cb">
+      <div class="ct">8. Add captain.service.js + vehicle.service.js</div>
+      <div class="cd"><span class="ic">createCaptain({ userId, vehicleId })</span> and <span class="ic">createVehicle({ vehicleData })</span> — both mirror the <span class="ic">user.service.js</span> factory pattern. Keep controllers thin.</div>
+    </div>
+  </div>
+  <div class="ci add">
+    <span class="cs cs-add">add</span>
+    <div class="cb">
+      <div class="ct">9. Add verify.middleware.js — requireVerifiedCaptain</div>
+      <div class="cd">Chain it on <span class="ic">getPendingRides</span>, <span class="ic">acceptride</span>, <span class="ic">completeRide</span>, and the status toggle route. Populates vehicle in one query, checks all 6 conditions, returns specific error per failure.</div>
+    </div>
+  </div>
+  <div class="ci add">
+    <span class="cs cs-add">add</span>
+    <div class="cb">
+      <div class="ct">10. Add upload.js — multer + S3 for document uploads</div>
+      <div class="cd">Configure multer with S3 storage (multer-s3). Expose <span class="ic">uploadDocument(fieldName)</span> middleware. Used on <span class="ic">POST /api/captains/documents/*</span> routes for licence and vehicle doc scans.</div>
+    </div>
+  </div>
+  <div class="ci add">
+    <span class="cs cs-add">add</span>
+    <div class="cb">
+      <div class="ct">11. Add admin.controller.js + admin.routes.js</div>
+      <div class="cd"><span class="ic">verifyCaptain</span>, <span class="ic">verifyVehicle</span>, <span class="ic">rejectWithNote</span> handlers. Add <span class="ic">"admin"</span> to User role enum. Add <span class="ic">allowAdminOnly</span> to role.middleware.js. Admin sees all pending captains and their uploaded docs.</div>
+    </div>
+  </div>
+  <div class="ci add">
+    <span class="cs cs-add">add</span>
+    <div class="cb">
+      <div class="ct">12. Add cron/checkExpiry.js — daily expiry check</div>
+      <div class="cd">Install <span class="ic">node-cron</span>. Runs at midnight daily. Checks <span class="ic">insurance.expiryDate</span>, <span class="ic">puc.expiryDate</span>, <span class="ic">license.expiryDate</span> against today. Flips status to "expired", sets <span class="ic">isActive: false</span>, sends push notification.</div>
+    </div>
+  </div>
+  <div class="ci add">
+    <span class="cs cs-add">add</span>
+    <div class="cb">
+      <div class="ct">13. Add socket.js — real-time location + ride events</div>
+      <div class="cd">On connect: save <span class="ic">socket.id</span> to <span class="ic">User.socketId</span>. Events: <span class="ic">updateLocation</span> (driver GPS → Captain.location), <span class="ic">rideRequest</span> (push to nearby driver sockets), <span class="ic">rideAccepted</span> (notify rider socket).</div>
+    </div>
+  </div>
+  <div class="ci add">
+    <span class="cs cs-add">add</span>
+    <div class="cb">
+      <div class="ct">14. Frontend — DocumentUpload.jsx + VerificationBanner.jsx</div>
+      <div class="cd">Document upload screen uses <span class="ic">documentService.js</span> with multipart/form-data. <span class="ic">VerificationBanner</span> shows current <span class="ic">captainVerified</span> status and admin's <span class="ic">verificationNote</span> if rejected. Driver sees this before CaptainHome loads.</div>
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════ 9. ENV VARS ══════════ -->
+<div class="stitle"><div class="stitle-icon" style="background:#2e1f06">⚙️</div>Environment Variables (.env)</div>
+
+<div class="env-grid">
+  <div class="env-card">
+    <div class="env-group">Server</div>
+    <div class="env-row"><span class="env-key">PORT</span><span class="env-val">5000</span></div>
+    <div class="env-row"><span class="env-key">NODE_ENV</span><span class="env-val">development | production</span></div>
+    <div class="env-row"><span class="env-key">MONGODB_URI</span><span class="env-val">mongodb+srv://...</span></div>
+    <div class="env-row"><span class="env-key">CLIENT_URL</span><span class="env-val">http://localhost:3000</span></div>
+  </div>
+  <div class="env-card">
+    <div class="env-group">Auth</div>
+    <div class="env-row"><span class="env-key">ACCESS_TOKEN_SECRET</span><span class="env-val">long random string</span></div>
+    <div class="env-row"><span class="env-key">ACCESS_TOKEN_EXPIRY</span><span class="env-val">15m</span></div>
+    <div class="env-row"><span class="env-key">REFRESH_TOKEN_SECRET</span><span class="env-val">different long string</span></div>
+    <div class="env-row"><span class="env-key">REFRESH_TOKEN_EXPIRY</span><span class="env-val">7d</span></div>
+  </div>
+  <div class="env-card">
+    <div class="env-group">AWS S3 (document uploads)</div>
+    <div class="env-row"><span class="env-key">AWS_ACCESS_KEY_ID</span><span class="env-val">from IAM</span></div>
+    <div class="env-row"><span class="env-key">AWS_SECRET_ACCESS_KEY</span><span class="env-val">from IAM</span></div>
+    <div class="env-row"><span class="env-key">AWS_REGION</span><span class="env-val">ap-south-1</span></div>
+    <div class="env-row"><span class="env-key">AWS_S3_BUCKET</span><span class="env-val">uber-clone-docs</span></div>
+  </div>
+  <div class="env-card">
+    <div class="env-group">External Services</div>
+    <div class="env-row"><span class="env-key">GOOGLE_MAPS_API_KEY</span><span class="env-val">for fare calc + ETA</span></div>
+    <div class="env-row"><span class="env-key">FCM_SERVER_KEY</span><span class="env-val">Firebase push notifications</span></div>
+    <div class="env-row"><span class="env-key">TWILIO_SID</span><span class="env-val">optional — OTP SMS</span></div>
+    <div class="env-row"><span class="env-key">TWILIO_AUTH_TOKEN</span><span class="env-val">optional</span></div>
+  </div>
+</div>
+
+
+<!-- ══════════ 10. PACKAGES ══════════ -->
+<div class="stitle"><div class="stitle-icon" style="background:#26215C">📦</div>Key Packages</div>
+
+<div class="pg">
+  <div class="pk-grp">
+    <div class="pk-head"><div class="pk-dot" style="background:var(--green)"></div>Backend</div>
+    <div class="pk-row"><span class="pk-name">bcryptjs</span><span class="pk-use">password hashing</span></div>
+    <div class="pk-row"><span class="pk-name">jsonwebtoken</span><span class="pk-use">JWT sign & verify</span></div>
+    <div class="pk-row"><span class="pk-name">express-validator</span><span class="pk-use">input validation</span></div>
+    <div class="pk-row"><span class="pk-name">mongoose</span><span class="pk-use">MongoDB ODM</span></div>
+    <div class="pk-row"><span class="pk-name">socket.io</span><span class="pk-use">real-time events</span></div>
+    <div class="pk-row"><span class="pk-name">cookie-parser</span><span class="pk-use">httpOnly cookie read</span></div>
+    <div class="pk-row"><span class="pk-name">multer + multer-s3</span><span class="pk-use">document file uploads</span></div>
+    <div class="pk-row"><span class="pk-name">@aws-sdk/client-s3</span><span class="pk-use">S3 upload</span></div>
+    <div class="pk-row"><span class="pk-name">node-cron</span><span class="pk-use">daily expiry check job</span></div>
+    <div class="pk-row"><span class="pk-name">cors</span><span class="pk-use">allow frontend origin</span></div>
+    <div class="pk-row"><span class="pk-name">dotenv</span><span class="pk-use">env var loading</span></div>
+  </div>
+  <div class="pk-grp">
+    <div class="pk-head"><div class="pk-dot" style="background:var(--purple)"></div>Frontend</div>
+    <div class="pk-row"><span class="pk-name">react-router-dom</span><span class="pk-use">routing + ProtectedRoute</span></div>
+    <div class="pk-row"><span class="pk-name">axios</span><span class="pk-use">API calls + auth header</span></div>
+    <div class="pk-row"><span class="pk-name">socket.io-client</span><span class="pk-use">live location updates</span></div>
+    <div class="pk-row"><span class="pk-name">react-hot-toast</span><span class="pk-use">login + verification toasts</span></div>
+    <div class="pk-row"><span class="pk-name">@react-google-maps/api</span><span class="pk-use">map + driver pins</span></div>
+    <div class="pk-row"><span class="pk-name">react-dropzone</span><span class="pk-use">document drag & drop upload</span></div>
+  </div>
+</div>
+
+
+<!-- FOOTER -->
+<div class="footer">
+  <div class="fl">Uber Clone · Built by <span>You</span> · Updated with Vehicle Verification System</div>
+  <div class="fr">
+    <span class="ftag">MongoDB</span><span class="ftag">Express</span>
+    <span class="ftag">React</span><span class="ftag">Node.js</span>
+    <span class="ftag">Socket.io</span>
+  </div>
+</div>
+
+</body>
+</html>

@@ -70,14 +70,14 @@ const driverSchema = new mongoose.Schema({
 
 },{timestamps:true});
 
+// driverSchema.index({status:1});
+// driverSchema.index({vehicle:1});
+// driverSchema.index({driverVerified:1});
+// driverSchema.index({"license.expiryDate":1});
 driverSchema.index({user:1});
-driverSchema.index({status:1});
-driverSchema.index({vehicle:1});
-driverSchema.index({isActive:1});
-driverSchema.index({driverVerified:1});
 driverSchema.index({location:"2dsphere"});
-driverSchema.index({"license.expiryDate":1});
-driverSchema.index({driverVerified:1,isActive:1});
 driverSchema.index({"license.number":1},{unique:true,sparse:true});
+driverSchema.index({isActive:1,status:1});
+driverSchema.index({driverVerified:1,isActive:1});
 
 export const Driver = mongoose.model("Driver",driverSchema);

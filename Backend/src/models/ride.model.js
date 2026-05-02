@@ -72,10 +72,10 @@ const rideSchema = new mongoose.Schema({
 
 },{timestamps:true});
 
-rideSchema.index({rider:1});
-rideSchema.index({driver:1});
-rideSchema.index({status:1});
-rideSchema.index({"pickup.location":"2dsphere"});
+// rideSchema.index({rider:1});
+// rideSchema.index({driver:1});
+// rideSchema.index({status:1});
+// rideSchema.index({"pickup.location":"2dsphere"});
 rideSchema.index({ rider: 1, status: 1 });  
 rideSchema.index({ driver: 1, status: 1 });
 

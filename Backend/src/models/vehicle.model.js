@@ -75,7 +75,6 @@ const permitDocSchema = new mongoose.Schema({
     },
 },{_id : false});
 
-
 const vehicleSchema = new mongoose.Schema({
     make:{
         type:String,
@@ -154,7 +153,6 @@ const vehicleSchema = new mongoose.Schema({
     }
 
 },{timestamps:true});
-
 
 // vehicleSchema.index({plate:1});
 vehicleSchema.index({vehicleVerified:1});

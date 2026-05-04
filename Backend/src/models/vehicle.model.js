@@ -103,7 +103,6 @@ const vehicleSchema = new mongoose.Schema({
         unique: true,
         trim: true,
         uppercase: true,
-        index: true,
     },
     vehicleType:{
         type:String,
@@ -155,7 +154,7 @@ const vehicleSchema = new mongoose.Schema({
 },{timestamps:true});
 
 // vehicleSchema.index({plate:1});
-vehicleSchema.index({vehicleVerified:1});
+// vehicleSchema.index({vehicleVerified:1});
 vehicleSchema.index({ "insurance.expiryDate": 1 });
 vehicleSchema.index({ "puc.expiryDate": 1 });
 

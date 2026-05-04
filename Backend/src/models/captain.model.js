@@ -4,15 +4,15 @@ const licenseSchema = new mongoose.Schema({
     number:{
         type:String,
         trim:true,
-        required:[true,"License number is required"],
+        // required:[true,"License number is required"],
     },
     fileUrl:{
         type:String, // uploaded to S3
-        required:[true,"License document is required"]
+        // required:[true,"License document is required"]
     },
     expiryDate:{
         type:Date,
-        required:true
+        // required:true
     },
     status:{
         type:String,
@@ -21,7 +21,7 @@ const licenseSchema = new mongoose.Schema({
     },
 },{_id : false});
 
-const driverSchema = new mongoose.Schema({
+const CaptainSchema = new mongoose.Schema({
     user:{
         type: mongoose.Schema.Types.ObjectId,
         ref:"User",
@@ -31,13 +31,13 @@ const driverSchema = new mongoose.Schema({
     vehicle:{
         type: mongoose.Schema.Types.ObjectId,
         ref:"Vehicle",
-        required:true,
+        default:null,
     },
     license: {
        type : licenseSchema,
        default : () => ({}),
     },
-    driverVerified:{
+    captainVerified:{
         type:String,
         enum:["pending","under_review","verified","rejected"],
         default:"pending"
@@ -70,14 +70,14 @@ const driverSchema = new mongoose.Schema({
 
 },{timestamps:true});
 
-// driverSchema.index({status:1});
-// driverSchema.index({vehicle:1});
-// driverSchema.index({driverVerified:1});
-// driverSchema.index({"license.expiryDate":1});
-driverSchema.index({user:1});
-driverSchema.index({location:"2dsphere"});
-driverSchema.index({"license.number":1},{unique:true,sparse:true});
-driverSchema.index({isActive:1,status:1});
-driverSchema.index({driverVerified:1,isActive:1});
+// CaptainSchema.index({status:1});
+// CaptainSchema.index({vehicle:1});
+// CaptainSchema.index({captainVerified:1});
+// CaptainSchema.index({"license.expiryDate":1});
+CaptainSchema.index({user:1});
+CaptainSchema.index({location:"2dsphere"});
+CaptainSchema.index({"license.number":1},{unique:true,sparse:true});
+CaptainSchema.index({isActive:1,status:1});
+CaptainSchema.index({captainVerified:1,isActive:1});
 
-export const Driver = mongoose.model("Driver",driverSchema);
+export const Captain = mongoose.model("Captain",CaptainSchema);

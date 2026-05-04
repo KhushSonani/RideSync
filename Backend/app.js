@@ -4,7 +4,6 @@ dotenv.config();
 import express from 'express';
 import cors from "cors";
 import cookieParser from "cookie-parser";
-import userRouter from "./routes/user.routes.js";
 
 const app = express();
 
@@ -19,7 +18,6 @@ app.get('/',(req,res)=>{
     res.send("It's working!");
 });
 
-app.use("/api/users", userRouter);
 
 app.use((err, req, res, next) => {
   const statusCode = err.statusCode || 500;

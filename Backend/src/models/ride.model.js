@@ -8,7 +8,7 @@ const rideSchema = new mongoose.Schema({
     },
     driver:{
         type: mongoose.Schema.Types.ObjectId,
-        ref:"Captain",
+        ref:"Driver",
         default: null,
     },
     pickup:{

@@ -1,5 +1,5 @@
 import { User } from "../models/user.model.js";
-import { Captain } from "../models/captain.model.js";
+// import { Driver } from "../models/driver.model.js";
 import { generateAccessToken , generateRefreshToken } from "../utils/token.js";
 import asyncHandler from "../utils/asyncHandler.js";
 import { ApiError } from "../utils/ApiError.js";
@@ -44,13 +44,13 @@ export const loginUser = asyncHandler(async (req,res) => {
     };
 
     // if (user.role === "driver") {
-    //     const captain = await Captain.findOne({ user: user._id })
-    //                             .select("captainVerified verificationNote isActive");
-    //     if (captain) {
-    //         data.captain = {
-    //             captainVerified: captain.captainVerified,
-    //             verificationNote: captain.verificationNote,
-    //             isActive: captain.isActive,
+    //     const driver = await Driver.findOne({ user: user._id })
+    //                             .select("driverVerified verificationNote isActive");
+    //     if (driver) {
+    //         data.driver = {
+    //             driverVerified: driver.driverVerified,
+    //             verificationNote: driver.verificationNote,
+    //             isActive: driver.isActive,
     //         };
     //     }
     // }

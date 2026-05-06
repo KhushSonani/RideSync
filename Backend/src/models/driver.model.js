@@ -21,7 +21,7 @@ const licenseSchema = new mongoose.Schema({
     },
 },{_id : false});
 
-const DriverSchema = new mongoose.Schema({
+const driverSchema = new mongoose.Schema({
     user:{
         type: mongoose.Schema.Types.ObjectId,
         ref:"User",
@@ -74,10 +74,10 @@ const DriverSchema = new mongoose.Schema({
 // DriverSchema.index({vehicle:1});
 // DriverSchema.index({driverVerified:1});
 // DriverSchema.index({"license.expiryDate":1});
-DriverSchema.index({user:1});
-DriverSchema.index({location:"2dsphere"});
-DriverSchema.index({"license.number":1},{unique:true,sparse:true});
-DriverSchema.index({isActive:1,status:1});
-DriverSchema.index({driverVerified:1,isActive:1});
+driverSchema.index({user:1});
+driverSchema.index({location:"2dsphere"});
+driverSchema.index({"license.number":1},{unique:true,sparse:true});
+driverSchema.index({isActive:1,status:1});
+driverSchema.index({driverVerified:1,isActive:1});
 
-export const Driver = mongoose.model("Driver",DriverSchema);
+export const Driver = mongoose.model("Driver",driverSchema);

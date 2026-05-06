@@ -1,7 +1,7 @@
 import mongoose from "mongoose";
 import bcrypt from "bcrypt";
 
-const UserSchema = new mongoose.Schema({
+const userSchema = new mongoose.Schema({
     username:{
         type:String,
         required:true,
@@ -27,11 +27,14 @@ const UserSchema = new mongoose.Schema({
     password:{
         type:String,
         required:[true,"Password is required!"],
+        minlength: [6,"Password must be at least 6 characters"],
+        maxlength:[128,"Password cannot exceed 128 characters"],
         select: false,
     },
     avatar: {
         type: String, // cloudinary url
-        required: true,
+        default: "default-avatar-url",
+        // required: true,
     },
     role:{
         type: String,
@@ -42,7 +45,8 @@ const UserSchema = new mongoose.Schema({
         type:String,
     },
     refreshToken:{
-        type:String,
+        type:String,    
+        select:false,
     }
 },{ timestamps:true });
 
@@ -57,4 +61,4 @@ userSchema.pre("save",async function (){
 
 
 
-export const User = mongoose.model("User",UserSchema);
+export const User = mongoose.model("User",userSchema);

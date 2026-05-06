@@ -1,16 +1,123 @@
+import { validationResult } from "express-validator";
+
 import { User } from "../models/user.model.js";
-// import { Driver } from "../models/driver.model.js";
+import { Driver } from "../models/driver.model.js";
+
+import { createUser } from "../services/user.service.js";
+import { createVehicle } from "../services/vehicle.service.js";
+import { createDriver } from "../services/driver.service.js";
+
 import { generateAccessToken , generateRefreshToken } from "../utils/token.js";
 import asyncHandler from "../utils/asyncHandler.js";
 import { ApiError } from "../utils/ApiError.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
 
+import { cookieOptions } from "../constants/cookieOptions.js";
+
+export const signupUser = asyncHandler(async (req,res) => {
+    const errors = validationResult(req);
+    if(!errors.isEmpty()){
+        throw new ApiError(400,"Validation failed",errors.array());
+    }
+    const {
+        username,
+        fullname,
+        email,
+        password,
+        avatar,
+        role,
+        vehicle
+    } = req.body;
+    
+    const existingUser = await User.findOne({
+        $or: [ {email} ,{username} ]
+    });
+    if(existingUser){
+        if(existingUser.email === email){
+            throw new ApiError(400,"Email already exists");
+        }
+        if(existingUser.username === username){
+            throw new ApiError(400,"Username already exists");
+        }
+    }
+
+    const user = await createUser(
+        {
+            username,
+            fullname,
+            email,
+            password,
+            avatar,
+            role,
+        }
+    )
+    let driverData = null;
+    if(role === "driver"){
+        // ** Create Vehicle ** //
+        const createdVehicle = await createVehicle(vehicle);
+
+        // ** Create Driver ** //
+        const driver = await createDriver({
+            userId : user._id,
+            vehicleId : createdVehicle._id,
+        });
+
+        driverData = {
+            _id : driver._id,
+            driverVerified : driver.driverVerified,
+            isActive : driver.isActive,
+            vehicle : createdVehicle,
+        };
+    }
+
+    const accessToken = generateAccessToken({
+        _id: user._id,
+        role: user.role
+    });
+
+    const refreshToken = generateRefreshToken({
+        _id: user._id,
+        role: user.role
+    });
+
+    user.refreshToken = refreshToken;
+    await user.save({ validateBeforeSave: false });
+
+    
+    const responseData = {
+        accessToken,
+        user: {
+            _id: user._id,
+            username: user.username,
+            fullname: user.fullname,
+            email: user.email,
+            avatar: user.avatar,
+            role: user.role,
+        },
+    };
+
+    if(driverData){
+        responseData.driver = driverData;
+    }
+
+    return res
+           .status(201)
+           .cookie("refreshToken",refreshToken,cookieOptions)
+           .json(
+                new ApiResponse(201,responseData,"User registered successfully.")
+           );
+
+});
+
+
 export const loginUser = asyncHandler(async (req,res) => {
     
-    const { email, password } = req.body;
-    if(!email || !password){
-        throw new ApiError(400,"Email and password are required! ");
+    const errors = validationResult(req);
+    if(!errors.isEmpty()){
+        throw new ApiError(400,"Validation failed",errors.array());
     }
+
+    const { email, password } = req.body;
 
     const user = await User.findOne({ email }).select("+password");
     if(!user) {
@@ -21,15 +128,12 @@ export const loginUser = asyncHandler(async (req,res) => {
     if(!isPasswordValid){
         throw new ApiError(401,"Invalid email or password.");
     }
+
     const accessToken  = generateAccessToken({ _id: user._id, role: user.role });
     const refreshToken = generateRefreshToken({ _id: user._id, role: user.role });
+
     user.refreshToken = refreshToken;
-    const options = {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === "production",
-        sameSite: "strict",
-        maxAge: 7 * 24 * 60 * 60 * 1000   
-    };
+
     await user.save({validateBeforeSave:false});
     
     const data = {
@@ -43,21 +147,23 @@ export const loginUser = asyncHandler(async (req,res) => {
         },
     };
 
-    // if (user.role === "driver") {
-    //     const driver = await Driver.findOne({ user: user._id })
-    //                             .select("driverVerified verificationNote isActive");
-    //     if (driver) {
-    //         data.driver = {
-    //             driverVerified: driver.driverVerified,
-    //             verificationNote: driver.verificationNote,
-    //             isActive: driver.isActive,
-    //         };
-    //     }
-    // }
+    if (user.role === "driver") {
+        const driver = await Driver.findOne({ user: user._id })
+                                .populate("vehicle")
+                                .select("driverVerified verificationNote isActive vehicle");
+        if (driver) {
+            data.driver = {
+                driverVerified: driver.driverVerified,
+                verificationNote: driver.verificationNote,
+                isActive: driver.isActive,
+                vehicle: driver.vehicle,
+            };
+        }
+    }
 
     return res
     .status(200)
-    .cookie("refreshToken",refreshToken,options)
-    .json(new ApiResponse(200,data,"Login successfull."));
-
+    .cookie("refreshToken",refreshToken,cookieOptions)
+    .json(new ApiResponse(200,data,"Login successful."));
+    
 });

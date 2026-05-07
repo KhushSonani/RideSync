@@ -1,8 +1,10 @@
+import "./src/config/env.js";
+
 import http from "http";
 import app from "./app.js";
 import connectToDb from "./src/db/db.js";
 
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 4000;
 async function startServer() {
   try {
     await connectToDb();

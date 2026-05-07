@@ -11,8 +11,15 @@ const rcDocSchema = new mongoose.Schema({
       type: String,
       trim: true,
     },
-    fileUrl: {
-      type: String, // S3 URL — set after upload
+    file: {
+        url:{
+            type:String,
+            default:null,
+        },
+        public_id:{
+            type:String,
+            default:null,
+        }
     },
     status: {
       type: String,
@@ -30,8 +37,15 @@ const insuranceDocSchema = new mongoose.Schema({
       type: String,
       trim: true,
     },
-    fileUrl: {
-      type: String, // S3 URL
+    file: {
+        url:{
+            type:String,
+            default:null,
+        },
+        public_id:{
+            type:String,
+            default:null,
+        }
     },
     expiryDate: {
       type: Date, // checked by node-cron daily job
@@ -44,8 +58,15 @@ const insuranceDocSchema = new mongoose.Schema({
 },{_id : false});
 
 const pucDocSchema = new mongoose.Schema({
-    fileUrl: {
-      type: String, // S3 URL — renews every 6 months
+    file: {
+        url:{
+            type:String,
+            default:null,
+        },
+        public_id:{
+            type:String,
+            default:null,
+        }
     },
     expiryDate: {
       type: Date,
@@ -62,8 +83,15 @@ const permitDocSchema = new mongoose.Schema({
       type: String,
       trim: true, // e.g. "yellow-plate commercial"
     },
-    fileUrl: {
-      type: String, // S3 URL
+    file: {
+        url:{
+            type:String,
+            default:null,
+        },
+        public_id:{
+            type:String,
+            default:null,
+        }
     },
     expiryDate: {
       type: Date,
@@ -118,8 +146,14 @@ const vehicleSchema = new mongoose.Schema({
         min:  [1, "Capacity must be at least 1"],
     },
     vehiclePhoto:{
-        type: String,
-        default: null,
+        url:{
+            type:String,
+            default:null,
+        },
+        public_id:{
+            type:String,
+            default:null,
+        }
     },
     rc: {
         type: rcDocSchema,

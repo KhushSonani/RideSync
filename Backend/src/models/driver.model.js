@@ -6,9 +6,15 @@ const licenseSchema = new mongoose.Schema({
         trim:true,
         // required:[true,"License number is required"],
     },
-    fileUrl:{
-        type:String, // uploaded to S3
-        // required:[true,"License document is required"]
+    file: {
+        url:{
+            type:String,
+            default:null,
+        },
+        public_id:{
+            type:String,
+            default:null,
+        }
     },
     expiryDate:{
         type:Date,
@@ -74,7 +80,7 @@ const driverSchema = new mongoose.Schema({
 // DriverSchema.index({vehicle:1});
 // DriverSchema.index({driverVerified:1});
 // DriverSchema.index({"license.expiryDate":1});
-driverSchema.index({user:1});
+// driverSchema.index({user:1});
 driverSchema.index({location:"2dsphere"});
 driverSchema.index({"license.number":1},{unique:true,sparse:true});
 driverSchema.index({isActive:1,status:1});

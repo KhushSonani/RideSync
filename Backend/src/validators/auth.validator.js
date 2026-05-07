@@ -16,8 +16,8 @@ export const signupValidator = [
     body("password")
         .isLength({ min: 6 }).withMessage("Password must be at least 6 characters"),
 
-    body("avatar")
-        .notEmpty().withMessage("Avatar is required"),
+    // body("avatar")
+    //     .notEmpty().withMessage("Avatar is required"),
     
     body("role")
         .optional().isIn(["rider", "driver"]).withMessage("Role must be rider or driver"),

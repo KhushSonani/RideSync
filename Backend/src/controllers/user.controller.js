@@ -8,15 +8,17 @@ import { createVehicle } from "../services/vehicle.service.js";
 import { createDriver } from "../services/driver.service.js";
 
 import { generateAccessToken , generateRefreshToken } from "../utils/token.js";
-import asyncHandler from "../utils/asyncHandler.js";
+import { asyncHandler } from "../utils/asyncHandler.js";
 import { ApiError } from "../utils/ApiError.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
+import { uploadToCloudinary } from "../utils/cloudinary.js";
 
 import { cookieOptions } from "../constants/cookieOptions.js";
 
 export const signupUser = asyncHandler(async (req,res) => {
     const errors = validationResult(req);
     if(!errors.isEmpty()){
+        // console.log(errors.array());
         throw new ApiError(400,"Validation failed",errors.array());
     }
     const {
@@ -24,7 +26,6 @@ export const signupUser = asyncHandler(async (req,res) => {
         fullname,
         email,
         password,
-        avatar,
         role,
         vehicle
     } = req.body;
@@ -41,13 +42,21 @@ export const signupUser = asyncHandler(async (req,res) => {
         }
     }
 
+    let avatarData = null;
+    if(req.file){
+        avatarData = await uploadToCloudinary(req.file.path,req.file.fieldname);
+        if(!avatarData){
+            throw new ApiError(500,"Failed to upload avatar");
+        }
+    }
+
     const user = await createUser(
         {
             username,
             fullname,
             email,
             password,
-            avatar,
+            avatar:avatarData,
             role,
         }
     )

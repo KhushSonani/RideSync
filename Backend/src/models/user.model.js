@@ -32,9 +32,14 @@ const userSchema = new mongoose.Schema({
         select: false,
     },
     avatar: {
-        type: String, // cloudinary url
-        default: "default-avatar-url",
-        // required: true,
+        url: {
+            type: String,
+            default: null,
+        },
+        public_id: {
+            type: String,
+            default: null,
+        }
     },
     role:{
         type: String,

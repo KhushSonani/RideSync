@@ -24,6 +24,14 @@ export const signupValidator = [
 
     // ** Driver Vehicle Validation ** //
 
+    body("vehicle").optional().customSanitizer(value => {
+        try {
+            return typeof value === 'string' ? JSON.parse(value) : value;
+        } catch (e) {
+            throw new Error("Invalid vehicle JSON");
+        }
+    }),
+
     body("vehicle.make")
         .if(body("role").equals("driver"))
         .notEmpty(),

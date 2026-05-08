@@ -18,7 +18,7 @@ import { cookieOptions } from "../constants/cookieOptions.js";
 export const signupUser = asyncHandler(async (req,res) => {
     const errors = validationResult(req);
     if(!errors.isEmpty()){
-        // console.log(errors.array());
+        console.log(errors.array());
         throw new ApiError(400,"Validation failed",errors.array());
     }
     const {
@@ -60,8 +60,14 @@ export const signupUser = asyncHandler(async (req,res) => {
             role,
         }
     )
+    let parsedVehicle = null;
     let driverData = null;
     if(role === "driver"){
+        // try {
+        //     parsedVehicle = JSON.parse(vehicle);
+        // } catch (err) {
+        //     throw new ApiError(400,"Invalid vehicle data format");
+        // }
         // ** Create Vehicle ** //
         const createdVehicle = await createVehicle(vehicle);
 

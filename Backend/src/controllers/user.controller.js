@@ -1,4 +1,5 @@
 import { validationResult } from "express-validator";
+import jwt from "jsonwebtoken";
 
 import { User } from "../models/user.model.js";
 import { Driver } from "../models/driver.model.js";
@@ -14,6 +15,7 @@ import { ApiResponse } from "../utils/ApiResponse.js";
 import { uploadToCloudinary } from "../utils/cloudinary.js";
 
 import { cookieOptions } from "../constants/cookieOptions.js";
+import { config } from "../config/env.js";
 
 export const signupUser = asyncHandler(async (req,res) => {
     const errors = validationResult(req);
@@ -50,17 +52,15 @@ export const signupUser = asyncHandler(async (req,res) => {
         }
     }
 
-    const user = await createUser(
-        {
-            username,
-            fullname,
-            email,
-            password,
-            avatar:avatarData,
-            role,
-        }
-    )
-    let parsedVehicle = null;
+    const user = await createUser({
+        username,
+        fullname,
+        email,
+        password,
+        avatar:avatarData,
+        role,
+    })
+    // let parsedVehicle = null;
     let driverData = null;
     if(role === "driver"){
         // try {
@@ -101,6 +101,7 @@ export const signupUser = asyncHandler(async (req,res) => {
     
     const responseData = {
         accessToken,
+        refreshToken,
         user: {
             _id: user._id,
             username: user.username,
@@ -123,7 +124,6 @@ export const signupUser = asyncHandler(async (req,res) => {
            );
 
 });
-
 
 export const loginUser = asyncHandler(async (req,res) => {
     
@@ -151,8 +151,9 @@ export const loginUser = asyncHandler(async (req,res) => {
 
     await user.save({validateBeforeSave:false});
     
-    const data = {
+    const responseData = {
         accessToken,
+        refreshToken,
         user: {
             _id: user._id,
             username: user.username,
@@ -167,7 +168,7 @@ export const loginUser = asyncHandler(async (req,res) => {
                                 .populate("vehicle")
                                 .select("driverVerified verificationNote isActive vehicle");
         if (driver) {
-            data.driver = {
+            responseData.driver = {
                 driverVerified: driver.driverVerified,
                 verificationNote: driver.verificationNote,
                 isActive: driver.isActive,
@@ -179,6 +180,85 @@ export const loginUser = asyncHandler(async (req,res) => {
     return res
     .status(200)
     .cookie("refreshToken",refreshToken,cookieOptions)
-    .json(new ApiResponse(200,data,"Login successful."));
+    .json(new ApiResponse(200,responseData,"Login successful."));
     
+});
+
+export const getUserProfile = asyncHandler(async (req,res) => {
+    return res.status(200).json(
+        new ApiResponse(200,req.user,"User profile fetched successfully")
+    )
+});
+
+export const logoutUser = asyncHandler(async (req,res) => {
+    await User.findByIdAndUpdate(
+        req.user._id,
+        {
+            $unset: {
+                refreshToken:1
+            }
+        }
+    );
+   return res
+        .status(200)
+        .clearCookie("refreshToken",cookieOptions)
+        .json(
+            new ApiResponse(200,{},"Logged out successfully")
+        );
+}); 
+
+export const refreshAccessToken  = asyncHandler(async (req,res) => {
+
+    const incomingRefreshToken = 
+        req.body.refreshToken || req.cookies?.refreshToken;
+    if(!incomingRefreshToken){
+        throw new ApiError(401,"Refresh token is required");
+    }
+
+    try{
+        const decodedToken = jwt.verify(
+            incomingRefreshToken,
+            config.REFRESH_TOKEN_SECRET
+        );
+
+        const existingUser = await User.findById(decodedToken?._id)
+                                        .select("+refreshToken");
+        
+        
+        if(!existingUser){
+            throw new ApiError(401,"Invalid refresh token");
+        }
+
+        if(incomingRefreshToken !== existingUser?.refreshToken){
+            throw new ApiError(401,"Refresh token is expired or used");
+        }
+
+        const newAccessToken  = generateAccessToken({
+            _id: existingUser._id, 
+            role: existingUser.role 
+        });
+        const newRefreshToken  = generateRefreshToken({
+            _id: existingUser._id, 
+            role: existingUser.role 
+        });
+
+        existingUser.refreshToken = newRefreshToken;
+        await existingUser.save({ validateBeforeSave: false });
+
+        return res
+            .status(200)
+            .cookie("refreshToken",newRefreshToken,cookieOptions)
+            .json(
+                new ApiResponse(
+                    200,
+                    {
+                        newAccessToken,
+                        refreshToken: newRefreshToken,
+                    },
+                    "Access token refreshed successfully"
+                )
+            );
+    }catch(err){
+        throw new ApiError(401, err?.message || "Invalid refresh token");
+    }
 });

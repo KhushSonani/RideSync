@@ -1,9 +1,10 @@
 import { User } from "../models/user.model.js";
-import {asynchandler} from "../utils/asyncHandler.js";
+import { asyncHandler } from "../utils/asyncHandler.js";
 import { ApiError } from "../utils/ApiError.js";
+import { config } from "../config/env.js";
 import jwt from "jsonwebtoken";
 
-export const authUser = asynchandler(async(req,res,next) => {
+export const verifyJWT = asyncHandler(async(req,res,next) => {
     const token = 
         req.cookies?.accessToken ||
         req.header("Authorization")?.replace("Bearer ", "");
@@ -13,7 +14,7 @@ export const authUser = asynchandler(async(req,res,next) => {
         }
         let decodedToken;
         try {
-            decodedToken = jwt.verify(token,process.env.ACCESS_TOKEN_SECRET);
+            decodedToken = jwt.verify(token,config.ACCESS_TOKEN_SECRET);
         } catch (err) {
             throw new ApiError(401, "Invalid or expired token.");
         }

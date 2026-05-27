@@ -9,19 +9,19 @@ import cookieParser from "cookie-parser";
 const app = express();
 
 app.use(cors({
-    origin : process.env.CORS_ORIGIN,
-    credentials: true,
+  origin: "*",
+  credentials: true,
 }));
 
 app.use(express.json());
-app.use(express.urlencoded({ extended:true }));
+app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
 
-app.get('/',(req,res)=>{
-    res.send("It's working!");
+app.get('/', (req, res) => {
+  res.send("It's working!");
 });
 
-app.use("/api/v1/users",userRoutes);
+app.use("/api/v1/users", userRoutes);
 
 app.use(multerErrorHandler);
 app.use((err, req, res, next) => {

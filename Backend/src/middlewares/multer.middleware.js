@@ -66,8 +66,8 @@ export const multerErrorHandler = (err, req, res, next) => {
     };
     return res.status(400).json({ success: false, message: messages[err.code] ?? err.message });
   }
-  if (err) {
+  if (err && err.message && err.message.startsWith("Invalid file type")) {
     return res.status(400).json({ success: false, message: err.message });
   }
-  next();
+  next(err);
 };

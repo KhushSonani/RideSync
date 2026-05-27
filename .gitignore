@@ -1,0 +1,47 @@
+# Node modules (dependencies)
+**/node_modules/
+
+# Expo / build output directories
+**/dist/
+**/.expo/
+**/web-build/
+
+# Local environment configuration files
+**/.env
+**/.env.local
+**/.env.development.local
+**/.env.test.local
+**/.env.production.local
+**/.env*.local
+
+# macOS and OS generated files
+.DS_Store
+**/Thumbs.db
+**/*.pem
+
+# JetBrains / VS Code IDE folders and files
+.idea/
+.vscode/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# Log files
+**/logs
+**/*.log
+**/npm-debug.log*
+**/yarn-debug.log*
+**/yarn-error.log*
+
+# Diagnostics/temp files
+**/*.tmp
+**/*.temp
+**/.metro-health-check*
+**/*.tsbuildinfo
+
+# Local UI designs and presentation files
+UI_Designs/
+RideSync_Ar_1.html
+RideSync_Ar_2.html

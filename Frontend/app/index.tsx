@@ -1,0 +1,158 @@
+import "@/global.css";
+import { refreshAccessToken } from "@/services/auth";
+import {
+  Text,
+  View,
+  TouchableOpacity,
+  StatusBar,
+  ActivityIndicator,
+} from "react-native";
+import { useState, useEffect } from "react";
+import {
+  getAccessToken
+} from "@/services/storage";
+import { Link, router, useRootNavigationState } from "expo-router";
+
+export default function App() {
+  const [checkingAuth, setCheckingAuth] = useState(true);
+  const rootNavigationState = useRootNavigationState();
+
+  useEffect(() => {
+    if (!rootNavigationState?.key) return;
+    checkUserAuth();
+  }, [rootNavigationState?.key]);
+
+  const checkUserAuth = async () => {
+    try {
+      const accessToken = await getAccessToken();
+      // ACCESS TOKEN EXISTS
+      if (accessToken) {
+        router.replace('/(tabs)/home');
+        return;
+      }
+      // TRY REFRESH TOKEN
+      const newAccessToken = await refreshAccessToken();
+      if (newAccessToken) {
+        router.replace('/(tabs)/home');
+        return;
+      }
+      // BOTH FAILED
+    } catch (err) {
+      console.log(
+        "CHECK USER AUTH ERROR:",
+        err
+      );
+    } finally {
+      setCheckingAuth(false);
+    }
+  };
+
+  if (checkingAuth) {
+    return (
+      <View className="flex-1 bg-[#070B12] items-center justify-center">
+        <ActivityIndicator
+          size="large"
+          color="#11E0C5"
+        />
+      </View>
+    );
+  }
+
+  return (
+    <View className="flex-1 bg-[#070B12]">
+      <StatusBar
+        barStyle="light-content"
+        translucent
+        backgroundColor="transparent"
+      />
+
+      {/* PREMIUM BACKGROUND */}
+      <View className="absolute inset-0 overflow-hidden">
+
+        {/* Main Glow */}
+        <View className="absolute -top-32 -right-16 w-[420px] h-[420px] rounded-full bg-[#00CBB4]/15" />
+
+        {/* Blue Glow */}
+        <View className="absolute bottom-[-80px] -left-20 w-[260px] h-[260px] rounded-full bg-[#0A84FF]/10" />
+
+        {/* Ring Effect */}
+        <View className="absolute top-[-40px] right-[-50px] w-[300px] h-[300px] rounded-full bg-[#144B45]/20 items-center justify-center">
+          <View className="w-[220px] h-[220px] rounded-full bg-[#1D6B61]/15" />
+        </View>
+
+      </View>
+
+      <View className="flex-1 px-6 items-center justify-center">
+
+        {/* LOGO */}
+        <View className="items-center">
+
+          {/* OUTER LOGO */}
+          <View className="w-32 h-32 rounded-[38px] bg-[#0D1420]/90 border border-white/[0.08] items-center justify-center shadow-2xl">
+
+            {/* INNER GLOW */}
+            <View className="w-24 h-24 rounded-[28px] bg-[#11E0C5]/15 items-center justify-center border border-[#11E0C5]/20">
+
+              {/* LOGO ICON */}
+              <Text className="text-[42px]">
+                🚘
+              </Text>
+
+            </View>
+
+          </View>
+
+          {/* APP NAME */}
+          <Text className="text-white text-[42px] font-bold tracking-tight mt-8">
+            RideSync
+          </Text>
+
+          {/* SUBTITLE */}
+          <Text className="text-[#748096] text-[15px] text-center leading-7 mt-4 max-w-[300px]">
+            Premium ride booking experience with modern mobility and seamless travel.
+          </Text>
+
+        </View>
+
+        {/* BUTTONS */}
+        <View className="w-full mt-16">
+
+          {/* SIGN IN */}
+          <Link href="/(auth)/signin" asChild>
+
+            <TouchableOpacity
+              activeOpacity={0.85}
+              className="h-14 bg-[#11E0C5] rounded-2xl items-center justify-center border border-[#6FFFEF]/10"
+            >
+
+              <Text className="text-[#071018] text-[16px] font-bold">
+                Sign In
+              </Text>
+
+            </TouchableOpacity>
+
+          </Link>
+
+          {/* SIGN UP */}
+          <Link href="/(auth)/signup" asChild>
+
+            <TouchableOpacity
+              activeOpacity={0.85}
+              className="h-14 bg-[#131D2B]/95 border border-white/[0.06] rounded-2xl items-center justify-center mt-4"
+            >
+
+              <Text className="text-white text-[16px] font-semibold">
+                Create Account
+              </Text>
+
+            </TouchableOpacity>
+
+          </Link>
+
+        </View>
+
+      </View>
+
+    </View>
+  );
+}

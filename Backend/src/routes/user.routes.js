@@ -1,13 +1,22 @@
 import { Router } from "express";
-import { 
-    getUserProfile, 
-    loginUser, 
-    logoutUser, 
-    refreshAccessToken, 
-    signupUser
+import {
+    getUserProfile,
+    loginUser,
+    logoutUser,
+    refreshAccessToken,
+    signupUser,
+    forgotPassword,
+    resetPassword,
+    changeCurrentPassword
 } from "../controllers/user.controller.js";
 import { profilePhotoUpload } from "../middlewares/multer.middleware.js";
-import { loginValidator, signupValidator } from "../validators/auth.validator.js";
+import {
+    loginValidator,
+    signupValidator,
+    forgotPasswordValidator,
+    resetPasswordValidator,
+    changeCurrentPasswordValidator
+} from "../validators/auth.validator.js";
 import { verifyJWT } from "../middlewares/auth.middleware.js";
 
 const router = Router();
@@ -24,9 +33,9 @@ router.post(
     loginUser
 );
 router.get(
-   "/profile",
-   verifyJWT,
-   getUserProfile
+    "/profile",
+    verifyJWT,
+    getUserProfile
 );
 router.post(
     "/logout",
@@ -36,6 +45,32 @@ router.post(
 router.post(
     "/refresh-token",
     refreshAccessToken
+);
+
+router.post(
+    "/change-password",
+    verifyJWT,
+    changeCurrentPasswordValidator,
+    changeCurrentPassword
+);
+
+router.post(
+    "/forgot-password",
+    forgotPasswordValidator,
+    forgotPassword
+);
+router.get(
+    "/reset-password/:token",
+    (req, res) => {
+        const { token } = req.params;
+        return res.redirect(`ridesync://reset-password/${token}`);
+    }
+);
+
+router.post(
+    "/reset-password/:token",
+    resetPasswordValidator,
+    resetPassword
 );
 
 export default router;

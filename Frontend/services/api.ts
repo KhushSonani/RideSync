@@ -15,9 +15,9 @@ export const api = axios.create({
     timeout: 15000,
 });
 
+
 let isRefreshing = false;
 let failedQueue: any[] = [];
-
 const processQueue = (error: any, token: string | null = null) => {
     failedQueue.forEach((prom) => {
         if (error) {
@@ -59,7 +59,11 @@ api.interceptors.response.use(
         if (
             error.response &&
             (error.response.status === 401 || error.response.status === 403) &&
-            !originalRequest._retry
+            !originalRequest._retry &&
+            !originalRequest.url.includes("/users/login") &&
+            !originalRequest.url.includes("/users/signup") &&
+            !originalRequest.url.includes("/users/forgot-password") &&
+            !originalRequest.url.includes("/users/reset-password")
         ) {
             console.log(`[API Interceptor] 401 Unauthorized detected for URL: ${originalRequest.url}`);
 

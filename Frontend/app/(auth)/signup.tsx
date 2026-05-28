@@ -15,6 +15,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import Svg, { Path } from 'react-native-svg';
+import { Feather } from '@expo/vector-icons';
 
 import { COLORS } from '@/constants/theme';
 import { api } from '@/services/api';
@@ -34,6 +35,7 @@ export default function SignUp() {
     const [password, setPassword] = useState('');
     const [confirmPassword, setConfirmPassword] = useState('');
     const [isPasswordVisible, setIsPasswordVisible] = useState(false);
+    const [isConfirmPasswordVisible, setIsConfirmPasswordVisible] = useState(false);
 
     const [role, setRole] = useState<'rider' | 'driver'>('rider');
 
@@ -488,13 +490,13 @@ export default function SignUp() {
 
                                                 <TouchableOpacity
                                                     activeOpacity={0.7}
-                                                    onPress={() =>
-                                                        setIsPasswordVisible(!isPasswordVisible)
-                                                    }
+                                                    onPress={() => setIsPasswordVisible(!isPasswordVisible)}
                                                 >
-                                                    <Text className="text-[#667085] text-base">
-                                                        {isPasswordVisible ? '🙈' : '👁'}
-                                                    </Text>
+                                                    <Feather 
+                                                        name={isPasswordVisible ? "eye" : "eye-off"} 
+                                                        size={16} 
+                                                        color="#667085" 
+                                                    />
                                                 </TouchableOpacity>
 
                                             </View>
@@ -514,11 +516,22 @@ export default function SignUp() {
                                                         setConfirmPassword(text);
                                                         clearMessages();
                                                     }}
-                                                    secureTextEntry={!isPasswordVisible}
+                                                    secureTextEntry={!isConfirmPasswordVisible}
                                                     autoCapitalize="none"
                                                     editable={!loading}
                                                     className="flex-1 text-white text-[15px]"
                                                 />
+
+                                                <TouchableOpacity
+                                                    activeOpacity={0.7}
+                                                    onPress={() => setIsConfirmPasswordVisible(!isConfirmPasswordVisible)}
+                                                 >
+                                                     <Feather 
+                                                         name={isConfirmPasswordVisible ? "eye" : "eye-off"} 
+                                                         size={16} 
+                                                         color="#667085" 
+                                                     />
+                                                 </TouchableOpacity>
 
                                             </View>
 

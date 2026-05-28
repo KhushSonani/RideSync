@@ -1,5 +1,7 @@
 import { validationResult } from "express-validator";
 import jwt from "jsonwebtoken";
+import crypto from "crypto";
+import { sendEmail } from "../utils/sendEmail.js";
 
 import { User } from "../models/user.model.js";
 import { Driver } from "../models/driver.model.js";
@@ -268,4 +270,154 @@ export const refreshAccessToken = asyncHandler(async (req, res) => {
         console.error("BACKEND REFRESH ERROR:", err);
         throw new ApiError(401, err?.message || "Invalid refresh token");
     }
+});
+
+export const changeCurrentPassword = asyncHandler(async (req, res) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+        throw new ApiError(400, "Validation failed", errors.array());
+    }
+
+    const { oldPassword, newPassword } = req.body;
+
+    const user = await User.findById(req.user._id).select("+password");
+    if (!user) {
+        throw new ApiError(404, "User not found");
+    }
+    if (oldPassword === newPassword) {
+        throw new ApiError(400, "Old password and new password cannot be same");
+    }
+    const isPasswordCorrect = await user.isPasswordCorrect(oldPassword);
+    if (!isPasswordCorrect) {
+        throw new ApiError(401, "Invalid old password");
+    }
+
+    user.password = newPassword;
+    await user.save();
+
+    return res
+        .status(200)
+        .json(
+            new ApiResponse(200, {}, "Password changed successfully")
+        );
+});
+
+export const forgotPassword = asyncHandler(async (req, res) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+        throw new ApiError(400, "Validation failed", errors.array());
+    }
+
+    const { email } = req.body;
+    const user = await User.findOne({ email });
+    if (!user) {
+        throw new ApiError(404, "User with this email does not exist.");
+    }
+
+    // Generate reset token
+    const resetToken = user.getForgotPasswordToken();
+
+    // Save user document (validation bypassed since password/etc aren't modified here)
+    await user.save({ validateBeforeSave: false });
+
+    // Construct reset URL
+    const resetUrl = `${process.env.BASE_URL}/api/v1/users/reset-password/${resetToken}`;
+
+    const message = `You are receiving this email because you (or someone else) have requested the reset of a password.\n\nPlease make a POST request to:\n\n${resetUrl}\n\nThis reset token will expire in 15 minutes.\n\nIf you did not request this, please ignore this email.`;
+
+    try {
+        await sendEmail({
+            email: user.email,
+            subject: "RideSync Password Reset Request",
+            message: message
+        });
+
+        return res
+            .status(200)
+            .json(
+                new ApiResponse(200, { resetToken }, "Password reset link sent successfully.")
+            );
+    } catch (error) {
+        // Clear reset token if sending email failed
+        user.forgotPasswordToken = undefined;
+        user.forgotPasswordExpiry = undefined;
+        await user.save({ validateBeforeSave: false });
+
+        throw new ApiError(500, "Email could not be sent. Please try again later.");
+    }
+});
+
+export const resetPassword = asyncHandler(async (req, res) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+        throw new ApiError(400, "Validation failed", errors.array());
+    }
+
+    const { token } = req.params;
+    const { password } = req.body;
+
+    // Hash the token received in URL params to match the one stored in database
+    const hashedToken = crypto
+        .createHash("sha256")
+        .update(token)
+        .digest("hex");
+
+    // Find the user with matching token and unexpired reset time
+    const user = await User.findOne({
+        forgotPasswordToken: hashedToken,
+        forgotPasswordExpiry: { $gt: Date.now() }
+    }).select("+password");
+
+    if (!user) {
+        throw new ApiError(400, "Invalid or expired password reset token.");
+    }
+
+    // Set new password
+    user.password = password;
+
+    // Clear reset token fields
+    user.forgotPasswordToken = undefined;
+    user.forgotPasswordExpiry = undefined;
+
+    // Save the user (this will trigger pre("save") hook to hash password)
+    await user.save();
+
+    const accessToken = generateAccessToken({ _id: user._id, role: user.role });
+    const refreshToken = generateRefreshToken({ _id: user._id, role: user.role });
+
+    user.refreshToken = refreshToken;
+    await user.save({ validateBeforeSave: false });
+
+    const responseData = {
+        accessToken,
+        refreshToken,
+        user: {
+            _id: user._id,
+            username: user.username,
+            email: user.email,
+            fullname: user.fullname,
+            role: user.role,
+        },
+    };
+
+    if (user.role === "driver") {
+        const driver = await Driver.findOne({ user: user._id })
+            .populate("vehicle")
+            .select("driverVerified verificationNote isActive vehicle");
+        if (driver) {
+            responseData.driver = {
+                driverVerified: driver.driverVerified,
+                verificationNote: driver.verificationNote,
+                isActive: driver.isActive,
+                vehicle: driver.vehicle,
+            };
+        }
+    }
+
+    return res
+        .status(200)
+        .cookie("refreshToken", refreshToken, cookieOptions)
+        .json(
+            new ApiResponse(200, responseData, "Password reset successfully. Logged in automatically.")
+        );
 });

@@ -7,7 +7,9 @@ import {
     ScrollView,
     TouchableOpacity,
     Image,
-    Alert
+    Alert,
+    Modal,
+    TextInput
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { router } from "expo-router";
@@ -21,6 +23,69 @@ import { glassCard } from "@/constants/styles";
 export default function ProfileScreen() {
     const [user, setUser] = useState<any>(null);
     const [loading, setLoading] = useState(true);
+
+    const [showChangePasswordModal, setShowChangePasswordModal] = useState(false);
+    const [oldPassword, setOldPassword] = useState('');
+    const [newPassword, setNewPassword] = useState('');
+    const [confirmNewPassword, setConfirmNewPassword] = useState('');
+    const [changingPassword, setChangingPassword] = useState(false);
+    const [changePasswordError, setChangePasswordError] = useState('');
+    const [changePasswordSuccess, setChangePasswordSuccess] = useState('');
+    const [isOldPasswordVisible, setIsOldPasswordVisible] = useState(false);
+    const [isNewPasswordVisible, setIsNewPasswordVisible] = useState(false);
+    const [isConfirmNewPasswordVisible, setIsConfirmNewPasswordVisible] = useState(false);
+
+    const clearPasswordState = () => {
+        setOldPassword('');
+        setNewPassword('');
+        setConfirmNewPassword('');
+        setChangePasswordError('');
+        setChangePasswordSuccess('');
+        setIsOldPasswordVisible(false);
+        setIsNewPasswordVisible(false);
+        setIsConfirmNewPasswordVisible(false);
+    };
+
+    const handleChangePassword = async () => {
+        setChangePasswordError('');
+        setChangePasswordSuccess('');
+
+        if (!oldPassword || !newPassword || !confirmNewPassword) {
+            setChangePasswordError("Please fill in all password fields.");
+            return;
+        }
+        if (newPassword.length < 6) {
+            setChangePasswordError("New password must be at least 6 characters.");
+            return;
+        }
+        if (oldPassword === newPassword) {
+            setChangePasswordError("New password must be different from current password.");
+            return;
+        }
+        if (newPassword !== confirmNewPassword) {
+            setChangePasswordError("New passwords do not match.");
+            return;
+        }
+
+        try {
+            setChangingPassword(true);
+            const response = await api.post('/users/change-password', {
+                oldPassword,
+                newPassword
+            });
+            setChangePasswordSuccess(response.data?.message || "Password changed successfully!");
+            setTimeout(() => {
+                setShowChangePasswordModal(false);
+                clearPasswordState();
+            }, 1500);
+        } catch (error: any) {
+            console.log("CHANGE PASSWORD ERROR:", error?.response?.data || error.message);
+            const message = error?.response?.data?.message || "Failed to change password. Please check your credentials.";
+            setChangePasswordError(message);
+        } finally {
+            setChangingPassword(false);
+        }
+    };
 
     useEffect(() => {
         fetchUserProfile();
@@ -257,6 +322,21 @@ export default function ProfileScreen() {
                             <Feather name="chevron-right" size={16} color="#748096" />
                         </TouchableOpacity>
 
+                        {/* CHANGE PASSWORD */}
+                        <TouchableOpacity
+                            activeOpacity={0.7}
+                            onPress={() => setShowChangePasswordModal(true)}
+                            className="flex-row items-center justify-between p-3.5 rounded-2xl hover:bg-white/[0.02]"
+                        >
+                            <View className="flex-row items-center">
+                                <View className="w-8 h-8 rounded-xl bg-[#11E0C5]/10 items-center justify-center mr-3">
+                                    <Feather name="lock" size={15} color="#11E0C5" />
+                                </View>
+                                <Text className="text-white text-sm font-medium">Change Password</Text>
+                            </View>
+                            <Feather name="chevron-right" size={16} color="#748096" />
+                        </TouchableOpacity>
+
                         {/* PAYMENTS */}
                         <TouchableOpacity
                             activeOpacity={0.7}
@@ -313,6 +393,152 @@ export default function ProfileScreen() {
                     </TouchableOpacity>
                 </ScrollView>
             </SafeAreaView>
+
+            {/* CHANGE PASSWORD MODAL */}
+            <Modal
+                visible={showChangePasswordModal}
+                transparent={true}
+                animationType="fade"
+                onRequestClose={() => {
+                    setShowChangePasswordModal(false);
+                    clearPasswordState();
+                }}
+            >
+                <View className="flex-1 bg-black/60 items-center justify-center px-6">
+                    <View 
+                        className={`${glassCard} w-full p-6 border border-white/[0.08]`}
+                        style={{
+                            backgroundColor: "#0D1420",
+                            shadowColor: "#11E0C5",
+                            shadowOpacity: 0.1,
+                            shadowRadius: 25,
+                            elevation: 15,
+                        }}
+                    >
+                        <Text className="text-white text-xl font-bold tracking-tight mb-2">
+                            Change Password
+                        </Text>
+                        <Text className="text-[#748096] text-xs mb-5">
+                            Update your credentials securely
+                        </Text>
+
+                        {/* OLD PASSWORD */}
+                        <View className="h-12 bg-[#131D2B]/95 border border-white/[0.06] rounded-xl px-4 flex-row items-center mb-3">
+                            <Feather name="lock" size={14} color="#667085" />
+                            <TextInput
+                                placeholder="Current Password"
+                                placeholderTextColor="#667085"
+                                value={oldPassword}
+                                onChangeText={setOldPassword}
+                                secureTextEntry={!isOldPasswordVisible}
+                                autoCapitalize="none"
+                                className="flex-1 text-white text-[14px] ml-3"
+                            />
+                            <TouchableOpacity
+                                activeOpacity={0.7}
+                                onPress={() => setIsOldPasswordVisible(!isOldPasswordVisible)}
+                            >
+                                <Feather 
+                                    name={isOldPasswordVisible ? "eye" : "eye-off"} 
+                                    size={15} 
+                                    color="#667085" 
+                                />
+                            </TouchableOpacity>
+                        </View>
+
+                        {/* NEW PASSWORD */}
+                        <View className="h-12 bg-[#131D2B]/95 border border-white/[0.06] rounded-xl px-4 flex-row items-center mb-3">
+                            <Feather name="shield" size={14} color="#667085" />
+                            <TextInput
+                                placeholder="New Password (min 6 chars)"
+                                placeholderTextColor="#667085"
+                                value={newPassword}
+                                onChangeText={setNewPassword}
+                                secureTextEntry={!isNewPasswordVisible}
+                                autoCapitalize="none"
+                                className="flex-1 text-white text-[14px] ml-3"
+                            />
+                            <TouchableOpacity
+                                activeOpacity={0.7}
+                                onPress={() => setIsNewPasswordVisible(!isNewPasswordVisible)}
+                            >
+                                <Feather 
+                                    name={isNewPasswordVisible ? "eye" : "eye-off"} 
+                                    size={15} 
+                                    color="#667085" 
+                                />
+                            </TouchableOpacity>
+                        </View>
+
+                        {/* CONFIRM NEW PASSWORD */}
+                        <View className="h-12 bg-[#131D2B]/95 border border-white/[0.06] rounded-xl px-4 flex-row items-center mb-4">
+                            <Feather name="shield" size={14} color="#667085" />
+                            <TextInput
+                                placeholder="Confirm New Password"
+                                placeholderTextColor="#667085"
+                                value={confirmNewPassword}
+                                onChangeText={setConfirmNewPassword}
+                                secureTextEntry={!isConfirmNewPasswordVisible}
+                                autoCapitalize="none"
+                                className="flex-1 text-white text-[14px] ml-3"
+                            />
+                            <TouchableOpacity
+                                activeOpacity={0.7}
+                                onPress={() => setIsConfirmNewPasswordVisible(!isConfirmNewPasswordVisible)}
+                            >
+                                <Feather 
+                                    name={isConfirmNewPasswordVisible ? "eye" : "eye-off"} 
+                                    size={15} 
+                                    color="#667085" 
+                                />
+                            </TouchableOpacity>
+                        </View>
+
+                        {/* ERROR & SUCCESS */}
+                        {changePasswordError ? (
+                            <Text className="text-red-500 text-xs font-semibold text-center mb-3">
+                                {changePasswordError}
+                            </Text>
+                        ) : null}
+                        {changePasswordSuccess ? (
+                            <Text className="text-green-400 text-xs font-semibold text-center mb-3">
+                                {changePasswordSuccess}
+                            </Text>
+                        ) : null}
+
+                        {/* ACTIONS */}
+                        <View className="flex-row gap-x-3 mt-2">
+                            <TouchableOpacity
+                                activeOpacity={0.7}
+                                onPress={() => {
+                                    setShowChangePasswordModal(false);
+                                    clearPasswordState();
+                                }}
+                                className="flex-1 h-12 bg-white/[0.04] border border-white/[0.08] rounded-xl items-center justify-center"
+                            >
+                                <Text className="text-white text-sm font-semibold">
+                                    Cancel
+                                </Text>
+                            </TouchableOpacity>
+
+                            <TouchableOpacity
+                                activeOpacity={0.8}
+                                onPress={handleChangePassword}
+                                disabled={changingPassword}
+                                className="flex-1 h-12 bg-[#11E0C5] rounded-xl items-center justify-center"
+                            >
+                                {changingPassword ? (
+                                    <ActivityIndicator size="small" color="#071018" />
+                                ) : (
+                                    <Text className="text-[#071018] text-sm font-bold">
+                                        Update
+                                    </Text>
+                                )}
+                            </TouchableOpacity>
+                        </View>
+                    </View>
+                </View>
+            </Modal>
         </View>
     );
 }

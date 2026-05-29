@@ -8,7 +8,8 @@ import {
     forgotPassword,
     resetPassword,
     changeCurrentPassword,
-    updateUserAvatar
+    updateUserAvatar,
+    deleteUserAvatar
 } from "../controllers/user.controller.js";
 import { profilePhotoUpload } from "../middlewares/multer.middleware.js";
 import {
@@ -60,6 +61,11 @@ router.patch(
     verifyJWT,
     profilePhotoUpload,
     updateUserAvatar
+);
+router.delete(
+    "/avatar",
+    verifyJWT,
+    deleteUserAvatar
 );
 router.post(
     "/forgot-password",

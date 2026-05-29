@@ -123,6 +123,40 @@ export default function ProfileScreen() {
         }
     };
 
+    const handleAvatarDelete = async () => {
+        try {
+            setUploadingAvatar(true);
+            const response = await api.delete("/users/avatar");
+            setUser(response.data?.data);
+            Alert.alert("Success", "Avatar deleted successfully!");
+        } catch (err: any) {
+            console.log("Avatar Delete Error:", err?.response?.data || err.message);
+            Alert.alert("Error", err?.response?.data?.message || err.message || "Failed to delete image");
+        } finally {
+            setUploadingAvatar(false);
+        }
+    };
+
+    const handleAvatarPress = () => {
+        const buttons: any[] = [
+            { text: "Upload Photo", onPress: handleAvatarUpload },
+        ];
+        if (user?.avatar?.url) {
+            buttons.push({
+                text: "Delete Photo",
+                style: "destructive",
+                onPress: handleAvatarDelete
+            });
+        }
+        buttons.push({ text: "Cancel", style: "cancel" });
+
+        Alert.alert(
+            "Profile Photo",
+            "Choose an action",
+            buttons
+        );
+    };
+
     useEffect(() => {
         fetchUserProfile();
     }, []);
@@ -282,7 +316,7 @@ export default function ProfileScreen() {
                             <TouchableOpacity
                                 activeOpacity={0.8}
                                 className="absolute bottom-0 right-0 w-8 h-8 rounded-full bg-[#11E0C5] border-2 border-[#070B12] items-center justify-center shadow-lg"
-                                onPress={handleAvatarUpload}
+                                onPress={handleAvatarPress}
                             >
                                 {
                                     uploadingAvatar ? (<ActivityIndicator size="small" color="#071018" />) :

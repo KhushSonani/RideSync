@@ -445,7 +445,7 @@ export const updateUserAvatar = asyncHandler(async (req, res) => {
                 }
             }
         },
-        { new: true }
+        { returnDocument: "after" }
     ).select("-password");
 
     if (oldPublicId) {
@@ -455,4 +455,29 @@ export const updateUserAvatar = asyncHandler(async (req, res) => {
     return res
         .status(200)
         .json(new ApiResponse(200, user, "Avatar updated successfully"));
+});
+
+export const deleteUserAvatar = asyncHandler(async (req, res) => {
+    const publicId = req.user?.avatar?.public_id;
+
+    if (publicId) {
+        await deleteFromCloudinary(publicId);
+    }
+
+    const user = await User.findByIdAndUpdate(
+        req.user?._id,
+        {
+            $set: {
+                avatar: {
+                    url: null,
+                    public_id: null
+                }
+            }
+        },
+        { returnDocument: "after" }
+    ).select("-password");
+
+    return res
+        .status(200)
+        .json(new ApiResponse(200, user, "Avatar deleted successfully"));
 });

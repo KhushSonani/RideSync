@@ -79,10 +79,10 @@ export const uploadToCloudinary = async (localFilePath, fieldname = "") => {
 //  Usage: await deleteFromCloudinary(driver.license.public_id);
 //  Call this when a driver re-uploads a document (replace old file).
 //
-export const deleteFromCloudinary = async (publicId) => {
+export const deleteFromCloudinary = async (publicId, resourceType = "image") => {
   if (!publicId) return;
   try {
-    await cloudinary.uploader.destroy(publicId, { resource_type: "auto" });
+    await cloudinary.uploader.destroy(publicId, { resource_type: resourceType });
   } catch (error) {
     console.error(`Cloudinary delete failed [${publicId}]:`, error.message);
   }

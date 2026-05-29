@@ -7,7 +7,8 @@ import {
     signupUser,
     forgotPassword,
     resetPassword,
-    changeCurrentPassword
+    changeCurrentPassword,
+    updateUserAvatar
 } from "../controllers/user.controller.js";
 import { profilePhotoUpload } from "../middlewares/multer.middleware.js";
 import {
@@ -54,6 +55,12 @@ router.post(
     changeCurrentPassword
 );
 
+router.patch(
+    "/avatar",
+    verifyJWT,
+    profilePhotoUpload,
+    updateUserAvatar
+);
 router.post(
     "/forgot-password",
     forgotPasswordValidator,

@@ -14,7 +14,7 @@ import { generateAccessToken, generateRefreshToken } from "../utils/token.js";
 import { asyncHandler } from "../utils/asyncHandler.js";
 import { ApiError } from "../utils/ApiError.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
-import { uploadToCloudinary } from "../utils/cloudinary.js";
+import { uploadToCloudinary, deleteFromCloudinary } from "../utils/cloudinary.js";
 
 import { cookieOptions } from "../constants/cookieOptions.js";
 import { config } from "../config/env.js";
@@ -420,4 +420,39 @@ export const resetPassword = asyncHandler(async (req, res) => {
         .json(
             new ApiResponse(200, responseData, "Password reset successfully. Logged in automatically.")
         );
+});
+
+export const updateUserAvatar = asyncHandler(async (req, res) => {
+    const avatarLocalPath = req.file?.path;
+    if (!avatarLocalPath) {
+        throw new ApiError(400, "Avatar file is required");
+    }
+
+    const avatar = await uploadToCloudinary(avatarLocalPath, req.file.fieldname);
+    if (!avatar || !avatar.url) {
+        throw new ApiError(500, "Error while uploading avatar");
+    }
+
+    const oldPublicId = req.user?.avatar?.public_id;
+
+    const user = await User.findByIdAndUpdate(
+        req.user?._id,
+        {
+            $set: {
+                avatar: {
+                    url: avatar.url,
+                    public_id: avatar.public_id
+                }
+            }
+        },
+        { new: true }
+    ).select("-password");
+
+    if (oldPublicId) {
+        await deleteFromCloudinary(oldPublicId);
+    }
+
+    return res
+        .status(200)
+        .json(new ApiResponse(200, user, "Avatar updated successfully"));
 });

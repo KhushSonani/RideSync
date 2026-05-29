@@ -71,20 +71,14 @@ export default function SignUp() {
         message: string,
         type: 'error' | 'success' = 'error'
     ) => {
-
         fadeAnim.setValue(0);
-
         if (type === 'error') {
-
             setSuccessMessage('');
             setErrorMessage(message);
-
         } else {
-
             setErrorMessage('');
             setSuccessMessage(message);
         }
-
         Animated.timing(fadeAnim, {
             toValue: 1,
             duration: 350,
@@ -93,45 +87,27 @@ export default function SignUp() {
     };
 
     const clearMessages = () => {
-
-        if (errorMessage) {
-            setErrorMessage('');
-        }
-
-        if (successMessage) {
-            setSuccessMessage('');
-        }
+        if (errorMessage) { setErrorMessage(''); }
+        if (successMessage) { setSuccessMessage(''); }
     };
 
     const handleSignup = async () => {
-
         clearMessages();
-
         if (
             !username.trim() ||
             !fullname.trim() ||
             !email.trim() ||
             !password
         ) {
-
-            showAnimatedMessage(
-                "Please fill all required fields."
-            );
-
+            showAnimatedMessage("Please fill all required fields.");
             return;
         }
-
         if (password !== confirmPassword) {
-
-            showAnimatedMessage(
-                "Passwords do not match."
-            );
-
+            showAnimatedMessage("Passwords do not match.");
             return;
         }
 
         if (role === "driver") {
-
             if (
                 !licenseNumber.trim() ||
                 !make.trim() ||
@@ -142,19 +118,13 @@ export default function SignUp() {
                 !capacity.trim() ||
                 !vehicleType.trim()
             ) {
-
-                showAnimatedMessage(
-                    "Please fill all vehicle details."
-                );
-
+                showAnimatedMessage("Please fill all vehicle details.");
                 return;
             }
         }
 
         try {
-
             setLoading(true);
-
             const response = await api.post(
                 "/users/signup",
                 {
@@ -163,7 +133,6 @@ export default function SignUp() {
                     email: email.trim(),
                     password,
                     role,
-
                     ...(role === "driver" && {
                         vehicle: {
                             make: make.trim(),
@@ -180,48 +149,28 @@ export default function SignUp() {
                     }),
                 }
             );
-
-            const {
-                accessToken,
-                refreshToken
-            } = response.data.data;
-
+            const { accessToken, refreshToken } = response.data.data;
             if (!accessToken || !refreshToken) {
-
-                throw new Error(
-                    "Invalid server response"
-                );
+                throw new Error("Invalid server response");
             }
 
             await saveAccessToken(accessToken);
             await saveRefreshToken(refreshToken);
 
-            showAnimatedMessage(
-                "Account created successfully!",
-                "success"
-            );
+            showAnimatedMessage("Account created successfully!", "success");
 
             setTimeout(() => {
-
                 router.replace("/(tabs)/home");
-
             }, 1200);
 
         } catch (error: any) {
-
             console.log(
                 "SIGNUP ERROR:",
                 error?.response?.data || error.message
             );
-
-            const message =
-                error?.response?.data?.message ||
-                "Unable to create account.";
-
+            const message = error?.response?.data?.message || "Unable to create account.";
             showAnimatedMessage(message);
-
         } finally {
-
             setLoading(false);
         }
     };
@@ -492,10 +441,10 @@ export default function SignUp() {
                                                     activeOpacity={0.7}
                                                     onPress={() => setIsPasswordVisible(!isPasswordVisible)}
                                                 >
-                                                    <Feather 
-                                                        name={isPasswordVisible ? "eye" : "eye-off"} 
-                                                        size={16} 
-                                                        color="#667085" 
+                                                    <Feather
+                                                        name={isPasswordVisible ? "eye" : "eye-off"}
+                                                        size={16}
+                                                        color="#667085"
                                                     />
                                                 </TouchableOpacity>
 
@@ -525,13 +474,13 @@ export default function SignUp() {
                                                 <TouchableOpacity
                                                     activeOpacity={0.7}
                                                     onPress={() => setIsConfirmPasswordVisible(!isConfirmPasswordVisible)}
-                                                 >
-                                                     <Feather 
-                                                         name={isConfirmPasswordVisible ? "eye" : "eye-off"} 
-                                                         size={16} 
-                                                         color="#667085" 
-                                                     />
-                                                 </TouchableOpacity>
+                                                >
+                                                    <Feather
+                                                        name={isConfirmPasswordVisible ? "eye" : "eye-off"}
+                                                        size={16}
+                                                        color="#667085"
+                                                    />
+                                                </TouchableOpacity>
 
                                             </View>
 

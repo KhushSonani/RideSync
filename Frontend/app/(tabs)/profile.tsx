@@ -19,6 +19,10 @@ import { api } from "@/services/api";
 import { clearTokens } from "@/services/storage";
 import { COLORS } from "@/constants/theme";
 import { glassCard } from "@/constants/styles";
+import {
+    pickImageFromGallery,
+    createImageFormData
+} from '@/services/upload';
 
 export default function ProfileScreen() {
     const [user, setUser] = useState<any>(null);
@@ -34,6 +38,9 @@ export default function ProfileScreen() {
     const [isOldPasswordVisible, setIsOldPasswordVisible] = useState(false);
     const [isNewPasswordVisible, setIsNewPasswordVisible] = useState(false);
     const [isConfirmNewPasswordVisible, setIsConfirmNewPasswordVisible] = useState(false);
+
+    const [uploadingAvatar, setUploadingAvatar] = useState(false);
+
 
     const clearPasswordState = () => {
         setOldPassword('');
@@ -84,6 +91,35 @@ export default function ProfileScreen() {
             setChangePasswordError(message);
         } finally {
             setChangingPassword(false);
+        }
+    };
+
+    const handleAvatarUpload = async () => {
+        try {
+            const image = await pickImageFromGallery();
+            if (!image) return;
+            setUploadingAvatar(true);
+            const formData = await createImageFormData(image, "avatar");
+            const response = await api.patch(
+                "/users/avatar",
+                formData,
+                {
+                    headers: {
+                        "Content-Type": "multipart/form-data",
+                    }
+                }
+            );
+            setUser(response.data?.data);
+            Alert.alert(
+                "Success",
+                "Avatar uploaded successfully!",
+            );
+
+        } catch (err: any) {
+            console.log("Avatar Upload Error:", err?.response?.data || err.message);
+            Alert.alert("Error", err?.response?.data?.message || err.message || "Failed to upload image");
+        } finally {
+            setUploadingAvatar(false);
         }
     };
 
@@ -246,9 +282,12 @@ export default function ProfileScreen() {
                             <TouchableOpacity
                                 activeOpacity={0.8}
                                 className="absolute bottom-0 right-0 w-8 h-8 rounded-full bg-[#11E0C5] border-2 border-[#070B12] items-center justify-center shadow-lg"
-                                onPress={() => Alert.alert("Upload Image", "Camera and gallery options can be integrated here.")}
+                                onPress={handleAvatarUpload}
                             >
-                                <Feather name="camera" size={14} color="#071018" />
+                                {
+                                    uploadingAvatar ? (<ActivityIndicator size="small" color="#071018" />) :
+                                        (<Feather name="camera" size={14} color="#071018" />)
+                                }
                             </TouchableOpacity>
                         </View>
 
@@ -405,7 +444,7 @@ export default function ProfileScreen() {
                 }}
             >
                 <View className="flex-1 bg-black/60 items-center justify-center px-6">
-                    <View 
+                    <View
                         className={`${glassCard} w-full p-6 border border-white/[0.08]`}
                         style={{
                             backgroundColor: "#0D1420",
@@ -438,10 +477,10 @@ export default function ProfileScreen() {
                                 activeOpacity={0.7}
                                 onPress={() => setIsOldPasswordVisible(!isOldPasswordVisible)}
                             >
-                                <Feather 
-                                    name={isOldPasswordVisible ? "eye" : "eye-off"} 
-                                    size={15} 
-                                    color="#667085" 
+                                <Feather
+                                    name={isOldPasswordVisible ? "eye" : "eye-off"}
+                                    size={15}
+                                    color="#667085"
                                 />
                             </TouchableOpacity>
                         </View>
@@ -462,10 +501,10 @@ export default function ProfileScreen() {
                                 activeOpacity={0.7}
                                 onPress={() => setIsNewPasswordVisible(!isNewPasswordVisible)}
                             >
-                                <Feather 
-                                    name={isNewPasswordVisible ? "eye" : "eye-off"} 
-                                    size={15} 
-                                    color="#667085" 
+                                <Feather
+                                    name={isNewPasswordVisible ? "eye" : "eye-off"}
+                                    size={15}
+                                    color="#667085"
                                 />
                             </TouchableOpacity>
                         </View>
@@ -486,10 +525,10 @@ export default function ProfileScreen() {
                                 activeOpacity={0.7}
                                 onPress={() => setIsConfirmNewPasswordVisible(!isConfirmNewPasswordVisible)}
                             >
-                                <Feather 
-                                    name={isConfirmNewPasswordVisible ? "eye" : "eye-off"} 
-                                    size={15} 
-                                    color="#667085" 
+                                <Feather
+                                    name={isConfirmNewPasswordVisible ? "eye" : "eye-off"}
+                                    size={15}
+                                    color="#667085"
                                 />
                             </TouchableOpacity>
                         </View>

@@ -1,68 +1,68 @@
 import mongoose from "mongoose";
 
 const licenseSchema = new mongoose.Schema({
-    number:{
-        type:String,
-        trim:true,
+    number: {
+        type: String,
+        trim: true,
         // required:[true,"License number is required"],
     },
     file: {
-        url:{
-            type:String,
-            default:null,
+        url: {
+            type: String,
+            default: null,
         },
-        public_id:{
-            type:String,
-            default:null,
+        public_id: {
+            type: String,
+            default: null,
         }
     },
-    expiryDate:{
-        type:Date,
+    expiryDate: {
+        type: Date,
         // required:true
     },
-    status:{
-        type:String,
-        enum:["pending","under_review","verified","rejected","expired"],
-        default:"pending"
+    status: {
+        type: String,
+        enum: ["pending", "under_review", "verified", "rejected", "expired"],
+        default: "pending"
     },
-},{_id : false});
+}, { _id: false });
 
 const driverSchema = new mongoose.Schema({
-    user:{
+    user: {
         type: mongoose.Schema.Types.ObjectId,
-        ref:"User",
-        required:true,
-        unique:true,
+        ref: "User",
+        required: true,
+        unique: true,
     },
-    vehicle:{
+    vehicle: {
         type: mongoose.Schema.Types.ObjectId,
-        ref:"Vehicle",
-        default:null,
+        ref: "Vehicle",
+        default: null,
     },
     license: {
-       type : licenseSchema,
-       default : () => ({}),
+        type: licenseSchema,
+        default: () => ({}),
     },
-    driverVerified:{
-        type:String,
-        enum:["pending","under_review","verified","rejected"],
-        default:"pending"
+    driverVerified: {
+        type: String,
+        enum: ["pending", "under_review", "verified", "rejected"],
+        default: "pending"
     },
-    verificationNote:{
-        type:String,
-        trim:true,
-        default:null
+    verificationNote: {
+        type: String,
+        trim: true,
+        default: null
     },
-    isActive:{
-        type:Boolean,
-        default:false
+    isActive: {
+        type: Boolean,
+        default: false
     },
-    status:{
-        type:String,
-        enum:["available","busy"],
-        default:"available"
+    status: {
+        type: String,
+        enum: ["available", "busy", "offline"],
+        default: "offline"
     },
-    location:{
+    location: {
         type: {
             type: String,
             enum: ["Point"],
@@ -74,16 +74,16 @@ const driverSchema = new mongoose.Schema({
         },
     },
 
-},{timestamps:true});
+}, { timestamps: true });
 
 // DriverSchema.index({status:1});
 // DriverSchema.index({vehicle:1});
 // DriverSchema.index({driverVerified:1});
 // DriverSchema.index({"license.expiryDate":1});
 // driverSchema.index({user:1});
-driverSchema.index({location:"2dsphere"});
-driverSchema.index({"license.number":1},{unique:true,sparse:true});
-driverSchema.index({isActive:1,status:1});
-driverSchema.index({driverVerified:1,isActive:1});
+driverSchema.index({ location: "2dsphere" });
+driverSchema.index({ "license.number": 1 }, { unique: true, sparse: true });
+driverSchema.index({ isActive: 1, status: 1 });
+driverSchema.index({ driverVerified: 1, isActive: 1 });
 
-export const Driver = mongoose.model("Driver",driverSchema);
+export const Driver = mongoose.model("Driver", driverSchema);

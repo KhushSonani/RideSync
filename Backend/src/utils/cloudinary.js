@@ -1,6 +1,7 @@
 import { v2 as cloudinary } from "cloudinary";
 import fs from "fs";
 import { config } from "../config/env.js";
+import { ApiError } from "./ApiError.js";
 
 // ─── Config ────────────────────────────────────────────────────────────────────
 cloudinary.config({
@@ -20,13 +21,13 @@ cloudinary.config({
 //  └── drivers/vehicle/photo/
 //
 const FOLDER_MAP = {
-    avatar:        "RideSync/users/avatar",
-    licenseFile:   "RideSync/drivers/license",
-    rcFile:        "RideSync/drivers/vehicle/rc",
-    insuranceFile: "RideSync/drivers/vehicle/insurance",
-    pucFile:       "RideSync/drivers/vehicle/puc",
-    permitFile:    "RideSync/drivers/vehicle/permit",
-    vehiclePhoto:  "RideSync/drivers/vehicle/photo",
+  avatar: "RideSync/users/avatar",
+  licenseFile: "RideSync/drivers/license",
+  rcFile: "RideSync/drivers/vehicle/rc",
+  insuranceFile: "RideSync/drivers/vehicle/insurance",
+  pucFile: "RideSync/drivers/vehicle/puc",
+  permitFile: "RideSync/drivers/vehicle/permit",
+  vehiclePhoto: "RideSync/drivers/vehicle/photo",
 };
 
 const DEFAULT_FOLDER = "RideSync/misc";
@@ -47,8 +48,8 @@ const deleteTempFile = (filePath) => {
 //  On failure → returns null (don't crash the request, just handle gracefully).
 //
 export const uploadToCloudinary = async (localFilePath, fieldname = "") => {
-  if (!localFilePath) 
-    throw new ApiError(500,"Cloudinary upload failed");
+  if (!localFilePath)
+    throw new ApiError(400, "No file path provided for upload");
 
   const folder = FOLDER_MAP[fieldname] ?? DEFAULT_FOLDER;
 
@@ -56,21 +57,20 @@ export const uploadToCloudinary = async (localFilePath, fieldname = "") => {
     const response = await cloudinary.uploader.upload(localFilePath, {
       folder,
       resource_type: "auto",   // handles images + PDFs
-      use_filename:  true,
+      use_filename: true,
       unique_filename: true,
     });
 
     deleteTempFile(localFilePath);
 
     return {
-      url:       response.secure_url,
+      url: response.secure_url,
       public_id: response.public_id,
     };
 
   } catch (error) {
     deleteTempFile(localFilePath); // always clean up
-    console.error(`Cloudinary upload failed [${fieldname}]:`, error.message);
-    return null;
+    throw new ApiError(500, `Cloudinary upload failed [${fieldname}]: ${error.message}`);
   }
 };
 

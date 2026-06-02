@@ -43,6 +43,7 @@ export const clearTokens = async () => {
     try {
         await SecureStore.deleteItemAsync("accessToken");
         await SecureStore.deleteItemAsync("refreshToken");
+        await SecureStore.deleteItemAsync("userRole");
     } catch (error) {
         console.log("CLEAR TOKENS ERROR:", error);
     }
@@ -61,5 +62,33 @@ export const removeRefreshToken = async () => {
         await SecureStore.deleteItemAsync("refreshToken");
     } catch (error) {
         console.log("REMOVE REFRESH TOKEN ERROR:", error);
+    }
+};
+
+// SAVE USER ROLE
+export const saveUserRole = async (role: string) => {
+    try {
+        await SecureStore.setItemAsync("userRole", role);
+    } catch (error) {
+        console.log("SAVE USER ROLE ERROR:", error);
+    }
+};
+
+// GET USER ROLE
+export const getUserRole = async () => {
+    try {
+        return await SecureStore.getItemAsync("userRole");
+    } catch (error) {
+        console.log("GET USER ROLE ERROR:", error);
+        return null;
+    }
+};
+
+// CLEAR USER ROLE
+export const clearUserRole = async () => {
+    try {
+        await SecureStore.deleteItemAsync("userRole");
+    } catch (error) {
+        console.log("CLEAR USER ROLE ERROR:", error);
     }
 };

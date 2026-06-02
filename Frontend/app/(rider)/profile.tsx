@@ -9,11 +9,12 @@ import {
     Image,
     Alert,
     Modal,
-    TextInput
+    TextInput,
+    RefreshControl
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { router } from "expo-router";
-import { Feather, Ionicons } from '@expo/vector-icons';
+import { Feather } from '@expo/vector-icons';
 
 import { api } from "@/services/api";
 import { clearTokens } from "@/services/storage";
@@ -27,8 +28,13 @@ import {
 export default function ProfileScreen() {
     const [user, setUser] = useState<any>(null);
     const [loading, setLoading] = useState(true);
+    const [refreshing, setRefreshing] = useState(false);
 
     const [showChangePasswordModal, setShowChangePasswordModal] = useState(false);
+    const [showLogoutModal, setShowLogoutModal] = useState(false);
+    const [loggingOut, setLoggingOut] = useState(false);
+    const [logoutSuccess, setLogoutSuccess] = useState(false);
+    const [logoutError, setLogoutError] = useState('');
     const [oldPassword, setOldPassword] = useState('');
     const [newPassword, setNewPassword] = useState('');
     const [confirmNewPassword, setConfirmNewPassword] = useState('');
@@ -185,40 +191,43 @@ export default function ProfileScreen() {
         }
     };
 
-    const handleLogout = async () => {
-        Alert.alert(
-            "Logout",
-            "Are you sure you want to log out?",
-            [
-                { text: "Cancel", style: "cancel" },
-                {
-                    text: "Logout",
-                    style: "destructive",
-                    onPress: async () => {
-                        try {
-                            setLoading(true);
-                            // Call backend logout endpoint
-                            try {
-                                await api.post('/users/logout');
-                            } catch (e) {
-                                const err = e as any;
-                                console.log("Backend logout request failed/ignored:", err.message);
-                            }
-                            // Clear local SecureStore tokens
-                            await clearTokens();
-                            Alert.alert("Success", "Logged out successfully!", [
-                                { text: "OK", onPress: () => router.replace("/") }
-                            ]);
-                        } catch (err) {
-                            console.log("LOGOUT ERROR:", err);
-                            Alert.alert("Error", "Something went wrong during logout.");
-                        } finally {
-                            setLoading(false);
-                        }
-                    }
-                }
-            ]
-        );
+    const handleRefresh = async () => {
+        setRefreshing(true);
+        try {
+            const response = await api.get('/users/profile');
+            if (response.data?.data) {
+                setUser(response.data.data);
+            }
+        } catch (error) {
+            console.log("RIDER PROFILE REFRESH ERROR:", error);
+        } finally {
+            setRefreshing(false);
+        }
+    };
+
+    const confirmLogout = async () => {
+        setLogoutError('');
+        setLogoutSuccess(false);
+        try {
+            setLoggingOut(true);
+            try {
+                await api.post('/users/logout');
+            } catch (e) {
+                const err = e as any;
+                console.log("Backend logout request failed/ignored:", err.message);
+            }
+            await clearTokens();
+            setLogoutSuccess(true);
+            setTimeout(() => {
+                setShowLogoutModal(false);
+                router.replace("/");
+            }, 1500);
+        } catch (err) {
+            console.log("LOGOUT ERROR:", err);
+            setLogoutError("Something went wrong during logout.");
+        } finally {
+            setLoggingOut(false);
+        }
     };
 
     // Helper to get initials
@@ -237,7 +246,7 @@ export default function ProfileScreen() {
         try {
             const date = new Date(dateStr);
             return date.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
-        } catch (e) {
+        } catch {
             return "May 2026";
         }
     };
@@ -279,6 +288,14 @@ export default function ProfileScreen() {
                 <ScrollView
                     showsVerticalScrollIndicator={false}
                     contentContainerStyle={{ paddingBottom: 40 }}
+                    refreshControl={
+                        <RefreshControl
+                            refreshing={refreshing}
+                            onRefresh={handleRefresh}
+                            tintColor="#11E0C5"
+                            colors={["#11E0C5"]}
+                        />
+                    }
                 >
                     {/* BACK NAVIGATION */}
                     <View className="flex-row items-center mt-1 px-1 mb-6">
@@ -456,7 +473,11 @@ export default function ProfileScreen() {
                     {/* LOGOUT BUTTON */}
                     <TouchableOpacity
                         activeOpacity={0.8}
-                        onPress={handleLogout}
+                        onPress={() => {
+                            setLogoutError('');
+                            setLogoutSuccess(false);
+                            setShowLogoutModal(true);
+                        }}
                         className="w-full h-14 bg-[#131D2B]/95 border border-red-500/20 rounded-2xl flex-row items-center justify-center mt-3"
                     >
                         <Feather name="log-out" size={16} color="#EF4444" className="mr-2" />
@@ -609,6 +630,89 @@ export default function ProfileScreen() {
                                 )}
                             </TouchableOpacity>
                         </View>
+                    </View>
+                </View>
+            </Modal>
+
+            {/* LOGOUT CONFIRMATION MODAL */}
+            <Modal
+                visible={showLogoutModal}
+                transparent={true}
+                animationType="fade"
+                onRequestClose={() => {
+                    if (!loggingOut && !logoutSuccess) {
+                        setShowLogoutModal(false);
+                    }
+                }}
+            >
+                <View className="flex-1 bg-black/60 items-center justify-center px-6">
+                    <View
+                        className={`${glassCard} w-full p-6 border border-white/[0.08]`}
+                        style={{
+                            backgroundColor: "#0D1420",
+                            shadowColor: "#EF4444",
+                            shadowOpacity: 0.05,
+                            shadowRadius: 25,
+                            elevation: 15,
+                        }}
+                    >
+                        <Text className="text-white text-xl font-bold tracking-tight mb-2 text-center">
+                            {logoutSuccess ? "Signed Out" : "Confirm Logout"}
+                        </Text>
+                        
+                        {logoutSuccess ? (
+                            <View className="items-center py-4">
+                                <View className="w-12 h-12 rounded-full bg-[#10B981]/15 items-center justify-center mb-3">
+                                    <Feather name="check" size={24} color="#10B981" />
+                                </View>
+                                <Text className="text-green-400 text-sm font-semibold text-center">
+                                    Logged out successfully!
+                                </Text>
+                                <Text className="text-[#748096] text-xs mt-1 text-center">
+                                    Redirecting you to login...
+                                </Text>
+                            </View>
+                        ) : (
+                            <View>
+                                <Text className="text-[#748096] text-sm text-center mb-6">
+                                    Are you sure you want to log out of your RideSync account?
+                                </Text>
+
+                                {logoutError ? (
+                                    <Text className="text-red-500 text-xs font-semibold text-center mb-3">
+                                        {logoutError}
+                                    </Text>
+                                ) : null}
+
+                                <View className="flex-row gap-x-3">
+                                    <TouchableOpacity
+                                        activeOpacity={0.7}
+                                        onPress={() => setShowLogoutModal(false)}
+                                        disabled={loggingOut}
+                                        className="flex-1 h-12 bg-white/[0.04] border border-white/[0.08] rounded-xl items-center justify-center"
+                                    >
+                                        <Text className="text-white text-sm font-semibold">
+                                            Cancel
+                                        </Text>
+                                    </TouchableOpacity>
+
+                                    <TouchableOpacity
+                                        activeOpacity={0.8}
+                                        onPress={confirmLogout}
+                                        disabled={loggingOut}
+                                        className="flex-1 h-12 bg-red-500 rounded-xl items-center justify-center"
+                                    >
+                                        {loggingOut ? (
+                                            <ActivityIndicator size="small" color="white" />
+                                        ) : (
+                                            <Text className="text-white text-sm font-bold">
+                                                Log Out
+                                            </Text>
+                                        )}
+                                    </TouchableOpacity>
+                                </View>
+                            </View>
+                        )}
                     </View>
                 </View>
             </Modal>

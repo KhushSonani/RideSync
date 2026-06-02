@@ -7,7 +7,8 @@ import {
     ScrollView,
     TouchableOpacity,
     Image,
-    Alert
+    Alert,
+    RefreshControl
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { router } from "expo-router";
@@ -15,11 +16,12 @@ import { Ionicons, Feather, MaterialCommunityIcons } from '@expo/vector-icons';
 
 import { api } from "@/services/api";
 import { COLORS } from "@/constants/theme";
-import { glassCard, primaryButton } from "@/constants/styles";
+import { glassCard } from "@/constants/styles";
 
 export default function HomeScreen() {
     const [user, setUser] = useState<any>(null);
     const [loading, setLoading] = useState(true);
+    const [refreshing, setRefreshing] = useState(false);
     const [greeting, setGreeting] = useState("Welcome back");
 
     useEffect(() => {
@@ -29,12 +31,18 @@ export default function HomeScreen() {
         else if (hours < 18) setGreeting("Good afternoon");
         else setGreeting("Good evening");
 
-        fetchUserProfile();
+        loadInitialData();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
+
+    const loadInitialData = async () => {
+        setLoading(true);
+        await fetchUserProfile();
+        setLoading(false);
+    };
 
     const fetchUserProfile = async () => {
         try {
-            setLoading(true);
             const response = await api.get('/users/profile');
             console.log("PROFILE RESPONSE:", response.data);
             if (response.data?.data) {
@@ -51,9 +59,13 @@ export default function HomeScreen() {
                 role: "rider",
                 avatar: null
             });
-        } finally {
-            setLoading(false);
         }
+    };
+
+    const handleRefresh = async () => {
+        setRefreshing(true);
+        await fetchUserProfile();
+        setRefreshing(false);
     };
 
     // Helper to get user initials for avatar fallback
@@ -103,6 +115,14 @@ export default function HomeScreen() {
                 <ScrollView
                     showsVerticalScrollIndicator={false}
                     contentContainerStyle={{ paddingBottom: 40 }}
+                    refreshControl={
+                        <RefreshControl
+                            refreshing={refreshing}
+                            onRefresh={handleRefresh}
+                            tintColor="#11E0C5"
+                            colors={["#11E0C5"]}
+                        />
+                    }
                 >
                     {/* HEADER: GREETING & AVATAR */}
                     <View className="flex-row items-center justify-between mt-3 mb-6">
@@ -118,7 +138,7 @@ export default function HomeScreen() {
                         {/* PREMIUM AVATAR */}
                         <TouchableOpacity
                             activeOpacity={0.8}
-                            onPress={() => router.push("/(tabs)/profile")}
+                            onPress={() => router.push("/(rider)/profile")}
                             className="relative"
                         >
                             <View className="w-14 h-14 rounded-full p-[2px] bg-gradient-to-tr from-[#11E0C5] to-[#0A84FF] border border-[#11E0C5]/40 items-center justify-center shadow-lg">
@@ -189,7 +209,7 @@ export default function HomeScreen() {
                         {/* REQUEST RIDE CARD */}
                         <TouchableOpacity
                             activeOpacity={0.8}
-                            onPress={() => router.push("/(tabs)/rides")}
+                            onPress={() => router.push("/(rider)/rides")}
                             className={`${glassCard} flex-1 p-4 items-start shadow-md`}
                         >
                             <View className="w-10 h-10 rounded-xl bg-[#11E0C5]/10 items-center justify-center mb-3">
@@ -211,11 +231,11 @@ export default function HomeScreen() {
                                         "To publish or share a ride, you need a driver account. Update your role in your profile.",
                                         [
                                             { text: "Cancel", style: "cancel" },
-                                            { text: "Go to Profile", onPress: () => router.push("/(tabs)/profile") }
+                                            { text: "Go to Profile", onPress: () => router.push("/(rider)/profile") }
                                         ]
                                     );
                                 } else {
-                                    router.push("/(tabs)/rides");
+                                    router.push("/(rider)/rides");
                                 }
                             }}
                             className={`${glassCard} flex-1 p-4 items-start shadow-md`}
@@ -235,7 +255,7 @@ export default function HomeScreen() {
                         <Text className="text-white text-[18px] font-bold">
                             Recent Rides
                         </Text>
-                        <TouchableOpacity activeOpacity={0.7} onPress={() => router.push("/(tabs)/rides")}>
+                        <TouchableOpacity activeOpacity={0.7} onPress={() => router.push("/(rider)/rides")}>
                             <Text className="text-[#11E0C5] text-xs font-semibold">See All</Text>
                         </TouchableOpacity>
                     </View>

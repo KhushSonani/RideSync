@@ -9,8 +9,11 @@ import {
 } from "react-native";
 import { useState, useEffect } from "react";
 import {
-  getAccessToken
+  getAccessToken,
+  getUserRole,
+  clearTokens
 } from "@/services/storage";
+import { getDriverStatus } from "@/services/driver";
 import { Link, router, useRootNavigationState } from "expo-router";
 
 export default function App() {
@@ -24,19 +27,33 @@ export default function App() {
 
   const checkUserAuth = async () => {
     try {
-      const accessToken = await getAccessToken();
-      // ACCESS TOKEN EXISTS
+      let accessToken = await getAccessToken();
+      if (!accessToken) {
+        accessToken = await refreshAccessToken();
+      }
+
       if (accessToken) {
-        router.replace('/(tabs)/home');
-        return;
+        const role = await getUserRole();
+        if (role === "rider") {
+          router.replace("/(rider)/home");
+          return;
+        } else if (role === "driver") {
+          try {
+            const statusData = await getDriverStatus();
+            if (statusData?.driverVerified === "verified") {
+              router.replace("/(driver)/home");
+            } else {
+              router.replace("/(driver)/documents");
+            }
+          } catch (e) {
+            console.log("FETCH DRIVER STATUS ERROR ON STARTUP:", e);
+            router.replace("/(driver)/documents");
+          }
+          return;
+        } else {
+          await clearTokens();
+        }
       }
-      // TRY REFRESH TOKEN
-      const newAccessToken = await refreshAccessToken();
-      if (newAccessToken) {
-        router.replace('/(tabs)/home');
-        return;
-      }
-      // BOTH FAILED
     } catch (err) {
       console.log(
         "CHECK USER AUTH ERROR:",

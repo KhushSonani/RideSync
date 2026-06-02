@@ -83,7 +83,7 @@ export default function ResetPassword() {
             showAnimatedMessage("Password reset successful! Logging you in...", "success");
 
             setTimeout(() => {
-                router.replace('/(tabs)/home');
+                router.replace('/');
             }, 1500);
         } catch (error: any) {
             console.log("RESET PASSWORD ERROR:", error?.response?.data || error.message);

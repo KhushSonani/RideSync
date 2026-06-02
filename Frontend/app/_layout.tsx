@@ -16,7 +16,8 @@ export default function RootLayout() {
     >
       <Stack.Screen name="index" />
       <Stack.Screen name="(auth)" />
-      <Stack.Screen name="(tabs)" />
+      <Stack.Screen name="(rider)" />
+      <Stack.Screen name="(driver)" />
     </Stack>
   );
 }

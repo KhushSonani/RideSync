@@ -1,7 +1,7 @@
 import { Tabs } from "expo-router";
 import { Ionicons } from '@expo/vector-icons';
 
-export default function TabsLayout() {
+export default function DriverTabsLayout() {
     return (
         <Tabs
             screenOptions={{
@@ -26,10 +26,10 @@ export default function TabsLayout() {
                 options={{
                     title: "Home",
                     tabBarIcon: ({ color, focused }) => (
-                        <Ionicons 
-                            name={focused ? "home" : "home-outline"} 
-                            size={22} 
-                            color={color} 
+                        <Ionicons
+                            name={focused ? "home" : "home-outline"}
+                            size={22}
+                            color={color}
                         />
                     ),
                 }}
@@ -40,10 +40,24 @@ export default function TabsLayout() {
                 options={{
                     title: "Rides",
                     tabBarIcon: ({ color, focused }) => (
-                        <Ionicons 
-                            name={focused ? "car-sport" : "car-sport-outline"} 
-                            size={22} 
-                            color={color} 
+                        <Ionicons
+                            name={focused ? "car-sport" : "car-sport-outline"}
+                            size={22}
+                            color={color}
+                        />
+                    ),
+                }}
+            />
+
+            <Tabs.Screen
+                name="documents"
+                options={{
+                    title: "Documents",
+                    tabBarIcon: ({ color, focused }) => (
+                        <Ionicons
+                            name={focused ? "document-text" : "document-text-outline"}
+                            size={22}
+                            color={color}
                         />
                     ),
                 }}
@@ -54,14 +68,16 @@ export default function TabsLayout() {
                 options={{
                     title: "Profile",
                     tabBarIcon: ({ color, focused }) => (
-                        <Ionicons 
-                            name={focused ? "person" : "person-outline"} 
-                            size={22} 
-                            color={color} 
+                        <Ionicons
+                            name={focused ? "person" : "person-outline"}
+                            size={22}
+                            color={color}
                         />
                     ),
                 }}
             />
+
+
         </Tabs>
     );
 }

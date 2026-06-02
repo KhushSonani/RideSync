@@ -22,7 +22,8 @@ import { api } from '@/services/api';
 
 import {
     saveAccessToken,
-    saveRefreshToken
+    saveRefreshToken,
+    saveUserRole
 } from '@/services/storage';
 
 export default function SignUp() {
@@ -149,18 +150,25 @@ export default function SignUp() {
                     }),
                 }
             );
-            const { accessToken, refreshToken } = response.data.data;
+            const { accessToken, refreshToken, user } = response.data.data;
             if (!accessToken || !refreshToken) {
                 throw new Error("Invalid server response");
             }
 
             await saveAccessToken(accessToken);
             await saveRefreshToken(refreshToken);
+            await saveUserRole(user.role);
 
             showAnimatedMessage("Account created successfully!", "success");
 
             setTimeout(() => {
-                router.replace("/(tabs)/home");
+                if (user.role === "rider") {
+                    router.replace("/(rider)/home");
+                } else if (user.role === "driver") {
+                    router.replace("/(driver)/documents");
+                } else {
+                    router.replace("/");
+                }
             }, 1200);
 
         } catch (error: any) {

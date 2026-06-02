@@ -26,7 +26,8 @@ import {
 } from '@/constants/styles';
 import {
     saveAccessToken,
-    saveRefreshToken
+    saveRefreshToken,
+    saveUserRole
 } from "@/services/storage";
 
 export default function SignIn() {
@@ -71,16 +72,27 @@ export default function SignIn() {
                 email: identifier.trim(),
                 password: password
             });
-            const { accessToken, refreshToken } = response.data.data;
+            const { accessToken, refreshToken, user, driver } = response.data.data;
             if (!accessToken || !refreshToken) {
                 throw new Error("Invalid response from server");
             }
             await saveAccessToken(accessToken);
             await saveRefreshToken(refreshToken);
+            await saveUserRole(user.role);
             console.log("LOGIN RESPONSE:", response.data);
             showAnimatedMessage("Logged in successfully!", "success");
             setTimeout(() => {
-                router.replace("/(tabs)/home");
+                if (user.role === "rider") {
+                    router.replace("/(rider)/home");
+                } else if (user.role === "driver") {
+                    if (driver?.driverVerified === "verified") {
+                        router.replace("/(driver)/home");
+                    } else {
+                        router.replace("/(driver)/documents");
+                    }
+                } else {
+                    router.replace("/");
+                }
             }, 1200);
         } catch (error: any) {
             console.log("LOGIN ERROR:", error?.response?.data || error.message);

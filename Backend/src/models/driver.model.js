@@ -86,4 +86,11 @@ driverSchema.index({ "license.number": 1 }, { unique: true, sparse: true });
 driverSchema.index({ isActive: 1, status: 1 });
 driverSchema.index({ driverVerified: 1, isActive: 1 });
 
+driverSchema.pre("save", function() {
+    if (this.license && this.license.status === "rejected") {
+        this.driverVerified = "rejected";
+        this.isActive = false;
+    }
+});
+
 export const Driver = mongoose.model("Driver", driverSchema);

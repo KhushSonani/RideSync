@@ -192,4 +192,25 @@ const vehicleSchema = new mongoose.Schema({
 vehicleSchema.index({ "insurance.expiryDate": 1 });
 vehicleSchema.index({ "puc.expiryDate": 1 });
 
+vehicleSchema.pre("save", async function() {
+    if (
+        (this.rc && this.rc.status === "rejected") ||
+        (this.insurance && this.insurance.status === "rejected") ||
+        (this.puc && this.puc.status === "rejected") ||
+        (this.permit && this.permit.status === "rejected")
+    ) {
+        this.vehicleVerified = "rejected";
+        
+        try {
+            const Driver = mongoose.model("Driver");
+            await Driver.updateOne(
+                { vehicle: this._id },
+                { $set: { isActive: false, driverVerified: "rejected" } }
+            );
+        } catch (e) {
+            console.error("Error updating associated driver on vehicle rejection:", e);
+        }
+    }
+});
+
 export const Vehicle = mongoose.model("Vehicle",vehicleSchema);

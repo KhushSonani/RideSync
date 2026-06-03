@@ -69,14 +69,49 @@ const rideSchema = new mongoose.Schema({
         select:false,
         default: null,
     },
+    acceptedAt: {
+        type: Date,
+        default: null,
+    },
+    arrivedAt: {
+        type: Date,
+        default: null,
+    },
+    startedAt: {
+        type: Date,
+        default: null,
+    },
+    completedAt: {
+        type: Date,
+        default: null,
+    },
+    cancelledAt: {
+        type: Date,
+        default: null,
+    },
+    cancelledBy: {
+        type: String,
+        enum: {
+            values: ["rider", "driver", "system"],
+            message: "Invalid cancelledBy role",
+        },
+        default: null,
+    },
+    cancelReason: {
+        type: String,
+        default: null,
+        trim: true,
+    },
 
 },{timestamps:true});
 
 // rideSchema.index({rider:1});
 // rideSchema.index({driver:1});
 // rideSchema.index({status:1});
-// rideSchema.index({"pickup.location":"2dsphere"});
+rideSchema.index({ "pickup.location": "2dsphere" });
 rideSchema.index({ rider: 1, status: 1 });  
 rideSchema.index({ driver: 1, status: 1 });
+rideSchema.index({ rider: 1, createdAt: -1 });
+rideSchema.index({ driver: 1, createdAt: -1 });
 
 export const Ride = mongoose.model("Ride",rideSchema);

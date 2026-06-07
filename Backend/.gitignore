@@ -62,3 +62,6 @@ Thumbs.db
 *.temp
 
 postman.json
+
+# Testing scripts
+src/Socket/socket.test.js

@@ -4,10 +4,11 @@ import { Driver } from "../models/driver.model.js";
 import { asyncHandler } from "../utils/asyncHandler.js";
 import { ApiError } from "../utils/ApiError.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
+import { getIO, joinRideRoom, leaveRideRoom } from "../Socket/socket.js";
+import { SOCKET_EVENTS } from "../Socket/socket.events.js";
 
-// Create a new ride request
+// ─── Create a new ride request ───────────────────────────────────────────────
 // POST /api/v1/rides/create
-// Private (Rider)
 export const createRide = asyncHandler(async (req, res) => {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
@@ -38,18 +39,25 @@ export const createRide = asyncHandler(async (req, res) => {
         otp
     });
 
+    // Populate rider for the socket payload
+    await ride.populate("rider", "username fullname avatar");
+
     // Explicitly attach the OTP in the response so the rider can share it with the driver
     const rideObj = ride.toObject();
     rideObj.otp = otp;
+
+    // Notify only drivers who are currently online and available.
+    // We target the "drivers:available" room instead of io.emit() so riders
+    // and unavailable/offline drivers never receive this event.
+    getIO().to("drivers:available").emit(SOCKET_EVENTS.NEW_RIDE_REQUEST, rideObj);
 
     return res.status(201).json(
         new ApiResponse(201, rideObj, "Ride requested successfully")
     );
 });
 
-// Get all requested rides available for drivers
+// ─── Get all requested rides available for drivers ───────────────────────────
 // GET /api/v1/rides/available
-// Private (Driver Only)
 export const getAvailableRides = asyncHandler(async (req, res) => {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
@@ -77,9 +85,8 @@ export const getAvailableRides = asyncHandler(async (req, res) => {
     );
 });
 
-// Accept a ride request
+// ─── Accept a ride request ───────────────────────────────────────────────────
 // POST /api/v1/rides/:id/accept
-// Private (Driver Only)
 export const acceptRide = asyncHandler(async (req, res) => {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
@@ -107,7 +114,7 @@ export const acceptRide = asyncHandler(async (req, res) => {
         { _id: req.driver._id, status: "available" },
         { status: "busy" },
         { returnDocument: "after" }
-    );
+    ).populate("user", "username fullname avatar").populate("vehicle");
 
     if (!driver) {
         throw new ApiError(400, "You already have an active ride or are not available");
@@ -133,14 +140,38 @@ export const acceptRide = asyncHandler(async (req, res) => {
     // Keep req.driver status aligned in memory for current middleware pipeline
     req.driver.status = "busy";
 
+    const riderId = ride.rider._id.toString();
+    const driverUserId = req.user._id.toString();
+    const rideIdStr = ride._id.toString();
+
+    // ── Room management ──────────────────────────────────────────────────────
+    // Move both the rider's and driver's sockets into the ride-specific room.
+    // From this point on, all in-ride events are emitted to ride:{rideId}.
+    joinRideRoom(riderId, rideIdStr);
+    joinRideRoom(driverUserId, rideIdStr);
+
+    // Driver should no longer receive new ride requests
+    getIO().in(`user:${driverUserId}`).socketsLeave("drivers:available");
+
+    // Notify the rider that their ride was accepted — include driver details
+    // so the UI can display driver name, photo, and vehicle info immediately.
+    getIO().to(`ride:${rideIdStr}`).emit(SOCKET_EVENTS.RIDE_ACCEPTED, {
+        ride,
+        driver: {
+            _id: driver._id,
+            user: driver.user,
+            vehicle: driver.vehicle,
+            status: driver.status,
+        },
+    });
+
     return res.status(200).json(
         new ApiResponse(200, ride, "Ride accepted successfully")
     );
 });
 
-// Update ride status to arriving (driver has arrived/is arriving at pickup)
+// ─── Update ride status to arriving ─────────────────────────────────────────
 // POST /api/v1/rides/:id/arriving
-// Private (Driver Only)
 export const arrivingRide = asyncHandler(async (req, res) => {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
@@ -166,14 +197,20 @@ export const arrivingRide = asyncHandler(async (req, res) => {
     ride.arrivedAt = new Date();
     await ride.save();
 
+    // Emit to the ride room — both rider and driver are already members
+    getIO().to(`ride:${rideId}`).emit(SOCKET_EVENTS.RIDE_STATUS_UPDATED, {
+        _id: ride._id,
+        status: ride.status,
+        arrivedAt: ride.arrivedAt,
+    });
+
     return res.status(200).json(
         new ApiResponse(200, ride, "Driver is arriving at the pickup location")
     );
 });
 
-// Start the ride (requires OTP verification)
+// ─── Start the ride (requires OTP verification) ──────────────────────────────
 // POST /api/v1/rides/:id/start
-// Private (Driver Only)
 export const startRide = asyncHandler(async (req, res) => {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
@@ -206,16 +243,24 @@ export const startRide = asyncHandler(async (req, res) => {
     ride.otp = null; // Clear OTP once successfully verified and started
     ride.startedAt = new Date();
     await ride.save();
+
     const rideObj = ride.toObject();
     delete rideObj?.otp;
+
+    // Emit to the ride room
+    getIO().to(`ride:${rideId}`).emit(SOCKET_EVENTS.RIDE_STATUS_UPDATED, {
+        _id: rideObj._id,
+        status: rideObj.status,
+        startedAt: rideObj.startedAt,
+    });
+
     return res.status(200).json(
         new ApiResponse(200, rideObj, "Ride started successfully")
     );
 });
 
-// Complete a ride
+// ─── Complete a ride ─────────────────────────────────────────────────────────
 // POST /api/v1/rides/:id/complete
-// Private (Driver Only)
 export const completeRide = asyncHandler(async (req, res) => {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
@@ -241,24 +286,42 @@ export const completeRide = asyncHandler(async (req, res) => {
         throw new ApiError(400, "Ride not found, not started, or you are not authorized to complete it");
     }
 
-    // Set driver status back to available
+    // Set driver status back to available and rejoin the available room
     req.driver.status = "available";
     await req.driver.save();
+
+    const riderId = ride.rider._id.toString();
+    const driverUserId = req.user._id.toString();
+
+    // Notify everyone in the ride room
+    getIO().to(`ride:${rideId}`).emit(SOCKET_EVENTS.RIDE_COMPLETED, {
+        _id: ride._id,
+        status: ride.status,
+        completedAt: ride.completedAt,
+        fare: ride.fare,
+    });
+
+    // ── Room cleanup ─────────────────────────────────────────────────────────
+    leaveRideRoom(riderId, rideId);
+    leaveRideRoom(driverUserId, rideId);
+
+    // Driver is available again — rejoin the available pool
+    getIO().in(`user:${driverUserId}`).socketsJoin("drivers:available");
 
     return res.status(200).json(
         new ApiResponse(200, ride, "Ride completed successfully")
     );
 });
 
-// Cancel a ride (can be done by rider or driver under appropriate status)
+// ─── Cancel a ride ───────────────────────────────────────────────────────────
 // POST /api/v1/rides/:id/cancel
-// Private (Rider or Driver)
 export const cancelRide = asyncHandler(async (req, res) => {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
         throw new ApiError(400, "Validation failed", errors.array());
     }
-    const msgForCancel = "No reason mentioned";
+
+    const defaultCancelMsg = "No reason mentioned";
     const { cancelReason } = req.body || {};
     const rideId = req.params.id;
     const ride = await Ride.findById(rideId);
@@ -267,6 +330,7 @@ export const cancelRide = asyncHandler(async (req, res) => {
         throw new ApiError(404, "Ride not found");
     }
 
+    // ── Rider cancellation ───────────────────────────────────────────────────
     if (req.user.role === "rider") {
         if (ride.rider.toString() !== req.user._id.toString()) {
             throw new ApiError(403, "You are not authorized to cancel this ride");
@@ -276,22 +340,59 @@ export const cancelRide = asyncHandler(async (req, res) => {
             throw new ApiError(400, `Rides with status '${ride.status}' cannot be cancelled`);
         }
 
+        const hadDriver = !!ride.driver;
+        const assignedDriverId = ride.driver?.toString() ?? null;
+
         // If a driver was assigned, free that driver back to available
-        if (ride.driver) {
-            await Driver.findByIdAndUpdate(ride.driver, { status: "available" });
+        if (hadDriver) {
+            await Driver.findByIdAndUpdate(assignedDriverId, { status: "available" });
+
+            // Find the driver's user ID to manage their room memberships
+            const assignedDriverDoc = await Driver.findById(assignedDriverId).select("user").lean();
+            if (assignedDriverDoc) {
+                const driverUserId = assignedDriverDoc.user.toString();
+                // Driver is available again → put them back in the available pool
+                getIO().in(`user:${driverUserId}`).socketsJoin("drivers:available");
+            }
         }
 
         ride.status = "cancelled";
         ride.cancelledBy = "rider";
         ride.cancelledAt = new Date();
-        ride.cancelReason = cancelReason || msgForCancel;
+        ride.cancelReason = cancelReason || defaultCancelMsg;
         await ride.save();
+
+        const riderId = req.user._id.toString();
+        const cancelPayload = {
+            _id: ride._id,
+            status: ride.status,
+            cancelledBy: ride.cancelledBy,
+            cancelReason: ride.cancelReason,
+            cancelledAt: ride.cancelledAt,
+        };
+
+        if (hadDriver) {
+            // Both are in ride:{rideId} — emit once to the room
+            getIO().to(`ride:${rideId}`).emit(SOCKET_EVENTS.RIDE_CANCELLED, cancelPayload);
+            // Room cleanup for both
+            leaveRideRoom(riderId, rideId);
+            if (assignedDriverId) {
+                const assignedDriverDoc = await Driver.findById(assignedDriverId).select("user").lean();
+                if (assignedDriverDoc) {
+                    leaveRideRoom(assignedDriverDoc.user.toString(), rideId);
+                }
+            }
+        } else {
+            // No driver was assigned — only the rider is in the room
+            getIO().to(`user:${riderId}`).emit(SOCKET_EVENTS.RIDE_CANCELLED, cancelPayload);
+        }
 
         return res.status(200).json(
             new ApiResponse(200, ride, "Ride cancelled successfully by rider")
         );
     }
 
+    // ── Driver cancellation ──────────────────────────────────────────────────
     if (req.user.role === "driver") {
         const driver = await Driver.findOne({ user: req.user._id });
         if (!driver) {
@@ -303,20 +404,47 @@ export const cancelRide = asyncHandler(async (req, res) => {
         }
 
         if (!["accepted", "arriving"].includes(ride.status)) {
-            throw new ApiError(400, `Only accepted/arriving rides can be cancelled by the driver`);
+            throw new ApiError(400, "Only accepted/arriving rides can be cancelled by the driver");
         }
 
-        // Mark the ride as cancelled
+        const riderId = ride.rider.toString();
+        const driverUserId = req.user._id.toString();
+
+        // Re-queue the ride (back to "requested" with no driver)
         ride.status = "requested";
         ride.driver = null;
         ride.cancelledBy = "driver";
         ride.cancelledAt = new Date();
-        ride.cancelReason = cancelReason || msgForCancel;
+        ride.cancelReason = cancelReason || defaultCancelMsg;
         await ride.save();
+
+        // Re-populate rider for the broadcast payload
+        await ride.populate("rider", "username fullname avatar");
 
         // Make the driver available again
         driver.status = "available";
         await driver.save();
+
+        const cancelPayload = {
+            _id: ride._id,
+            status: "cancelled",
+            cancelledBy: "driver",
+            cancelReason: ride.cancelReason,
+            cancelledAt: ride.cancelledAt,
+        };
+
+        // Notify the rider their driver cancelled
+        getIO().to(`ride:${rideId}`).emit(SOCKET_EVENTS.RIDE_CANCELLED, cancelPayload);
+
+        // ── Room cleanup ─────────────────────────────────────────────────────
+        leaveRideRoom(riderId, rideId);
+        leaveRideRoom(driverUserId, rideId);
+
+        // Driver goes back into the available pool
+        getIO().in(`user:${driverUserId}`).socketsJoin("drivers:available");
+
+        // Re-broadcast the ride to available drivers so it can be picked up again
+        getIO().to("drivers:available").emit(SOCKET_EVENTS.NEW_RIDE_REQUEST, ride.toObject());
 
         return res.status(200).json(
             new ApiResponse(200, ride, "Ride returned to available rides queue")
@@ -326,9 +454,8 @@ export const cancelRide = asyncHandler(async (req, res) => {
     throw new ApiError(403, "Unauthorized role");
 });
 
-// Get current active ride for user (rider or driver)
+// ─── Get current active ride ─────────────────────────────────────────────────
 // GET /api/v1/rides/current
-// Private (Rider or Driver)
 export const getCurrentRide = asyncHandler(async (req, res) => {
     let query = {};
     if (req.user.role === "rider") {
@@ -364,9 +491,8 @@ export const getCurrentRide = asyncHandler(async (req, res) => {
     );
 });
 
-// Get ride history for user (rider or driver)
+// ─── Get ride history ────────────────────────────────────────────────────────
 // GET /api/v1/rides/history
-// Private (Rider or Driver)
 export const getRideHistory = asyncHandler(async (req, res) => {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {

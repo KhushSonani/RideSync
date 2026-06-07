@@ -17,6 +17,8 @@ import { Ionicons, Feather, MaterialCommunityIcons } from '@expo/vector-icons';
 import { api } from "@/services/api";
 import { COLORS } from "@/constants/theme";
 import { glassCard } from "@/constants/styles";
+import { connectSocket, getSocket, disconnectSocket } from "@/services/socket";
+import { getAccessToken } from "@/services/storage";
 
 export default function HomeScreen() {
     const [user, setUser] = useState<any>(null);
@@ -31,7 +33,46 @@ export default function HomeScreen() {
         else if (hours < 18) setGreeting("Good afternoon");
         else setGreeting("Good evening");
 
+        let socket: ReturnType<typeof getSocket> | null = null;
+
+        const initSocket = async () => {
+            const token = await getAccessToken();
+            if (!token) {
+                console.log("[Socket] No token found, cannot connect.");
+                return;
+            }
+            socket = connectSocket(token);
+
+            // Example test listeners — remove these once real events are in place
+            socket.on("new_ride_request", (ride) => {
+                console.log("[Socket] new_ride_request received:", ride?._id);
+            });
+            socket.on("ride_accepted", (ride) => {
+                console.log("[Socket] ride_accepted:", ride?._id);
+            });
+            socket.on("ride_status_updated", (ride) => {
+                console.log("[Socket] ride_status_updated -> status:", ride?.status);
+            });
+            socket.on("ride_completed", (ride) => {
+                console.log("[Socket] ride_completed:", ride?._id);
+            });
+            socket.on("ride_cancelled", (ride) => {
+                console.log("[Socket] ride_cancelled:", ride?._id);
+            });
+        };
+
+        initSocket();
         loadInitialData();
+
+        return () => {
+            if (socket) {
+                socket.off("new_ride_request");
+                socket.off("ride_accepted");
+                socket.off("ride_status_updated");
+                socket.off("ride_completed");
+                socket.off("ride_cancelled");
+            }
+        };
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 

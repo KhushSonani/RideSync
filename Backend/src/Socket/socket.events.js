@@ -47,6 +47,16 @@ export const SOCKET_EVENTS = {
     /** Sent to ride:{id} room — relays driver GPS to the rider */
     DRIVER_LOCATION: "driver:location_update",
 
+    /**
+     * Sent to ride-request:{rideId} room when the ride is no longer available.
+     * Triggers on two conditions:
+     *   1. Another driver accepted the ride first (race-condition winner takes all)
+     *   2. The rider cancelled the ride before anyone accepted
+     * Every driver who received the original NEW_RIDE_REQUEST should dismiss
+     * the request card from their UI upon receiving this event.
+     */
+    RIDE_UNAVAILABLE: "ride:unavailable",
+
     /** Sent to the socket that caused an error (auth, validation, etc.) */
     ERROR: "socket:error",
 };

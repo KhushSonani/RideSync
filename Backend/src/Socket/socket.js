@@ -444,3 +444,39 @@ export const leaveRideRoom = (userId, rideId) => {
     io.in(`user:${userId}`).socketsLeave(room);
     console.log(`[Socket] user:${userId} sockets left ${room}`);
 };
+
+/**
+ * Move all sockets of a user into the ride-request:{rideId} staging room.
+ * Called from ride.controller.js for each nearby driver after a ride is created.
+ * All members of this room will receive RIDE_UNAVAILABLE when the ride is taken
+ * or cancelled, so their UI dismisses the request card automatically.
+ *
+ * @param {string} userId
+ * @param {string} rideId
+ */
+export const joinRequestRoom = (userId, rideId) => {
+    if (!io) return;
+    const room = `ride-request:${rideId}`;
+    io.in(`user:${userId}`).socketsJoin(room);
+};
+
+/**
+ * Emit RIDE_UNAVAILABLE to every driver who received this ride request,
+ * then force all their sockets out of the staging room (dissolves it).
+ *
+ * Call this exactly once — either from acceptRide (another driver won)
+ * or from cancelRide (rider cancelled before anyone accepted).
+ *
+ * @param {string} rideId
+ */
+export const dissolveRequestRoom = (rideId) => {
+    if (!io) return;
+    const room = `ride-request:${rideId}`;
+    io.to(room).emit(SOCKET_EVENTS.RIDE_UNAVAILABLE, {
+        rideId,
+        timestamp: new Date().toISOString(),
+    });
+    // Force everyone out — the room ceases to exist after this
+    io.in(room).socketsLeave(room);
+    console.log(`[Socket] ride-request:${rideId} dissolved`);
+};

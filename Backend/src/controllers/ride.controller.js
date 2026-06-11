@@ -1,11 +1,14 @@
+import { randomInt } from "crypto";
 import { validationResult } from "express-validator";
 import { Ride } from "../models/ride.model.js";
 import { Driver } from "../models/driver.model.js";
 import { asyncHandler } from "../utils/asyncHandler.js";
 import { ApiError } from "../utils/ApiError.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
-import { getIO, joinRideRoom, leaveRideRoom } from "../Socket/socket.js";
+import { getIO, joinRideRoom, leaveRideRoom, joinRequestRoom, dissolveRequestRoom } from "../Socket/socket.js";
 import { SOCKET_EVENTS } from "../Socket/socket.events.js";
+import { config } from "../config/env.js";
+import { findNearbyAvailableDrivers } from "../utils/dispatch.js";
 
 // ─── Create a new ride request ───────────────────────────────────────────────
 // POST /api/v1/rides/create
@@ -28,7 +31,7 @@ export const createRide = asyncHandler(async (req, res) => {
     }
 
     // Generate a secure 6-digit numeric OTP
-    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+    const otp = randomInt(100000, 1000000).toString();
 
     const ride = await Ride.create({
         rider: req.user._id,
@@ -46,13 +49,37 @@ export const createRide = asyncHandler(async (req, res) => {
     const rideObj = ride.toObject();
     rideObj.otp = otp;
 
-    // Notify only drivers who are currently online and available.
-    // We target the "drivers:available" room instead of io.emit() so riders
-    // and unavailable/offline drivers never receive this event.
-    getIO().to("drivers:available").emit(SOCKET_EVENTS.NEW_RIDE_REQUEST, rideObj);
+    // ── Geo-targeted dispatch ─────────────────────────────────────────────────
+    // Find all verified, active, available drivers within the configured radius.
+    // We use the existing 2dsphere index on Driver.location for this query.
+    // The result is an array of { _id (driverId), user (userId) } objects.
+    const nearbyDrivers = await findNearbyAvailableDrivers(pickup.location.coordinates);
+
+    const rideIdStr = ride._id.toString();
+
+    if (nearbyDrivers.length > 0) {
+        for (const driver of nearbyDrivers) {
+            const driverUserId = driver.user.toString();
+            // Emit only to this specific driver's personal room
+            getIO().to(`user:${driverUserId}`).emit(SOCKET_EVENTS.NEW_RIDE_REQUEST, rideObj);
+            // Stage this driver in the request room so we can dissolve it later
+            joinRequestRoom(driverUserId, rideIdStr);
+        }
+        console.log(
+            `[Dispatch] Ride ${rideIdStr} sent to ${nearbyDrivers.length} nearby driver(s)`
+        );
+    } else {
+        // No nearby drivers online — ride is still created and visible via
+        // GET /rides/available for drivers who come online later.
+        console.log(`[Dispatch] Ride ${rideIdStr}: no nearby drivers online within ${config.DISPATCH_RADIUS_KM}km`);
+    }
+
+    const responseMessage = nearbyDrivers.length > 0
+        ? "Ride requested successfully"
+        : "Searching for drivers";
 
     return res.status(201).json(
-        new ApiResponse(201, rideObj, "Ride requested successfully")
+        new ApiResponse(201, rideObj, responseMessage)
     );
 });
 
@@ -71,7 +98,16 @@ export const getAvailableRides = asyncHandler(async (req, res) => {
 
     const rides = await Ride.find({
         status: "requested",
-        driver: null
+        driver: null,
+        "pickup.location": {
+            $near: {
+                $geometry: {
+                    type: "Point",
+                    coordinates: req.driver.location.coordinates
+                },
+                $maxDistance: config.DISPATCH_RADIUS_KM * 1000
+            }
+        }
     }).populate("rider", "username fullname avatar");
 
     return res.status(200).json(
@@ -152,6 +188,12 @@ export const acceptRide = asyncHandler(async (req, res) => {
 
     // Driver should no longer receive new ride requests
     getIO().in(`user:${driverUserId}`).socketsLeave("drivers:available");
+
+    // Notify all OTHER drivers who received this request that it is gone.
+    // dissolveRequestRoom emits RIDE_UNAVAILABLE to the ride-request:{id} room
+    // (which includes the accepting driver too — their UI handles dismissal)
+    // then forces everyone out of the room, cleaning it up completely.
+    dissolveRequestRoom(rideIdStr);
 
     // Notify the rider that their ride was accepted — include driver details
     // so the UI can display driver name, photo, and vehicle info immediately.
@@ -342,13 +384,13 @@ export const cancelRide = asyncHandler(async (req, res) => {
 
         const hadDriver = !!ride.driver;
         const assignedDriverId = ride.driver?.toString() ?? null;
+        let assignedDriverDoc = null;
 
         // If a driver was assigned, free that driver back to available
         if (hadDriver) {
-            await Driver.findByIdAndUpdate(assignedDriverId, { status: "available" });
+            assignedDriverDoc = await Driver.findByIdAndUpdate(assignedDriverId, { status: "available" }).select("user").lean();
 
             // Find the driver's user ID to manage their room memberships
-            const assignedDriverDoc = await Driver.findById(assignedDriverId).select("user").lean();
             if (assignedDriverDoc) {
                 const driverUserId = assignedDriverDoc.user.toString();
                 // Driver is available again → put them back in the available pool
@@ -376,15 +418,15 @@ export const cancelRide = asyncHandler(async (req, res) => {
             getIO().to(`ride:${rideId}`).emit(SOCKET_EVENTS.RIDE_CANCELLED, cancelPayload);
             // Room cleanup for both
             leaveRideRoom(riderId, rideId);
-            if (assignedDriverId) {
-                const assignedDriverDoc = await Driver.findById(assignedDriverId).select("user").lean();
-                if (assignedDriverDoc) {
-                    leaveRideRoom(assignedDriverDoc.user.toString(), rideId);
-                }
+            if (assignedDriverDoc) {
+                leaveRideRoom(assignedDriverDoc.user.toString(), rideId);
             }
         } else {
-            // No driver was assigned — only the rider is in the room
+            // No driver assigned yet — notify the rider directly
             getIO().to(`user:${riderId}`).emit(SOCKET_EVENTS.RIDE_CANCELLED, cancelPayload);
+            // Also dissolve the request room so every driver who received the
+            // original dispatch gets RIDE_UNAVAILABLE and dismisses the card.
+            dissolveRequestRoom(rideId);
         }
 
         return res.status(200).json(
@@ -413,9 +455,9 @@ export const cancelRide = asyncHandler(async (req, res) => {
         // Re-queue the ride (back to "requested" with no driver)
         ride.status = "requested";
         ride.driver = null;
-        ride.cancelledBy = "driver";
-        ride.cancelledAt = new Date();
-        ride.cancelReason = cancelReason || defaultCancelMsg;
+        ride.cancelledBy = undefined;
+        ride.cancelledAt = undefined;
+        ride.cancelReason = undefined;
         await ride.save();
 
         // Re-populate rider for the broadcast payload
@@ -443,8 +485,22 @@ export const cancelRide = asyncHandler(async (req, res) => {
         // Driver goes back into the available pool
         getIO().in(`user:${driverUserId}`).socketsJoin("drivers:available");
 
-        // Re-broadcast the ride to available drivers so it can be picked up again
-        getIO().to("drivers:available").emit(SOCKET_EVENTS.NEW_RIDE_REQUEST, ride.toObject());
+        // Re-dispatch to nearby available drivers using the same geo-query logic.
+        // This ensures the re-queued ride only goes to drivers near the pickup,
+        // not every online driver globally.
+        const rideObj = ride.toObject();
+        const nearbyDrivers = await findNearbyAvailableDrivers(ride.pickup.location.coordinates, req.driver._id);
+
+        if (nearbyDrivers.length > 0) {
+            for (const d of nearbyDrivers) {
+                const nearbyUserId = d.user.toString();
+                getIO().to(`user:${nearbyUserId}`).emit(SOCKET_EVENTS.NEW_RIDE_REQUEST, rideObj);
+                joinRequestRoom(nearbyUserId, rideId);
+            }
+            console.log(
+                `[Dispatch] Re-queued ride ${rideId} sent to ${nearbyDrivers.length} nearby driver(s)`
+            );
+        }
 
         return res.status(200).json(
             new ApiResponse(200, ride, "Ride returned to available rides queue")

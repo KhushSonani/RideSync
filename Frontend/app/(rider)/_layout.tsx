@@ -26,10 +26,10 @@ export default function RiderTabsLayout() {
                 options={{
                     title: "Home",
                     tabBarIcon: ({ color, focused }) => (
-                        <Ionicons 
-                            name={focused ? "home" : "home-outline"} 
-                            size={22} 
-                            color={color} 
+                        <Ionicons
+                            name={focused ? "home" : "home-outline"}
+                            size={22}
+                            color={color}
                         />
                     ),
                 }}
@@ -40,10 +40,10 @@ export default function RiderTabsLayout() {
                 options={{
                     title: "Rides",
                     tabBarIcon: ({ color, focused }) => (
-                        <Ionicons 
-                            name={focused ? "car-sport" : "car-sport-outline"} 
-                            size={22} 
-                            color={color} 
+                        <Ionicons
+                            name={focused ? "car-sport" : "car-sport-outline"}
+                            size={22}
+                            color={color}
                         />
                     ),
                 }}
@@ -54,14 +54,21 @@ export default function RiderTabsLayout() {
                 options={{
                     title: "Profile",
                     tabBarIcon: ({ color, focused }) => (
-                        <Ionicons 
-                            name={focused ? "person" : "person-outline"} 
-                            size={22} 
-                            color={color} 
+                        <Ionicons
+                            name={focused ? "person" : "person-outline"}
+                            size={22}
+                            color={color}
                         />
                     ),
                 }}
             />
+
+            {/* ── Hidden ride-flow screens (not shown in tab bar) ───────────── */}
+            <Tabs.Screen name="create-ride"       options={{ href: null }} />
+            <Tabs.Screen name="searching-driver"  options={{ href: null }} />
+            <Tabs.Screen name="driver-assigned"   options={{ href: null }} />
+            <Tabs.Screen name="live-tracking"     options={{ href: null }} />
+            <Tabs.Screen name="ride-complete"     options={{ href: null }} />
         </Tabs>
     );
 }

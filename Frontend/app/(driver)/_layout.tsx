@@ -77,7 +77,11 @@ export default function DriverTabsLayout() {
                 }}
             />
 
-
+            {/* ── Hidden ride-flow screens (not shown in tab bar) ───────────── */}
+            <Tabs.Screen name="ride-request-modal" options={{ href: null }} />
+            <Tabs.Screen name="active-ride"        options={{ href: null }} />
+            <Tabs.Screen name="otp-verify"         options={{ href: null }} />
+            <Tabs.Screen name="ride-complete"      options={{ href: null }} />
         </Tabs>
     );
 }

@@ -1,5 +1,6 @@
 import "@/global.css";
 import { refreshAccessToken } from "@/services/auth";
+import { api } from "@/services/api";
 import {
   Text,
   View,
@@ -8,6 +9,7 @@ import {
   ActivityIndicator,
 } from "react-native";
 import { useState, useEffect } from "react";
+import * as SecureStore from "expo-secure-store";
 import {
   getAccessToken,
   getUserRole,
@@ -15,6 +17,9 @@ import {
 } from "@/services/storage";
 import { getDriverStatus } from "@/services/driver";
 import { Link, router, useRootNavigationState } from "expo-router";
+import { Feather } from "@expo/vector-icons";
+import { SafeAreaView } from "react-native-safe-area-context";
+import { ONBOARDING_KEY } from "@/app/onboarding";
 
 export default function App() {
   const [checkingAuth, setCheckingAuth] = useState(true);
@@ -27,6 +32,15 @@ export default function App() {
 
   const checkUserAuth = async () => {
     try {
+      // ── Onboarding gate ────────────────────────────────────────────────
+      // Show onboarding only on the very first launch (key not yet set).
+      const onboarded = await SecureStore.getItemAsync(ONBOARDING_KEY);
+      if (!onboarded) {
+        router.replace("/onboarding");
+        return;
+      }
+
+      // ── Auth gate ──────────────────────────────────────────────────────
       let accessToken = await getAccessToken();
       if (!accessToken) {
         accessToken = await refreshAccessToken();
@@ -35,7 +49,27 @@ export default function App() {
       if (accessToken) {
         const role = await getUserRole();
         if (role === "rider") {
-          router.replace("/(rider)/home");
+          try {
+            const rideRes = await api.get("/rides/current");
+            const activeRide = rideRes.data?.data;
+            if (activeRide) {
+              const status = activeRide.status;
+              if (status === "requested") {
+                router.replace("/(rider)/searching-driver");
+              } else if (status === "accepted") {
+                router.replace("/(rider)/driver-assigned");
+              } else if (status === "arriving" || status === "started") {
+                router.replace("/(rider)/live-tracking");
+              } else {
+                router.replace("/(rider)/home");
+              }
+            } else {
+              router.replace("/(rider)/home");
+            }
+          } catch (e) {
+            console.log("FETCH ACTIVE RIDE ERROR ON STARTUP:", e);
+            router.replace("/(rider)/home");
+          }
           return;
         } else if (role === "driver") {
           try {
@@ -82,6 +116,18 @@ export default function App() {
         translucent
         backgroundColor="transparent"
       />
+
+      <SafeAreaView className="absolute top-4 right-4 z-20">
+        <Link href="/sandbox" asChild>
+          <TouchableOpacity
+            className="w-10 h-10 bg-[#131D2B]/95 rounded-full border border-white/[0.08] items-center justify-center shadow-lg"
+            activeOpacity={0.8}
+            accessibilityLabel="View UI Sandbox"
+          >
+            <Feather name="layers" size={18} color="#11E0C5" />
+          </TouchableOpacity>
+        </Link>
+      </SafeAreaView>
 
       {/* PREMIUM BACKGROUND */}
       <View className="absolute inset-0 overflow-hidden">

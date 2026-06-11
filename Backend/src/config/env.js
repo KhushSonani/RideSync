@@ -60,4 +60,8 @@ export const config = {
 
     NODE_ENV:
         process.env.NODE_ENV || "development",
+
+    // Optional — defaults to 5km if not set in .env
+    DISPATCH_RADIUS_KM:
+        parseFloat(process.env.DISPATCH_RADIUS_KM) || 5,
 };

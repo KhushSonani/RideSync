@@ -140,6 +140,17 @@ export interface SocketErrorPayload {
     timestamp: string;
 }
 
+/**
+ * ride:unavailable
+ * Received by drivers inside ride-request:{rideId} room when the ride is
+ * no longer bookable — either accepted by another driver or cancelled by the rider.
+ * The driver UI should dismiss the request card upon receiving this event.
+ */
+export interface RideUnavailablePayload {
+    rideId: string;
+    timestamp: string;
+}
+
 // ─── Client → Server event payloads ───────────────────────────────────────
 
 /**
@@ -166,6 +177,7 @@ export const SOCKET_EVENTS = {
     RIDE_COMPLETED:      "ride:completed",
     RIDE_CANCELLED:      "ride:cancelled",
     DRIVER_LOCATION:     "driver:location_update",
+    RIDE_UNAVAILABLE:    "ride:unavailable",
     ERROR:               "socket:error",
 } as const;
 

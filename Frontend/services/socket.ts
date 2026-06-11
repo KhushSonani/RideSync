@@ -28,6 +28,7 @@ import {
     type DriverLocationPayload,
     type SocketErrorPayload,
     type UpdateLocationPayload,
+    type RideUnavailablePayload,
 } from "./socket.types";
 
 // ─── Config ─────────────────────────────────────────────────────────────────
@@ -217,6 +218,20 @@ export const onSocketError = (
     const s = getSocket();
     s.on(SOCKET_EVENTS.ERROR, callback);
     return () => s.off(SOCKET_EVENTS.ERROR, callback);
+};
+
+/**
+ * Listen for ride unavailable event (drivers only).
+ * Fired when another driver accepted the ride first, or the rider cancelled
+ * before anyone accepted. Use this to dismiss the request card from the UI.
+ * @returns Unsubscribe function
+ */
+export const onRideUnavailable = (
+    callback: (payload: RideUnavailablePayload) => void
+): (() => void) => {
+    const s = getSocket();
+    s.on(SOCKET_EVENTS.RIDE_UNAVAILABLE, callback);
+    return () => s.off(SOCKET_EVENTS.RIDE_UNAVAILABLE, callback);
 };
 
 /**

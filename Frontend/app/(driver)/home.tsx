@@ -9,16 +9,21 @@ import {
     Image,
     Switch,
     Alert,
-    RefreshControl
+    RefreshControl,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { router } from "expo-router";
-import { Feather, MaterialCommunityIcons } from '@expo/vector-icons';
+import { Feather } from "@expo/vector-icons";
 
 import { getDriverStatus, getDriverProfile, updateDriverStatus } from "@/services/driver";
+import { api } from "@/services/api";
+import { onNewRideRequest, connectSocket } from "@/services/socket";
+import { useDriverLocation } from "@/services/useDriverLocation";
+import { getAccessToken } from "@/services/storage";
 import { COLORS } from "@/constants/theme";
 import { glassCard } from "@/constants/styles";
 import VerificationBanner from "@/components/VerificationBanner";
+import EmptyStateCard from "@/components/common/EmptyStateCard";
 
 export default function DriverHome() {
     const [user, setUser] = useState<any>(null);
@@ -28,41 +33,34 @@ export default function DriverHome() {
     const [greeting, setGreeting] = useState("Welcome back");
     const [togglingStatus, setTogglingStatus] = useState(false);
 
+    // TODO: replace with real earnings from GET /rides/history
+    const recentRides: any[] = [];
+
     useEffect(() => {
         const hours = new Date().getHours();
         if (hours < 12) setGreeting("Good morning");
         else if (hours < 18) setGreeting("Good afternoon");
         else setGreeting("Good evening");
-
+        
+        const initSocket = async () => {
+            const token = await getAccessToken();
+            if (token) connectSocket(token);
+        };
+        
+        initSocket();
         fetchData();
     }, []);
 
     const fetchData = async () => {
         try {
             setLoading(true);
-            const profileResponse = await getDriverProfile();
-            if (profileResponse?.data) {
-                setUser(profileResponse.data.user);
-            }
+            const profileRes = await getDriverProfile();
+            if (profileRes?.data) setUser(profileRes.data.user);
             const statusData = await getDriverStatus();
             setDriverState(statusData);
-        } catch (error) {
-            console.log("DRIVER FETCH DATA ERROR:", error);
-            // Mock fallback values for visual testing
-            setUser({
-                fullname: "Khush Sonani",
-                username: "khush_sonani",
-                email: "driver@ridesync.com",
-                role: "driver",
-                avatar: null
-            });
-            setDriverState({
-                status: "offline",
-                isActive: false,
-                driverVerified: "pending",
-                verificationNote: null,
-                vehicleVerified: "pending"
-            });
+        } catch {
+            setUser({ fullname: "RideSync Driver", username: "driver", role: "driver", avatar: null });
+            setDriverState({ status: "offline", isActive: false, driverVerified: "pending", verificationNote: null });
         } finally {
             setLoading(false);
         }
@@ -71,41 +69,26 @@ export default function DriverHome() {
     const handleRefresh = async () => {
         setRefreshing(true);
         try {
-            const profileResponse = await getDriverProfile();
-            if (profileResponse?.data) {
-                setUser(profileResponse.data.user);
-            }
+            const profileRes = await getDriverProfile();
+            if (profileRes?.data) setUser(profileRes.data.user);
             const statusData = await getDriverStatus();
             setDriverState(statusData);
-        } catch (error) {
-            console.log("DRIVER REFRESH ERROR:", error);
-        } finally {
-            setRefreshing(false);
-        }
+        } catch { /* non-critical */ }
+        finally { setRefreshing(false); }
     };
 
     const handleToggleStatus = async (value: boolean) => {
         if (!driverState?.isActive || driverState?.driverVerified !== "verified") {
-            Alert.alert(
-                "Access Locked",
-                "You cannot go online until your account is fully verified by our admin team."
-            );
+            Alert.alert("Access Locked", "Complete verification before going online.");
             return;
         }
-
         const newStatus = value ? "available" : "offline";
         try {
             setTogglingStatus(true);
-            const response = await updateDriverStatus(newStatus);
-            if (response?.data) {
-                setDriverState((prev: any) => ({
-                    ...prev,
-                    status: response.data.status
-                }));
-            }
-        } catch (error: any) {
-            console.log("UPDATE STATUS ERROR:", error?.response?.data || error.message);
-            Alert.alert("Error", error?.response?.data?.message || "Failed to update availability status.");
+            const res = await updateDriverStatus(newStatus);
+            if (res?.data) setDriverState((p: any) => ({ ...p, status: res.data.status }));
+        } catch (err: any) {
+            Alert.alert("Error", err?.response?.data?.message || "Failed to update status.");
         } finally {
             setTogglingStatus(false);
         }
@@ -114,14 +97,48 @@ export default function DriverHome() {
     const getInitials = (name: string) => {
         if (!name) return "DR";
         const parts = name.split(" ");
-        if (parts.length >= 2) {
-            return `${parts[0][0]}${parts[1][0]}`.toUpperCase();
-        }
-        return name.slice(0, 2).toUpperCase();
+        return parts.length >= 2
+            ? `${parts[0][0]}${parts[1][0]}`.toUpperCase()
+            : name.slice(0, 2).toUpperCase();
     };
 
     const isOnline = driverState?.status === "available";
     const isVerified = driverState?.driverVerified === "verified" && driverState?.isActive;
+
+    // ── Track location while online ───────────────────────────────────────────
+    useDriverLocation({ isActive: isOnline });
+
+    useEffect(() => {
+        if (!isOnline) return;
+
+        // 1. Check for existing available rides
+        const checkAvailable = async () => {
+            try {
+                const res = await api.get("/rides/available");
+                if (res.data?.data && res.data.data.length > 0) {
+                    router.push({
+                        pathname: "/(driver)/ride-request-modal",
+                        params: { requestData: JSON.stringify(res.data.data[0]) }
+                    });
+                }
+            } catch (e) {
+                console.log("No available rides or error");
+            }
+        };
+        checkAvailable();
+
+        // 2. Listen for new incoming ride requests
+        const offNewRide = onNewRideRequest((payload) => {
+            router.push({
+                pathname: "/(driver)/ride-request-modal",
+                params: { requestData: JSON.stringify(payload) }
+            });
+        });
+
+        return () => {
+            offNewRide();
+        };
+    }, [isOnline]);
 
     if (loading) {
         return (
@@ -136,21 +153,12 @@ export default function DriverHome() {
         <View className="flex-1" style={{ backgroundColor: COLORS.background }}>
             <StatusBar barStyle="light-content" translucent backgroundColor="transparent" />
 
-            {/* PREMIUM GLOW BACKGROUND */}
+            {/* Glow background */}
             <View className="absolute inset-0 overflow-hidden">
-                <View
-                    className="absolute -top-32 -right-16 w-[380px] h-[380px] rounded-full"
-                    style={{ backgroundColor: COLORS.glowPrimary }}
-                />
-                <View
-                    className="absolute top-[280px] -left-20 w-[240px] h-[240px] rounded-full"
-                    style={{ backgroundColor: COLORS.glowBlue }}
-                />
+                <View className="absolute -top-32 -right-16 w-[380px] h-[380px] rounded-full" style={{ backgroundColor: COLORS.glowPrimary }} />
+                <View className="absolute top-[280px] -left-20 w-[240px] h-[240px] rounded-full" style={{ backgroundColor: COLORS.glowBlue }} />
                 <View className="absolute bottom-[-100px] right-[-50px] w-[300px] h-[300px] rounded-full bg-[#11E0C5]/5" />
-                <View
-                    className="absolute top-[-20px] right-[-40px] w-[260px] h-[260px] rounded-full items-center justify-center"
-                    style={{ backgroundColor: COLORS.glowRing }}
-                >
+                <View className="absolute top-[-20px] right-[-40px] w-[260px] h-[260px] rounded-full items-center justify-center" style={{ backgroundColor: COLORS.glowRing }}>
                     <View className="w-[190px] h-[190px] rounded-full bg-[#1D6B61]/15" />
                 </View>
             </View>
@@ -160,15 +168,10 @@ export default function DriverHome() {
                     showsVerticalScrollIndicator={false}
                     contentContainerStyle={{ paddingBottom: 40 }}
                     refreshControl={
-                        <RefreshControl
-                            refreshing={refreshing}
-                            onRefresh={handleRefresh}
-                            tintColor="#11E0C5"
-                            colors={["#11E0C5"]}
-                        />
+                        <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} tintColor="#11E0C5" colors={["#11E0C5"]} />
                     }
                 >
-                    {/* HEADER: GREETING & AVATAR */}
+                    {/* ── Header ───────────────────────────────────────────── */}
                     <View className="flex-row items-center justify-between mt-3 mb-6">
                         <View className="flex-1 pr-4">
                             <Text className="text-[#748096] text-[14px] font-medium uppercase tracking-wider">
@@ -179,32 +182,25 @@ export default function DriverHome() {
                             </Text>
                         </View>
 
-                        {/* PREMIUM AVATAR */}
                         <TouchableOpacity
                             activeOpacity={0.8}
                             onPress={() => router.push("/(driver)/profile")}
+                            accessibilityRole="button"
+                            accessibilityLabel="Go to profile"
                             className="relative"
                         >
-                            <View className="w-14 h-14 rounded-full p-[2px] bg-gradient-to-tr from-[#11E0C5] to-[#0A84FF] border border-[#11E0C5]/40 items-center justify-center shadow-lg">
+                            <View className="w-14 h-14 rounded-full border border-[#11E0C5]/40 items-center justify-center bg-[#131D2B]">
                                 {user?.avatar?.url ? (
-                                    <Image
-                                        source={{ uri: user.avatar.url }}
-                                        className="w-full h-full rounded-full"
-                                    />
+                                    <Image source={{ uri: user.avatar.url }} className="w-full h-full rounded-full" />
                                 ) : (
-                                    <View className="w-full h-full rounded-full bg-[#131D2B] items-center justify-center">
-                                        <Text className="text-[#11E0C5] text-[16px] font-bold tracking-wide">
-                                            {getInitials(user?.fullname)}
-                                        </Text>
-                                    </View>
+                                    <Text className="text-[#11E0C5] text-[16px] font-bold">{getInitials(user?.fullname)}</Text>
                                 )}
                             </View>
-                            {/* Verification status dot */}
                             <View className={`absolute bottom-0 right-0 w-[14px] h-[14px] rounded-full border-2 border-[#070B12] ${isVerified ? "bg-[#10B981]" : "bg-red-500"}`} />
                         </TouchableOpacity>
                     </View>
 
-                    {/* VERIFICATION BANNER */}
+                    {/* ── Verification banner ──────────────────────────────── */}
                     {driverState?.driverVerified !== "verified" && (
                         <VerificationBanner
                             driverVerified={driverState?.driverVerified}
@@ -212,8 +208,8 @@ export default function DriverHome() {
                         />
                     )}
 
-                    {/* AVAILABILITY STATUS CARD */}
-                    <View className={`${glassCard} p-5 shadow-xl mb-6`}>
+                    {/* ── Availability toggle ──────────────────────────────── */}
+                    <View className={`${glassCard} p-5 shadow-xl mb-5`}>
                         <View className="flex-row items-center justify-between">
                             <View className="flex-row items-center flex-1 mr-4">
                                 <View className={`w-10 h-10 rounded-xl items-center justify-center mr-3 ${isOnline ? "bg-[#10B981]/10" : "bg-red-500/10"}`}>
@@ -227,76 +223,98 @@ export default function DriverHome() {
                                 </View>
                             </View>
                             {togglingStatus ? (
-                                <ActivityIndicator size="small" color="#11E0C5" className="mr-3" />
+                                <ActivityIndicator size="small" color="#11E0C5" />
                             ) : (
                                 <Switch
                                     value={isOnline}
                                     onValueChange={handleToggleStatus}
-                                    trackColor={{ false: "#1A2536", true: "#11E0C5/50" }}
+                                    trackColor={{ false: "#1A2536", true: "#11E0C550" }}
                                     thumbColor={isOnline ? "#11E0C5" : "#748096"}
                                     disabled={driverState?.driverVerified !== "verified" || togglingStatus}
+                                    accessibilityRole="switch"
+                                    accessibilityLabel="Toggle availability"
                                 />
                             )}
                         </View>
                     </View>
 
-                    {/* QUICK STATS */}
-                    <View className="flex-row gap-x-4 mb-6">
-                        <View className={`${glassCard} flex-1 p-4 items-center`}>
-                            <Text className="text-[#748096] text-xs">{"Today's Earnings"}</Text>
-                            <Text className="text-white text-[20px] font-bold mt-1">$0.00</Text>
-                        </View>
-                        <View className={`${glassCard} flex-1 p-4 items-center`}>
-                            <Text className="text-[#748096] text-xs">Rides Completed</Text>
-                            <Text className="text-white text-[20px] font-bold mt-1">0</Text>
-                        </View>
-                        <View className={`${glassCard} flex-1 p-4 items-center`}>
-                            <Text className="text-[#748096] text-xs">Acceptance Rate</Text>
-                            <Text className="text-white text-[20px] font-bold mt-1">100%</Text>
-                        </View>
+                    {/* ── Stats row ────────────────────────────────────────── */}
+                    <View className="flex-row gap-x-3 mb-5">
+                        <StatCard label="Today's Earnings" value="₹0" sub="Start driving" />
+                        <StatCard label="Rides Today" value="0" sub="No rides yet" />
+                        <StatCard label="Acceptance Rate" value="—" sub="Go online first" />
                     </View>
 
-                    {/* INCOMING RIDE REQUESTS */}
+                    {/* ── Live request state ───────────────────────────────── */}
                     <Text className="text-white text-[18px] font-bold mb-4 px-1">
-                        Active Ride Requests
+                        Live Requests
                     </Text>
 
                     {isOnline ? (
-                        <View className={`${glassCard} p-6 items-center justify-center min-h-[140px] mb-6`}>
-                            <MaterialCommunityIcons name="radar" size={32} color="#11E0C5" className="animate-pulse" />
-                            <Text className="text-white text-[15px] font-bold mt-3">Scanning for nearby rides...</Text>
-                            <Text className="text-[#748096] text-xs mt-1 text-center max-w-[240px]">
-                                Keep this app open. You will be notified here as soon as a rider books a trip near you.
-                            </Text>
-                        </View>
+                        <EmptyStateCard
+                            icon="radio"
+                            iconColor="#11E0C5"
+                            title="Scanning for nearby rides…"
+                            subtitle="Keep the app open. You'll be notified the moment a rider books a trip near you."
+                            minHeight={150}
+                            className="mb-5"
+                        />
                     ) : (
-                        <View className={`${glassCard} p-6 items-center justify-center min-h-[140px] mb-6`}>
-                            <Feather name="moon" size={28} color="#667085" />
-                            <Text className="text-white text-[15px] font-bold mt-3">You are offline</Text>
-                            <Text className="text-[#748096] text-xs mt-1 text-center max-w-[240px]">
-                                {driverState?.driverVerified === "verified"
-                                    ? "Switch the duty status toggle on to start receiving live ride requests."
-                                    : "Complete document upload and wait for admin approval to go online."
-                                }
-                            </Text>
-                        </View>
+                        <EmptyStateCard
+                            icon="moon"
+                            iconColor="#748096"
+                            title="You're offline"
+                            subtitle={
+                                driverState?.driverVerified === "verified"
+                                    ? "Toggle the duty switch on to start receiving ride requests."
+                                    : "Complete your document upload and wait for admin approval to go online."
+                            }
+                            minHeight={150}
+                            className="mb-5"
+                        />
                     )}
 
-                    {/* RECENT ACTIVITY */}
+                    {/* ── Recent activity ──────────────────────────────────── */}
                     <View className="flex-row items-center justify-between mb-4 px-1">
-                        <Text className="text-white text-[18px] font-bold">
-                            Recent Activity
-                        </Text>
-                        <TouchableOpacity activeOpacity={0.7}>
-                            <Text className="text-[#11E0C5] text-xs font-semibold">See All</Text>
+                        <Text className="text-white text-[18px] font-bold">Recent Activity</Text>
+                        <TouchableOpacity
+                            activeOpacity={0.7}
+                            onPress={() => router.push("/(driver)/rides")}
+                            accessibilityRole="button"
+                            accessibilityLabel="See all rides"
+                        >
+                            <Text className="text-[#11E0C5] text-[13px] font-semibold">See All</Text>
                         </TouchableOpacity>
                     </View>
 
-                    <View className={`${glassCard} p-5 items-center justify-center min-h-[100px]`}>
-                        <Text className="text-[#748096] text-sm">No recent rides found.</Text>
-                    </View>
+                    {recentRides.length === 0 ? (
+                        <EmptyStateCard
+                            icon="clock"
+                            iconColor="#748096"
+                            title="No activity yet"
+                            subtitle="Your completed rides and earnings will appear here after your first trip."
+                            minHeight={120}
+                        />
+                    ) : (
+                        // TODO: render RideHistoryCard for each recent ride
+                        null
+                    )}
                 </ScrollView>
             </SafeAreaView>
+        </View>
+    );
+}
+
+// ─── Mini stat card ────────────────────────────────────────────────────────────
+
+function StatCard({ label, value, sub }: { label: string; value: string; sub: string }) {
+    return (
+        <View className={`${glassCard} flex-1 p-4 items-center`}>
+            <Text className="text-[#748096] text-[10px] text-center uppercase tracking-wide leading-4">
+                {label}
+            </Text>
+            <Text className="text-white text-[18px] font-bold mt-1">{value}</Text>
+            <Text className="text-[#748096] text-[10px] mt-0.5">{sub}</Text>
         </View>
     );
 }

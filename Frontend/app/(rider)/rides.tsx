@@ -5,29 +5,34 @@ import {
     StatusBar,
     ScrollView,
     RefreshControl,
-    TouchableOpacity
+    TouchableOpacity,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { router } from "expo-router";
-import { Ionicons } from '@expo/vector-icons';
-import { COLORS } from "@/constants/theme";
-import { glassCard } from "@/constants/styles";
+import { Feather } from "@expo/vector-icons";
 
-export default function RidesScreen() {
+import { COLORS } from "@/constants/theme";
+import EmptyStateCard from "@/components/common/EmptyStateCard";
+import RideHistoryCard from "@/components/common/RideHistoryCard";
+
+// TODO: replace with real data from GET /rides/history
+const MOCK_EMPTY = true;
+const MOCK_RIDES: any[] = [];
+
+export default function RiderRidesScreen() {
     const [refreshing, setRefreshing] = useState(false);
 
-    const handleRefresh = () => {
+    const handleRefresh = async () => {
         setRefreshing(true);
-        setTimeout(() => {
-            setRefreshing(false);
-        }, 1500);
+        // TODO: refetch rides from API
+        setTimeout(() => setRefreshing(false), 1200);
     };
 
     return (
         <View className="flex-1" style={{ backgroundColor: COLORS.background }}>
             <StatusBar barStyle="light-content" translucent backgroundColor="transparent" />
 
-            {/* PREMIUM GLOW BACKGROUND */}
+            {/* Glow background */}
             <View className="absolute inset-0 overflow-hidden">
                 <View
                     className="absolute -top-32 -right-16 w-[380px] h-[380px] rounded-full"
@@ -52,99 +57,86 @@ export default function RidesScreen() {
                         />
                     }
                 >
-                    {/* BACK NAVIGATION */}
-                    <View className="flex-row items-center mt-1 px-1 mb-6">
+                    {/* Header */}
+                    <View className="flex-row items-center mt-1 mb-6">
                         <TouchableOpacity
                             activeOpacity={0.7}
                             onPress={() => router.back()}
+                            accessibilityRole="button"
+                            accessibilityLabel="Go back"
                             className="p-2 -ml-2"
                         >
-                            <View className="w-4 h-4 border-l-2 border-t-2 border-white/90 transform -rotate-45 mt-0.5 ml-1" />
+                            <Feather name="arrow-left" size={20} color="white" />
                         </TouchableOpacity>
-                        <Text className="text-white text-[24px] italic ml-5 tracking-wide">
+                        <Text className="text-white text-[24px] italic ml-4 tracking-wide">
                             my rides
                         </Text>
                     </View>
 
-                    {/* RIDES LIST */}
-                    <View className="gap-y-4">
-                        <View className={`${glassCard} p-5 flex-row items-center justify-between`}>
-                            <View className="flex-row items-center flex-1 pr-3">
-                                <View className="w-12 h-12 rounded-full bg-[#131D2B] items-center justify-center mr-3 border border-white/[0.04]">
-                                    <Ionicons name="map-outline" size={20} color="#11E0C5" />
-                                </View>
-                                <View className="flex-1">
-                                    <Text className="text-white text-base font-bold" numberOfLines={1}>
-                                        Downtown to Airport Terminal
-                                    </Text>
-                                    <Text className="text-[#748096] text-xs mt-1">
-                                        May 24, 2026 • 10:30 AM
-                                    </Text>
-                                    <Text className="text-white/60 text-xs mt-1">
-                                        Driver: Alexander K.
-                                    </Text>
-                                </View>
-                            </View>
-                            <View className="items-end justify-between h-14">
-                                <Text className="text-white text-base font-bold">$24.50</Text>
-                                <Text className="text-[#10B981] text-[10px] font-bold mt-1 bg-[#10B981]/10 px-2.5 py-1 rounded-full border border-[#10B981]/25">
-                                    Completed
+                    {/* Filter chips — TODO: implement active filter state + API params */}
+                    <ScrollView
+                        horizontal
+                        showsHorizontalScrollIndicator={false}
+                        contentContainerStyle={{ paddingRight: 8 }}
+                        className="mb-5 -mx-1"
+                    >
+                        {FILTERS.map((f) => (
+                            <TouchableOpacity
+                                key={f}
+                                activeOpacity={0.7}
+                                accessibilityRole="button"
+                                accessibilityLabel={`Filter by ${f}`}
+                                className={`mr-2 px-4 py-2 rounded-full border ${
+                                    f === "All"
+                                        ? "bg-[#11E0C5]/10 border-[#11E0C5]/30"
+                                        : "bg-white/[0.03] border-white/[0.08]"
+                                }`}
+                            >
+                                <Text
+                                    className={`text-[12px] font-semibold ${
+                                        f === "All" ? "text-[#11E0C5]" : "text-[#748096]"
+                                    }`}
+                                >
+                                    {f}
                                 </Text>
-                            </View>
-                        </View>
+                            </TouchableOpacity>
+                        ))}
+                    </ScrollView>
 
-                        <View className={`${glassCard} p-5 flex-row items-center justify-between`}>
-                            <View className="flex-row items-center flex-1 pr-3">
-                                <View className="w-12 h-12 rounded-full bg-[#131D2B] items-center justify-center mr-3 border border-white/[0.04]">
-                                    <Ionicons name="map-outline" size={20} color="#11E0C5" />
-                                </View>
-                                <View className="flex-1">
-                                    <Text className="text-white text-base font-bold" numberOfLines={1}>
-                                        Corporate Park to Greenfields
-                                    </Text>
-                                    <Text className="text-[#748096] text-xs mt-1">
-                                        May 22, 2026 • 6:15 PM
-                                    </Text>
-                                    <Text className="text-white/60 text-xs mt-1">
-                                        Driver: Sarah M.
-                                    </Text>
-                                </View>
-                            </View>
-                            <View className="items-end justify-between h-14">
-                                <Text className="text-white text-base font-bold">$18.20</Text>
-                                <Text className="text-[#10B981] text-[10px] font-bold mt-1 bg-[#10B981]/10 px-2.5 py-1 rounded-full border border-[#10B981]/25">
-                                    Completed
-                                </Text>
-                            </View>
+                    {/* Content */}
+                    {MOCK_EMPTY || MOCK_RIDES.length === 0 ? (
+                        <EmptyStateCard
+                            icon="map"
+                            iconColor="#11E0C5"
+                            title="No rides yet"
+                            subtitle="Your completed and upcoming rides will appear here once you book your first trip."
+                            ctaLabel="Book a Ride"
+                            onCtaPress={() => router.push("/(rider)/create-ride")}
+                            minHeight={220}
+                        />
+                    ) : (
+                        <View className="gap-y-3">
+                            {MOCK_RIDES.map((ride, i) => (
+                                <RideHistoryCard
+                                    key={ride._id ?? i}
+                                    pickup={ride.pickup?.address ?? "Pickup"}
+                                    drop={ride.drop?.address ?? "Destination"}
+                                    date={ride.createdAt ?? ""}
+                                    fare={`₹${ride.fare ?? 0}`}
+                                    status={ride.status}
+                                    personName={ride.driver?.user?.fullname}
+                                    distance={ride.distance ? `${ride.distance} km` : undefined}
+                                    onPress={() => {
+                                        // TODO: navigate to ride detail screen
+                                    }}
+                                />
+                            ))}
                         </View>
-
-                        <View className={`${glassCard} p-5 flex-row items-center justify-between`}>
-                            <View className="flex-row items-center flex-1 pr-3">
-                                <View className="w-12 h-12 rounded-full bg-[#131D2B] items-center justify-center mr-3 border border-white/[0.04]">
-                                    <Ionicons name="map-outline" size={20} color="#11E0C5" />
-                                </View>
-                                <View className="flex-1">
-                                    <Text className="text-white text-base font-bold" numberOfLines={1}>
-                                        High Street Shopping Center
-                                    </Text>
-                                    <Text className="text-[#748096] text-xs mt-1">
-                                        May 19, 2026 • 2:40 PM
-                                    </Text>
-                                    <Text className="text-white/60 text-xs mt-1">
-                                        Driver: David P.
-                                    </Text>
-                                </View>
-                            </View>
-                            <View className="items-end justify-between h-14">
-                                <Text className="text-white text-base font-bold">$12.80</Text>
-                                <Text className="text-[#10B981] text-[10px] font-bold mt-1 bg-[#10B981]/10 px-2.5 py-1 rounded-full border border-[#10B981]/25">
-                                    Completed
-                                </Text>
-                            </View>
-                        </View>
-                    </View>
+                    )}
                 </ScrollView>
             </SafeAreaView>
         </View>
     );
 }
+
+const FILTERS = ["All", "Completed", "Cancelled", "In Progress"];

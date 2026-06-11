@@ -1,68 +1,128 @@
-import React, { useState, useEffect } from "react";
+/**
+ * @file home.tsx
+ * @description Rider home screen — Uber/Ola-style with full-screen map.
+ *
+ * Layout:
+ *   MapView (absolute, full screen)
+ *     └ showsUserLocation — blue dot at current GPS position
+ *   Floating header (top, SafeAreaView)
+ *     └ Greeting + name / sandbox shortcut / avatar
+ *   Floating bottom card
+ *     └ "Where to?" search pill
+ *     └ Quick-access shortcuts (Home, Work, Trips)
+ *     └ Recent trips (empty state or RideHistoryCard list)
+ *
+ * Existing logic preserved exactly:
+ *   - Socket init / cleanup
+ *   - Profile fetch
+ *   - Pull-to-refresh
+ *   - Greeting by time of day
+ */
+
+import React, { useState, useEffect, useRef } from "react";
 import {
     View,
     Text,
     StatusBar,
-    ActivityIndicator,
-    ScrollView,
     TouchableOpacity,
     Image,
-    Alert,
-    RefreshControl
+    RefreshControl,
+    ScrollView,
+    Dimensions,
 } from "react-native";
+import MapView, { PROVIDER_DEFAULT } from "react-native-maps";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { router } from "expo-router";
-import { Ionicons, Feather, MaterialCommunityIcons } from '@expo/vector-icons';
+import { Feather, Ionicons } from "@expo/vector-icons";
 
 import { api } from "@/services/api";
-import { COLORS } from "@/constants/theme";
-import { glassCard } from "@/constants/styles";
-import { connectSocket, getSocket, disconnectSocket } from "@/services/socket";
+import { connectSocket, getSocket } from "@/services/socket";
 import { getAccessToken } from "@/services/storage";
+import { useRiderLocation } from "@/services/useRiderLocation";
+import EmptyStateCard from "@/components/common/EmptyStateCard";
+import RideHistoryCard from "@/components/common/RideHistoryCard";
 
-export default function HomeScreen() {
-    const [user, setUser] = useState<any>(null);
-    const [loading, setLoading] = useState(true);
+// ─── Constants ────────────────────────────────────────────────────────────────
+
+/** Fallback map region — shows India while GPS fix is loading */
+const INDIA_REGION = {
+    latitude: 20.5937,
+    longitude: 78.9629,
+    latitudeDelta: 20,
+    longitudeDelta: 20,
+};
+
+const { height: SCREEN_H } = Dimensions.get("window");
+/** Bottom card never exceeds 58% of the screen so the map is always visible */
+const BOTTOM_CARD_MAX_H = Math.round(SCREEN_H * 0.58);
+
+// ─── Types ────────────────────────────────────────────────────────────────────
+
+interface UserProfile {
+    fullname: string;
+    username: string;
+    email: string;
+    role: string;
+    avatar?: { url?: string } | null;
+}
+
+// ─── Screen ──────────────────────────────────────────────────────────────────
+
+export default function RiderHomeScreen() {
+    const [user, setUser] = useState<UserProfile | null>(null);
+    const [profileLoading, setProfileLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
     const [greeting, setGreeting] = useState("Welcome back");
 
+    // TODO: replace with real rides from GET /rides/history
+    const recentRides: any[] = [];
+
+    const mapRef = useRef<MapView>(null);
+    const cameraAnimatedRef = useRef(false);
+
+    // ── GPS location (for map centering — does not set LocationContext) ────────
+    const { coords: currentLocation, permissionDenied } = useRiderLocation();
+
+    // ── Animate camera to current location on first GPS fix ───────────────────
     useEffect(() => {
-        // Set dynamic greeting based on time of day
-        const hours = new Date().getHours();
-        if (hours < 12) setGreeting("Good morning");
-        else if (hours < 18) setGreeting("Good afternoon");
+        if (currentLocation && !cameraAnimatedRef.current) {
+            cameraAnimatedRef.current = true;
+            mapRef.current?.animateToRegion(
+                {
+                    latitude: currentLocation.lat,
+                    longitude: currentLocation.lng,
+                    latitudeDelta: 0.05,
+                    longitudeDelta: 0.05,
+                },
+                900
+            );
+        }
+    }, [currentLocation]);
+
+    // ── App lifecycle (socket + profile — unchanged from original) ────────────
+    useEffect(() => {
+        const h = new Date().getHours();
+        if (h < 12) setGreeting("Good morning");
+        else if (h < 18) setGreeting("Good afternoon");
         else setGreeting("Good evening");
 
         let socket: ReturnType<typeof getSocket> | null = null;
 
         const initSocket = async () => {
             const token = await getAccessToken();
-            if (!token) {
-                console.log("[Socket] No token found, cannot connect.");
-                return;
-            }
+            if (!token) return;
             socket = connectSocket(token);
 
-            // Example test listeners — remove these once real events are in place
-            socket.on("new_ride_request", (ride) => {
-                console.log("[Socket] new_ride_request received:", ride?._id);
-            });
-            socket.on("ride_accepted", (ride) => {
-                console.log("[Socket] ride_accepted:", ride?._id);
-            });
-            socket.on("ride_status_updated", (ride) => {
-                console.log("[Socket] ride_status_updated -> status:", ride?.status);
-            });
-            socket.on("ride_completed", (ride) => {
-                console.log("[Socket] ride_completed:", ride?._id);
-            });
-            socket.on("ride_cancelled", (ride) => {
-                console.log("[Socket] ride_cancelled:", ride?._id);
-            });
+            // TODO: wire up ride lifecycle events
+            socket.on("new_ride_request", (ride: any) => { console.log("[Socket] new_ride_request:", ride?._id); });
+            socket.on("ride_accepted", (ride: any) => { console.log("[Socket] ride_accepted:", ride?._id); });
+            socket.on("ride_status_updated", (ride: any) => { console.log("[Socket] ride_status_updated:", ride?.status); });
+            socket.on("ride_completed", (ride: any) => { console.log("[Socket] ride_completed:", ride?._id); });
+            socket.on("ride_cancelled", (ride: any) => { console.log("[Socket] ride_cancelled:", ride?._id); });
         };
 
         initSocket();
-        loadInitialData();
+        loadProfile();
 
         return () => {
             if (socket) {
@@ -76,86 +136,237 @@ export default function HomeScreen() {
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
-    const loadInitialData = async () => {
-        setLoading(true);
-        await fetchUserProfile();
-        setLoading(false);
-    };
-
-    const fetchUserProfile = async () => {
+    const loadProfile = async () => {
+        setProfileLoading(true);
         try {
-            const response = await api.get('/users/profile');
-            console.log("PROFILE RESPONSE:", response.data);
-            if (response.data?.data) {
-                setUser(response.data.data);
-            }
-        } catch (error) {
-            const err = error as any;
-            console.log("FETCH PROFILE ERROR:", err?.response?.data || err.message);
-            // Non-blocking fallback to mock user for testing visual designs
+            const res = await api.get("/users/profile");
+            if (res.data?.data) setUser(res.data.data);
+        } catch {
             setUser({
-                fullname: "Khush Sonani",
-                username: "khush_sonani",
-                email: "khush@ridesync.com",
+                fullname: "RideSync User",
+                username: "rider",
+                email: "",
                 role: "rider",
-                avatar: null
+                avatar: null,
             });
+        } finally {
+            setProfileLoading(false);
         }
     };
 
     const handleRefresh = async () => {
         setRefreshing(true);
-        await fetchUserProfile();
+        await loadProfile();
         setRefreshing(false);
     };
 
-    // Helper to get user initials for avatar fallback
     const getInitials = (name: string) => {
         if (!name) return "RS";
         const parts = name.split(" ");
-        if (parts.length >= 2) {
-            return `${parts[0][0]}${parts[1][0]}`.toUpperCase();
-        }
-        return name.slice(0, 2).toUpperCase();
+        return parts.length >= 2
+            ? `${parts[0][0]}${parts[1][0]}`.toUpperCase()
+            : name.slice(0, 2).toUpperCase();
     };
 
-    if (loading) {
-        return (
-            <View className="flex-1 bg-[#070B12] items-center justify-center">
-                <StatusBar barStyle="light-content" translucent backgroundColor="transparent" />
-                <ActivityIndicator size="large" color="#11E0C5" />
-            </View>
-        );
-    }
+    // ── Render ────────────────────────────────────────────────────────────────
 
     return (
-        <View className="flex-1" style={{ backgroundColor: COLORS.background }}>
+        <View style={{ flex: 1, backgroundColor: "#070B12" }}>
             <StatusBar barStyle="light-content" translucent backgroundColor="transparent" />
 
-            {/* PREMIUM GLOW BACKGROUND */}
-            <View className="absolute inset-0 overflow-hidden">
-                <View
-                    className="absolute -top-32 -right-16 w-[380px] h-[380px] rounded-full"
-                    style={{ backgroundColor: COLORS.glowPrimary }}
-                />
-                <View
-                    className="absolute top-[280px] -left-20 w-[240px] h-[240px] rounded-full"
-                    style={{ backgroundColor: COLORS.glowBlue }}
-                />
-                {/* Bottom Right Subtle Glow */}
-                <View className="absolute bottom-[-100px] right-[-50px] w-[300px] h-[300px] rounded-full bg-[#11E0C5]/5" />
-                <View
-                    className="absolute top-[-20px] right-[-40px] w-[260px] h-[260px] rounded-full items-center justify-center"
-                    style={{ backgroundColor: COLORS.glowRing }}
-                >
-                    <View className="w-[190px] h-[190px] rounded-full bg-[#1D6B61]/15" />
-                </View>
-            </View>
+            {/* ── FULL SCREEN MAP ───────────────────────────────────────── */}
+            <MapView
+                ref={mapRef}
+                provider={PROVIDER_DEFAULT}
+                style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0 }}
+                initialRegion={INDIA_REGION}
+                showsUserLocation={!permissionDenied}
+                showsMyLocationButton={false}
+                showsCompass={false}
+                showsScale={false}
+                toolbarEnabled={false}
+                customMapStyle={DARK_MAP_STYLE}
+            />
 
-            <SafeAreaView className="flex-1 px-5 pt-3">
+            {/* ── PERMISSION DENIED BANNER ──────────────────────────────── */}
+            {permissionDenied && (
+                <SafeAreaView
+                    style={{
+                        position: "absolute",
+                        top: 0,
+                        left: 0,
+                        right: 0,
+                        zIndex: 20,
+                    }}
+                >
+                    <View
+                        style={{
+                            marginHorizontal: 16,
+                            marginTop: 8,
+                            backgroundColor: "rgba(239,68,68,0.15)",
+                            borderWidth: 1,
+                            borderColor: "rgba(239,68,68,0.3)",
+                            borderRadius: 14,
+                            paddingHorizontal: 14,
+                            paddingVertical: 10,
+                            flexDirection: "row",
+                            alignItems: "center",
+                        }}
+                    >
+                        <Feather name="map-pin" size={14} color="#EF4444" />
+                        <Text
+                            style={{
+                                color: "#EF4444",
+                                fontSize: 12,
+                                fontWeight: "600",
+                                marginLeft: 8,
+                                flex: 1,
+                            }}
+                        >
+                            Location access denied — enable it in Settings for a better experience.
+                        </Text>
+                    </View>
+                </SafeAreaView>
+            )}
+
+            {/* ── FLOATING HEADER ───────────────────────────────────────── */}
+            <SafeAreaView
+                style={{
+                    position: "absolute",
+                    top: 0,
+                    left: 0,
+                    right: 0,
+                    zIndex: 10,
+                    pointerEvents: "box-none",
+                } as any}
+            >
+                <View
+                    style={{
+                        flexDirection: "row",
+                        alignItems: "center",
+                        justifyContent: "space-between",
+                        paddingHorizontal: 20,
+                        paddingTop: 12,
+                        paddingBottom: 10,
+                        pointerEvents: "box-none",
+                    } as any}
+                >
+                    {/* Greeting */}
+                    <View
+                        style={{
+                            backgroundColor: "rgba(7,11,18,0.82)",
+                            paddingHorizontal: 14,
+                            paddingVertical: 10,
+                            borderRadius: 16,
+                            borderWidth: 1,
+                            borderColor: "rgba(255,255,255,0.07)",
+                            flex: 1,
+                            marginRight: 12,
+                        }}
+                    >
+                        <Text style={{ color: "#748096", fontSize: 11, fontWeight: "600", textTransform: "uppercase", letterSpacing: 1 }}>
+                            {greeting}
+                        </Text>
+                        <Text
+                            style={{ color: "#FFFFFF", fontSize: 17, fontWeight: "700", marginTop: 2 }}
+                            numberOfLines={1}
+                        >
+                            {profileLoading ? "…" : (user?.fullname || "RideSync User")}
+                        </Text>
+                    </View>
+
+                    {/* Actions */}
+                    <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
+                        <TouchableOpacity
+                            activeOpacity={0.75}
+                            onPress={() => router.push("/sandbox")}
+                            accessibilityLabel="Open component sandbox"
+                            style={{
+                                width: 44,
+                                height: 44,
+                                borderRadius: 22,
+                                backgroundColor: "rgba(7,11,18,0.85)",
+                                borderWidth: 1,
+                                borderColor: "rgba(255,255,255,0.1)",
+                                alignItems: "center",
+                                justifyContent: "center",
+                            }}
+                        >
+                            <Feather name="layers" size={18} color="#11E0C5" />
+                        </TouchableOpacity>
+
+                        <TouchableOpacity
+                            activeOpacity={0.8}
+                            onPress={() => router.push("/(rider)/profile")}
+                            accessibilityLabel="Go to profile"
+                            style={{ position: "relative" }}
+                        >
+                            <View
+                                style={{
+                                    width: 44,
+                                    height: 44,
+                                    borderRadius: 22,
+                                    backgroundColor: "rgba(7,11,18,0.85)",
+                                    borderWidth: 1.5,
+                                    borderColor: "rgba(17,224,197,0.4)",
+                                    alignItems: "center",
+                                    justifyContent: "center",
+                                    overflow: "hidden",
+                                }}
+                            >
+                                {user?.avatar?.url ? (
+                                    <Image
+                                        source={{ uri: user.avatar.url }}
+                                        style={{ width: 44, height: 44, borderRadius: 22 }}
+                                    />
+                                ) : (
+                                    <Text style={{ color: "#11E0C5", fontSize: 14, fontWeight: "700" }}>
+                                        {getInitials(user?.fullname ?? "")}
+                                    </Text>
+                                )}
+                            </View>
+                            {/* Online dot */}
+                            <View
+                                style={{
+                                    position: "absolute",
+                                    bottom: 0,
+                                    right: 0,
+                                    width: 13,
+                                    height: 13,
+                                    borderRadius: 7,
+                                    backgroundColor: "#10B981",
+                                    borderWidth: 2,
+                                    borderColor: "#070B12",
+                                }}
+                            />
+                        </TouchableOpacity>
+                    </View>
+                </View>
+            </SafeAreaView>
+
+            {/* ── BOTTOM FLOATING CARD ─────────────────────────────────── */}
+            <View
+                style={{
+                    position: "absolute",
+                    bottom: 0,
+                    left: 0,
+                    right: 0,
+                    maxHeight: BOTTOM_CARD_MAX_H,
+                    zIndex: 10,
+                    backgroundColor: "rgba(7,11,18,0.97)",
+                    borderTopLeftRadius: 28,
+                    borderTopRightRadius: 28,
+                    shadowColor: "#000",
+                    shadowOpacity: 0.5,
+                    shadowRadius: 24,
+                    shadowOffset: { width: 0, height: -4 },
+                    elevation: 24,
+                }}
+            >
                 <ScrollView
+                    bounces={false}
                     showsVerticalScrollIndicator={false}
-                    contentContainerStyle={{ paddingBottom: 40 }}
+                    keyboardShouldPersistTaps="handled"
                     refreshControl={
                         <RefreshControl
                             refreshing={refreshing}
@@ -164,191 +375,246 @@ export default function HomeScreen() {
                             colors={["#11E0C5"]}
                         />
                     }
+                    contentContainerStyle={{ paddingBottom: 28 }}
                 >
-                    {/* HEADER: GREETING & AVATAR */}
-                    <View className="flex-row items-center justify-between mt-3 mb-6">
-                        <View className="flex-1 pr-4">
-                            <Text className="text-[#748096] text-[14px] font-medium uppercase tracking-wider">
-                                {greeting}
-                            </Text>
-                            <Text className="text-white text-[28px] font-bold tracking-tight mt-1" numberOfLines={1}>
-                                {user?.fullname || "RideSync User"}
-                            </Text>
-                        </View>
-
-                        {/* PREMIUM AVATAR */}
-                        <TouchableOpacity
-                            activeOpacity={0.8}
-                            onPress={() => router.push("/(rider)/profile")}
-                            className="relative"
-                        >
-                            <View className="w-14 h-14 rounded-full p-[2px] bg-gradient-to-tr from-[#11E0C5] to-[#0A84FF] border border-[#11E0C5]/40 items-center justify-center shadow-lg">
-                                {user?.avatar?.url ? (
-                                    <Image
-                                        source={{ uri: user.avatar.url }}
-                                        className="w-full h-full rounded-full"
-                                    />
-                                ) : (
-                                    <View className="w-full h-full rounded-full bg-[#131D2B] items-center justify-center">
-                                        <Text className="text-[#11E0C5] text-[16px] font-bold tracking-wide">
-                                            {getInitials(user?.fullname)}
-                                        </Text>
-                                    </View>
-                                )}
-                            </View>
-                            {/* Online/Active status dot */}
-                            <View className="absolute bottom-0 right-0 w-[14px] h-[14px] rounded-full bg-[#10B981] border-2 border-[#070B12]" />
-                        </TouchableOpacity>
-                    </View>
-
-                    {/* QUICK STATS/DASHBOARD CARD */}
-                    <View className={`${glassCard} p-5 shadow-xl mb-6`}>
-                        <View className="flex-row items-center justify-between border-b border-white/[0.05] pb-4 mb-4">
-                            <View className="flex-row items-center">
-                                <View className="w-8 h-8 rounded-lg bg-[#11E0C5]/10 items-center justify-center mr-3">
-                                    <Feather name="shield" size={16} color="#11E0C5" />
-                                </View>
-                                <View>
-                                    <Text className="text-[#748096] text-[11px] uppercase tracking-wider">Account Role</Text>
-                                    <Text className="text-white text-[15px] font-semibold mt-0.5 capitalize">
-                                        {user?.role || "Rider"}
-                                    </Text>
-                                </View>
-                            </View>
-                            <View className="bg-[#11E0C5]/10 border border-[#11E0C5]/20 px-3 py-1 rounded-full">
-                                <Text className="text-[#11E0C5] text-[11px] font-bold capitalize">
-                                    {user?.role === "driver" ? "Driver Mode" : "Rider Mode"}
-                                </Text>
-                            </View>
-                        </View>
-
-                        <View className="flex-row justify-between items-center">
-                            <View className="flex-1 items-center border-r border-white/[0.05]">
-                                <Text className="text-[#748096] text-xs">Rating</Text>
-                                <View className="flex-row items-center mt-1">
-                                    <Ionicons name="star" size={15} color="#FFC107" />
-                                    <Text className="text-white text-base font-bold ml-1">4.9</Text>
-                                </View>
-                            </View>
-                            <View className="flex-1 items-center border-r border-white/[0.05]">
-                                <Text className="text-[#748096] text-xs">Rides</Text>
-                                <Text className="text-white text-base font-bold mt-1">18</Text>
-                            </View>
-                            <View className="flex-1 items-center">
-                                <Text className="text-[#748096] text-xs">Status</Text>
-                                <Text className="text-[#11E0C5] text-sm font-bold mt-1">Verified</Text>
-                            </View>
-                        </View>
-                    </View>
-
-                    {/* MAIN QUICK ACTIONS */}
-                    <Text className="text-white text-[18px] font-bold mb-4 px-1">
-                        Where to go?
-                    </Text>
-
-                    <View className="flex-row gap-x-4 mb-6">
-                        {/* REQUEST RIDE CARD */}
-                        <TouchableOpacity
-                            activeOpacity={0.8}
-                            onPress={() => router.push("/(rider)/rides")}
-                            className={`${glassCard} flex-1 p-4 items-start shadow-md`}
-                        >
-                            <View className="w-10 h-10 rounded-xl bg-[#11E0C5]/10 items-center justify-center mb-3">
-                                <Ionicons name="car-sport" size={20} color="#11E0C5" />
-                            </View>
-                            <Text className="text-white text-[15px] font-bold">Request Ride</Text>
-                            <Text className="text-[#748096] text-[11px] mt-1 leading-4">
-                                Book a premium ride to your destination
-                            </Text>
-                        </TouchableOpacity>
-
-                        {/* SHARE RIDE CARD */}
-                        <TouchableOpacity
-                            activeOpacity={0.8}
-                            onPress={() => {
-                                if (user?.role === "rider") {
-                                    Alert.alert(
-                                        "Driver Role Required",
-                                        "To publish or share a ride, you need a driver account. Update your role in your profile.",
-                                        [
-                                            { text: "Cancel", style: "cancel" },
-                                            { text: "Go to Profile", onPress: () => router.push("/(rider)/profile") }
-                                        ]
-                                    );
-                                } else {
-                                    router.push("/(rider)/rides");
-                                }
+                    {/* Drag handle */}
+                    <View style={{ alignItems: "center", paddingTop: 12, paddingBottom: 20 }}>
+                        <View
+                            style={{
+                                width: 40,
+                                height: 4,
+                                borderRadius: 2,
+                                backgroundColor: "rgba(255,255,255,0.15)",
                             }}
-                            className={`${glassCard} flex-1 p-4 items-start shadow-md`}
+                        />
+                    </View>
+
+                    {/* "Where to?" pill */}
+                    <TouchableOpacity
+                        activeOpacity={0.85}
+                        onPress={() => router.push("/(rider)/create-ride")}
+                        accessibilityLabel="Book a ride — where to?"
+                        style={{
+                            marginHorizontal: 20,
+                            marginBottom: 16,
+                            height: 58,
+                            backgroundColor: "#11E0C5",
+                            borderRadius: 20,
+                            flexDirection: "row",
+                            alignItems: "center",
+                            paddingHorizontal: 18,
+                            shadowColor: "#11E0C5",
+                            shadowOpacity: 0.45,
+                            shadowRadius: 18,
+                            shadowOffset: { width: 0, height: 6 },
+                            elevation: 12,
+                        }}
+                    >
+                        <View
+                            style={{
+                                width: 34,
+                                height: 34,
+                                borderRadius: 12,
+                                backgroundColor: "rgba(7,16,24,0.22)",
+                                alignItems: "center",
+                                justifyContent: "center",
+                                marginRight: 12,
+                            }}
                         >
-                            <View className="w-10 h-10 rounded-xl bg-[#0A84FF]/10 items-center justify-center mb-3">
-                                <MaterialCommunityIcons name="map-marker-distance" size={20} color="#0A84FF" />
-                            </View>
-                            <Text className="text-white text-[15px] font-bold">Share Ride</Text>
-                            <Text className="text-[#748096] text-[11px] mt-1 leading-4">
-                                Publish empty seats and share travel costs
+                            <Feather name="search" size={16} color="#071018" />
+                        </View>
+                        <Text style={{ color: "#071018", fontSize: 16, fontWeight: "700", flex: 1 }}>
+                            Where to?
+                        </Text>
+                        <Feather name="arrow-right" size={18} color="#071018" />
+                    </TouchableOpacity>
+
+                    {/* Quick-access shortcuts */}
+                    <View
+                        style={{
+                            flexDirection: "row",
+                            marginHorizontal: 20,
+                            marginBottom: 20,
+                            gap: 10,
+                        }}
+                    >
+                        {[
+                            { icon: "home" as const, label: "Home", route: "/(rider)/create-ride" as const },
+                            { icon: "briefcase" as const, label: "Work", route: "/(rider)/create-ride" as const },
+                            { icon: "clock" as const, label: "Trips", route: "/(rider)/rides" as const },
+                        ].map(({ icon, label, route }) => (
+                            <TouchableOpacity
+                                key={label}
+                                activeOpacity={0.8}
+                                onPress={() => router.push(route as any)}
+                                style={{
+                                    flex: 1,
+                                    flexDirection: "row",
+                                    alignItems: "center",
+                                    backgroundColor: "#0D1420",
+                                    borderWidth: 1,
+                                    borderColor: "rgba(255,255,255,0.07)",
+                                    borderRadius: 16,
+                                    paddingHorizontal: 12,
+                                    paddingVertical: 12,
+                                    gap: 6,
+                                }}
+                            >
+                                <Feather name={icon} size={15} color="#748096" />
+                                <Text style={{ color: "#FFFFFF", fontSize: 12, fontWeight: "600" }}>
+                                    {label}
+                                </Text>
+                            </TouchableOpacity>
+                        ))}
+                    </View>
+
+                    {/* Divider */}
+                    <View
+                        style={{
+                            height: 1,
+                            backgroundColor: "rgba(255,255,255,0.06)",
+                            marginHorizontal: 20,
+                            marginBottom: 18,
+                        }}
+                    />
+
+                    {/* Recent Trips header */}
+                    <View
+                        style={{
+                            flexDirection: "row",
+                            alignItems: "center",
+                            justifyContent: "space-between",
+                            paddingHorizontal: 20,
+                            marginBottom: 14,
+                        }}
+                    >
+                        <Text style={{ color: "#FFFFFF", fontSize: 16, fontWeight: "700" }}>
+                            Recent Trips
+                        </Text>
+                        <TouchableOpacity
+                            activeOpacity={0.7}
+                            onPress={() => router.push("/(rider)/rides")}
+                            accessibilityLabel="See all rides"
+                        >
+                            <Text style={{ color: "#11E0C5", fontSize: 13, fontWeight: "600" }}>
+                                See All
                             </Text>
                         </TouchableOpacity>
                     </View>
 
-                    {/* RECENT ACTIVITY SECTION */}
-                    <View className="flex-row items-center justify-between mb-4 px-1">
-                        <Text className="text-white text-[18px] font-bold">
-                            Recent Rides
-                        </Text>
-                        <TouchableOpacity activeOpacity={0.7} onPress={() => router.push("/(rider)/rides")}>
-                            <Text className="text-[#11E0C5] text-xs font-semibold">See All</Text>
-                        </TouchableOpacity>
-                    </View>
-
-                    {/* MOCK RIDES FEED FOR GORGEOUS AESTHETICS */}
-                    <View className="gap-y-3">
-                        <View className={`${glassCard} p-4 flex-row items-center justify-between`}>
-                            <View className="flex-row items-center flex-1 pr-3">
-                                <View className="w-10 h-10 rounded-full bg-[#131D2B] items-center justify-center mr-3 border border-white/[0.04]">
-                                    <Ionicons name="map-outline" size={18} color="#11E0C5" />
-                                </View>
-                                <View className="flex-1">
-                                    <Text className="text-white text-[14px] font-semibold" numberOfLines={1}>
-                                        Downtown to Airport Terminal
-                                    </Text>
-                                    <Text className="text-[#748096] text-[11px] mt-0.5">
-                                        May 24, 2026 • 10:30 AM
-                                    </Text>
-                                </View>
+                    {/* Recent trips list or empty state */}
+                    <View style={{ paddingHorizontal: 20 }}>
+                        {recentRides.length === 0 ? (
+                            <EmptyStateCard
+                                icon="map"
+                                iconColor="#11E0C5"
+                                title="No trips yet"
+                                subtitle="Your completed rides will appear here after your first trip."
+                                ctaLabel="Book Your First Ride"
+                                onCtaPress={() => router.push("/(rider)/create-ride")}
+                            />
+                        ) : (
+                            <View style={{ gap: 12 }}>
+                                {recentRides.slice(0, 3).map((ride, i) => (
+                                    <RideHistoryCard
+                                        key={ride._id ?? i}
+                                        pickup={ride.pickup?.address ?? "Pickup"}
+                                        drop={ride.drop?.address ?? "Destination"}
+                                        date={ride.createdAt ?? ""}
+                                        fare={`₹${ride.fare ?? 0}`}
+                                        status={ride.status}
+                                        personName={ride.driver?.user?.fullname}
+                                        distance={ride.distance ? `${ride.distance} km` : undefined}
+                                    />
+                                ))}
                             </View>
-                            <View className="items-end">
-                                <Text className="text-white text-[14px] font-bold">$24.50</Text>
-                                <Text className="text-[#10B981] text-[10px] font-semibold mt-1 bg-[#10B981]/10 px-2 py-0.5 rounded-full">
-                                    Completed
-                                </Text>
-                            </View>
-                        </View>
-
-                        <View className={`${glassCard} p-4 flex-row items-center justify-between`}>
-                            <View className="flex-row items-center flex-1 pr-3">
-                                <View className="w-10 h-10 rounded-full bg-[#131D2B] items-center justify-center mr-3 border border-white/[0.04]">
-                                    <Ionicons name="map-outline" size={18} color="#11E0C5" />
-                                </View>
-                                <View className="flex-1">
-                                    <Text className="text-white text-[14px] font-semibold" numberOfLines={1}>
-                                        Corporate Park to Greenfields
-                                    </Text>
-                                    <Text className="text-[#748096] text-[11px] mt-0.5">
-                                        May 22, 2026 • 6:15 PM
-                                    </Text>
-                                </View>
-                            </View>
-                            <View className="items-end">
-                                <Text className="text-white text-[14px] font-bold">$18.20</Text>
-                                <Text className="text-[#10B981] text-[10px] font-semibold mt-1 bg-[#10B981]/10 px-2 py-0.5 rounded-full">
-                                    Completed
-                                </Text>
-                            </View>
-                        </View>
+                        )}
                     </View>
                 </ScrollView>
-            </SafeAreaView>
+            </View>
         </View>
     );
 }
+
+// ─── Dark map style ───────────────────────────────────────────────────────────
+
+const DARK_MAP_STYLE = [
+    { elementType: "geometry", stylers: [{ color: "#0d1420" }] },
+    { elementType: "labels.text.stroke", stylers: [{ color: "#0d1420" }] },
+    { elementType: "labels.text.fill", stylers: [{ color: "#748096" }] },
+    {
+        featureType: "administrative.locality",
+        elementType: "labels.text.fill",
+        stylers: [{ color: "#a0a8b4" }],
+    },
+    {
+        featureType: "poi",
+        elementType: "labels.text.fill",
+        stylers: [{ color: "#748096" }],
+    },
+    {
+        featureType: "poi.park",
+        elementType: "geometry",
+        stylers: [{ color: "#0f1d2b" }],
+    },
+    {
+        featureType: "poi.park",
+        elementType: "labels.text.fill",
+        stylers: [{ color: "#3a4d60" }],
+    },
+    {
+        featureType: "road",
+        elementType: "geometry",
+        stylers: [{ color: "#1a2840" }],
+    },
+    {
+        featureType: "road",
+        elementType: "geometry.stroke",
+        stylers: [{ color: "#111d2c" }],
+    },
+    {
+        featureType: "road",
+        elementType: "labels.text.fill",
+        stylers: [{ color: "#5a6a7e" }],
+    },
+    {
+        featureType: "road.highway",
+        elementType: "geometry",
+        stylers: [{ color: "#243348" }],
+    },
+    {
+        featureType: "road.highway",
+        elementType: "geometry.stroke",
+        stylers: [{ color: "#1a2840" }],
+    },
+    {
+        featureType: "road.highway",
+        elementType: "labels.text.fill",
+        stylers: [{ color: "#8a9aaa" }],
+    },
+    {
+        featureType: "transit",
+        elementType: "geometry",
+        stylers: [{ color: "#14253a" }],
+    },
+    {
+        featureType: "transit.station",
+        elementType: "labels.text.fill",
+        stylers: [{ color: "#748096" }],
+    },
+    {
+        featureType: "water",
+        elementType: "geometry",
+        stylers: [{ color: "#07111e" }],
+    },
+    {
+        featureType: "water",
+        elementType: "labels.text.fill",
+        stylers: [{ color: "#3a4d60" }],
+    },
+    {
+        featureType: "water",
+        elementType: "labels.text.stroke",
+        stylers: [{ color: "#07111e" }],
+    },
+];

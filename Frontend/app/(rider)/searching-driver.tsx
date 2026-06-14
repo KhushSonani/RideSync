@@ -7,9 +7,10 @@ import {
     Animated,
     ActivityIndicator,
     Alert,
+    AppState,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { router } from "expo-router";
+import { router, useLocalSearchParams, useFocusEffect } from "expo-router";
 import { Feather, MaterialCommunityIcons } from "@expo/vector-icons";
 
 import { COLORS } from "@/constants/theme";
@@ -19,11 +20,13 @@ import RouteRow from "@/components/ride/RouteRow";
 import FareDistanceRow from "@/components/ride/FareDistanceRow";
 
 import { api } from "@/services/api";
-import { onRideAccepted, onRideCancelled } from "@/services/socket";
+import { onRideAccepted, onRideCancelled, connectSocket } from "@/services/socket";
+import { getAccessToken } from "@/services/storage";
 
 // ─── Screen ──────────────────────────────────────────────────────────────────
 
 export default function SearchingDriverScreen() {
+    const { otp } = useLocalSearchParams();
     const [cancelling, setCancelling] = useState(false);
     const [elapsedSeconds, setElapsedSeconds] = useState(0);
     const [currentRide, setCurrentRide] = useState<any>(null);
@@ -37,21 +40,85 @@ export default function SearchingDriverScreen() {
     // Elapsed search timer
     const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-    // Fetch the actual current ride on mount
-    useEffect(() => {
-        const fetchCurrentRide = async () => {
-            try {
-                const res = await api.get("/rides/current");
-                if (res.data?.data) {
-                    setCurrentRide(res.data.data);
-                }
-            } catch (error) {
-                console.error("[SearchingDriver] Failed to fetch current ride:", error);
-            }
-        };
-        fetchCurrentRide();
-    }, []);
+    // ── State Recovery & Socket Subscriptions ─────────────────────────────────
+    useFocusEffect(
+        useCallback(() => {
+            let isActive = true;
+            let offAccepted: (() => void) | undefined;
+            let offCancelled: (() => void) | undefined;
 
+            const setupState = async () => {
+                try {
+                    // 1. Always fetch the true source of truth
+                    const res = await api.get("/rides/current");
+                    if (!isActive) return;
+
+                    const ride = res.data?.data;
+                    if (ride) {
+                        setCurrentRide(ride);
+                        // Fast-forward if state changed while backgrounded/away
+                        if (ride.status === "accepted") {
+                            router.replace({
+                                pathname: "/(rider)/driver-assigned",
+                                params: { otp: ride.otp || otp }
+                            });
+                            return;
+                        } else if (ride.status === "arriving" || ride.status === "started") {
+                            router.replace("/(rider)/live-tracking");
+                            return;
+                        }
+                    } else {
+                        // Ride missing or cancelled
+                        router.replace("/(rider)/home");
+                        return;
+                    }
+
+                    // 2. Ensure socket is connected and listening
+                    const token = await getAccessToken();
+                    if (token && isActive) {
+                        connectSocket(token);
+                        
+                        // Clean up previous listeners if re-running
+                        if (offAccepted) offAccepted();
+                        if (offCancelled) offCancelled();
+
+                        offAccepted = onRideAccepted((payload) => {
+                            router.replace({
+                                pathname: "/(rider)/driver-assigned",
+                                params: { otp: payload.ride?.otp || otp || "" }
+                            });
+                        });
+
+                        offCancelled = onRideCancelled((payload) => {
+                            Alert.alert("Ride Cancelled", "Your ride request was cancelled.");
+                            router.replace("/(rider)/home");
+                        });
+                    }
+                } catch (error) {
+                    console.error("[SearchingDriver] Recovery error:", error);
+                    // On error, let the user stay here or fallback home, but don't force loop.
+                }
+            };
+
+            setupState();
+
+            // Re-run recovery when app foregrounds
+            const subscription = AppState.addEventListener("change", (nextAppState) => {
+                if (nextAppState === "active") {
+                    setupState();
+                }
+            });
+
+            return () => {
+                isActive = false;
+                subscription.remove();
+                if (offAccepted) offAccepted();
+                if (offCancelled) offCancelled();
+            };
+        }, [otp])
+    );
+
+    // ── Animations & Timers (run once on mount) ───────────────────────────────
     useEffect(() => {
         // Staggered expanding ring pulse
         const animateRing = (anim: Animated.Value, delay: number) => {
@@ -91,19 +158,8 @@ export default function SearchingDriverScreen() {
             setElapsedSeconds((prev) => prev + 1);
         }, 1000);
 
-        const offAccepted = onRideAccepted((payload) => {
-            router.replace("/(rider)/driver-assigned");
-        });
-
-        const offCancelled = onRideCancelled((payload) => {
-            Alert.alert("Ride Cancelled", "Your ride request was cancelled.");
-            router.replace("/(rider)/home");
-        });
-
         return () => {
             if (timerRef.current) clearInterval(timerRef.current);
-            offAccepted();
-            offCancelled();
         };
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
@@ -153,7 +209,7 @@ export default function SearchingDriverScreen() {
                 },
             ]
         );
-    }, []);
+    }, [currentRide]);
 
     // Ring animation helpers
     const ringStyle = (anim: Animated.Value) => ({

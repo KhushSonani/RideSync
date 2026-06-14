@@ -12,7 +12,7 @@ import {
     RefreshControl,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { router } from "expo-router";
+import { router, useFocusEffect } from "expo-router";
 import { Feather } from "@expo/vector-icons";
 
 import { getDriverStatus, getDriverProfile, updateDriverStatus } from "@/services/driver";
@@ -48,12 +48,32 @@ export default function DriverHome() {
         };
         
         initSocket();
-        fetchData();
     }, []);
 
-    const fetchData = async () => {
+    useFocusEffect(
+        React.useCallback(() => {
+            fetchData();
+        }, [])
+    );
+
+    async function fetchData() {
         try {
             setLoading(true);
+
+            // 1. Check for active ride first
+            try {
+                const rideRes = await api.get("/rides/current");
+                if (rideRes.data?.data) {
+                    const status = rideRes.data.data.status;
+                    if (status === "accepted" || status === "arriving" || status === "started") {
+                        router.replace("/(driver)/active-ride");
+                        return;
+                    }
+                }
+            } catch (err) {
+                // Ignore errors and continue fetching profile
+            }
+
             const profileRes = await getDriverProfile();
             if (profileRes?.data) setUser(profileRes.data.user);
             const statusData = await getDriverStatus();
@@ -128,15 +148,27 @@ export default function DriverHome() {
         checkAvailable();
 
         // 2. Listen for new incoming ride requests
-        const offNewRide = onNewRideRequest((payload) => {
-            router.push({
-                pathname: "/(driver)/ride-request-modal",
-                params: { requestData: JSON.stringify(payload) }
-            });
-        });
+        let offNewRide: (() => void) | undefined;
+        const setupSocket = async () => {
+            try {
+                const token = await getAccessToken();
+                if (token) connectSocket(token);
+
+                offNewRide = onNewRideRequest((payload) => {
+                    router.push({
+                        pathname: "/(driver)/ride-request-modal",
+                        params: { requestData: JSON.stringify(payload) }
+                    });
+                });
+            } catch (err) {
+                console.warn("Socket initialization error:", err);
+            }
+        };
+
+        setupSocket();
 
         return () => {
-            offNewRide();
+            if (offNewRide) offNewRide();
         };
     }, [isOnline]);
 

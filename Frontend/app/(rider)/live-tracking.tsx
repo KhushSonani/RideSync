@@ -31,10 +31,11 @@ import {
     Alert,
     ActivityIndicator,
     Platform,
+    AppState,
 } from "react-native";
 import MapView, { Marker, PROVIDER_DEFAULT, type Region } from "react-native-maps";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { router } from "expo-router";
+import { router, useFocusEffect } from "expo-router";
 import { Feather, Ionicons } from "@expo/vector-icons";
 
 import { COLORS } from "@/constants/theme";
@@ -42,14 +43,19 @@ import { glassCard } from "@/constants/styles";
 import RideStatusCard, { type RideStatus } from "@/components/ride/RideStatusCard";
 import DriverInfoCard from "@/components/ride/DriverInfoCard";
 import RouteRow from "@/components/ride/RouteRow";
+import OTPDisplay from "@/components/ride/OTPDisplay";
 import {
     onDriverLocation,
     onRideStatusUpdated,
     onRideCompleted,
     onRideCancelled,
     isSocketConnected,
+    connectSocket,
+    onSocketConnect,
+    onSocketDisconnect,
 } from "@/services/socket";
 import type { RideAcceptedPayload, DriverLocationPayload } from "@/services/socket.types";
+import { getAccessToken } from "@/services/storage";
 
 import { api } from "@/services/api";
 
@@ -88,119 +94,184 @@ export default function LiveTrackingScreen() {
     // Driver location — starts null until first socket event arrives
     const [driverLocation, setDriverLocation] = useState<{ lat: number; lng: number } | null>(null);
     const [hasFirstFix, setHasFirstFix] = useState(false);
+    const hasFirstFixRef = useRef(false);
 
     const mapRef = useRef<MapView>(null);
 
-    // ── Fetch active ride on mount ────────────────────────────────────────────
+    // ── Check socket health ──────────────────────────────────────────
     useEffect(() => {
-        const fetchRide = async () => {
+        let offConnect: (() => void) | undefined;
+        let offDisconnect: (() => void) | undefined;
+
+        const setupHealthListeners = async () => {
             try {
-                const res = await api.get("/rides/current");
-                if (res.data?.data) {
-                    setRideData(res.data.data);
-                    if (res.data.data.status === "arriving" || res.data.data.status === "started") {
-                        setRideStatus(res.data.data.status);
-                    }
-                } else {
-                    router.replace("/(rider)/home");
-                }
-            } catch (error) {
-                console.error("[LiveTracking] Error fetching ride:", error);
-                router.replace("/(rider)/home");
-            } finally {
-                setLoading(false);
+                const token = await getAccessToken();
+                if (token) connectSocket(token);
+                
+                setIsOffline(!isSocketConnected());
+                offConnect = onSocketConnect(() => setIsOffline(false));
+                offDisconnect = onSocketDisconnect(() => setIsOffline(true));
+            } catch (err) {
+                console.warn("Socket health listener error:", err);
             }
         };
-        fetchRide();
-    }, []);
 
-    // ── Check socket health on mount ──────────────────────────────────────────
-    useEffect(() => {
-        const connected = isSocketConnected();
-        setIsOffline(!connected);
-    }, []);
+        setupHealthListeners();
 
-    // ── Socket subscriptions ──────────────────────────────────────────────────
-    useEffect(() => {
-        if (!rideData) return;
-        // Guard: socket might not be ready if screen is opened directly during dev
-        let offDriverLocation: (() => void) | null = null;
-        let offStatusUpdated: (() => void) | null = null;
-        let offCompleted: (() => void) | null = null;
-        let offCancelled: (() => void) | null = null;
-
-        try {
-            // 1. Driver location updates
-            offDriverLocation = onDriverLocation((payload: DriverLocationPayload) => {
-                const { lat, lng } = payload.location;
-
-                // Gracefully handle missing / invalid coordinates
-                if (typeof lat !== "number" || typeof lng !== "number") {
-                    console.warn("[LiveTracking] Received invalid driver location:", payload);
-                    return;
-                }
-
-                setDriverLocation({ lat, lng });
-                setIsOffline(false);
-
-                if (!hasFirstFix) {
-                    setHasFirstFix(true);
-                    // Animate camera to show both markers on first fix
-                    mapRef.current?.animateToRegion(
-                        buildInitialRegion(rideData.pickup.location.coordinates[1], rideData.pickup.location.coordinates[0], lat, lng),
-                        800
-                    );
-                } else {
-                    // Smoothly pan camera to keep driver marker visible
-                    mapRef.current?.animateCamera(
-                        { center: { latitude: lat, longitude: lng } },
-                        { duration: 600 }
-                    );
-                }
-            });
-
-            // 2. Ride status transitions (arriving → started)
-            offStatusUpdated = onRideStatusUpdated((payload) => {
-                if (payload.status === "arriving" || payload.status === "started") {
-                    setRideStatus(payload.status);
-                }
-            });
-
-            // 3. Ride completed → go to completion screen
-            offCompleted = onRideCompleted((payload) => {
-                router.replace({
-                    pathname: "/(rider)/ride-complete",
-                    params: {
-                        fare: payload.fare,
-                        completedAt: payload.completedAt,
-                        pickupAddress: rideData.pickup.address,
-                        dropAddress: rideData.drop.address,
-                        distance: rideData.distance,
-                        driverName: rideData.driver.user.fullname
-                    }
-                });
-            });
-
-            // 4. Ride cancelled → go home
-            offCancelled = onRideCancelled(() => {
-                Alert.alert("Ride Cancelled", "Your ride has been cancelled.", [
-                    { text: "OK", onPress: () => router.replace("/(rider)/home") },
-                ]);
-            });
-        } catch (err) {
-            console.error("[LiveTracking] Socket subscription error:", err);
-            setIsOffline(true);
-        }
-
-        // Cleanup on unmount — prevents duplicate listeners and memory leaks
         return () => {
-            offDriverLocation?.();
-            offStatusUpdated?.();
-            offCompleted?.();
-            offCancelled?.();
+            if (offConnect) offConnect();
+            if (offDisconnect) offDisconnect();
         };
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [rideData]);
+    }, []);
+
+    // ── State Recovery & Socket Subscriptions ─────────────────────────────────
+    useFocusEffect(
+        useCallback(() => {
+            let isActive = true;
+            let offDriverLocation: (() => void) | undefined;
+            let offStatusUpdated: (() => void) | undefined;
+            let offCompleted: (() => void) | undefined;
+            let offCancelled: (() => void) | undefined;
+
+            const setupState = async () => {
+                try {
+                    setLoading(true);
+                    const res = await api.get("/rides/current");
+                    if (!isActive) return;
+
+                    const ride = res.data?.data;
+                    if (ride) {
+                        setRideData(ride);
+                        
+                        if (ride.status === "arriving" || ride.status === "started") {
+                            setRideStatus(ride.status);
+                        } else if (ride.status === "completed") {
+                            router.replace({
+                                pathname: "/(rider)/ride-complete",
+                                params: {
+                                    fare: ride.fare,
+                                    completedAt: ride.completedAt,
+                                    pickupAddress: ride.pickup.address,
+                                    dropAddress: ride.drop.address,
+                                    distance: ride.distance,
+                                    driverName: ride.driver?.user?.fullname
+                                }
+                            });
+                            return;
+                        } else if (ride.status === "cancelled") {
+                            Alert.alert("Ride Cancelled", "Your ride has been cancelled.");
+                            router.replace("/(rider)/home");
+                            return;
+                        } else if (ride.status === "accepted") {
+                            router.replace({
+                                pathname: "/(rider)/driver-assigned",
+                                params: { otp: ride.otp || "" }
+                            });
+                            return;
+                        }
+
+                        if (ride.driver?.location?.coordinates?.length === 2) {
+                            const [lng, lat] = ride.driver.location.coordinates;
+                            if (lat !== 0 || lng !== 0) {
+                                setDriverLocation({ lat, lng });
+                                if (!hasFirstFixRef.current) {
+                                    hasFirstFixRef.current = true;
+                                    setHasFirstFix(true);
+                                    mapRef.current?.animateToRegion(
+                                        buildInitialRegion(ride.pickup.location.coordinates[1], ride.pickup.location.coordinates[0], lat, lng),
+                                        800
+                                    );
+                                }
+                            }
+                        }
+
+                        // Socket setup
+                        const token = await getAccessToken();
+                        if (token && isActive) {
+                            connectSocket(token);
+
+                            if (offDriverLocation) offDriverLocation();
+                            if (offStatusUpdated) offStatusUpdated();
+                            if (offCompleted) offCompleted();
+                            if (offCancelled) offCancelled();
+
+                            offDriverLocation = onDriverLocation((payload: DriverLocationPayload) => {
+                                const { lat, lng } = payload.location;
+                                if (typeof lat !== "number" || typeof lng !== "number") return;
+                                
+                                setDriverLocation({ lat, lng });
+
+                                if (!hasFirstFixRef.current) {
+                                    hasFirstFixRef.current = true;
+                                    setHasFirstFix(true);
+                                    mapRef.current?.animateToRegion(
+                                        buildInitialRegion(ride.pickup.location.coordinates[1], ride.pickup.location.coordinates[0], lat, lng),
+                                        800
+                                    );
+                                } else {
+                                    mapRef.current?.animateCamera(
+                                        { center: { latitude: lat, longitude: lng } },
+                                        { duration: 600 }
+                                    );
+                                }
+                            });
+
+                            offStatusUpdated = onRideStatusUpdated((payload) => {
+                                if (payload.status === "arriving" || payload.status === "started") {
+                                    setRideStatus(payload.status);
+                                }
+                            });
+
+                            offCompleted = onRideCompleted((payload) => {
+                                router.replace({
+                                    pathname: "/(rider)/ride-complete",
+                                    params: {
+                                        fare: payload.fare,
+                                        completedAt: payload.completedAt,
+                                        pickupAddress: ride.pickup.address,
+                                        dropAddress: ride.drop.address,
+                                        distance: ride.distance,
+                                        driverName: ride.driver.user.fullname
+                                    }
+                                });
+                            });
+
+                            offCancelled = onRideCancelled(() => {
+                                Alert.alert("Ride Cancelled", "Your ride has been cancelled.", [
+                                    { text: "OK", onPress: () => router.replace("/(rider)/home") },
+                                ]);
+                            });
+                        }
+                    } else {
+                        router.replace("/(rider)/home");
+                        return;
+                    }
+                } catch (error) {
+                    console.error("[LiveTracking] Recovery error:", error);
+                    router.replace("/(rider)/home");
+                } finally {
+                    if (isActive) setLoading(false);
+                }
+            };
+
+            setupState();
+
+            const subscription = AppState.addEventListener("change", (nextAppState) => {
+                if (nextAppState === "active") {
+                    setupState();
+                }
+            });
+
+            return () => {
+                isActive = false;
+                subscription.remove();
+                if (offDriverLocation) offDriverLocation();
+                if (offStatusUpdated) offStatusUpdated();
+                if (offCompleted) offCompleted();
+                if (offCancelled) offCancelled();
+            };
+        }, [])
+    );
 
     // ── Handlers ──────────────────────────────────────────────────────────────
 
@@ -446,6 +517,13 @@ export default function LiveTrackingScreen() {
                                 onMessagePress={handleMessageDriver}
                             />
                         </View>
+
+                        {/* OTP Card (Visible if arriving and OTP exists) */}
+                        {rideStatus === "arriving" && rideData.otp && (
+                            <View className="mb-4">
+                                <OTPDisplay otp={rideData.otp} />
+                            </View>
+                        )}
 
                         {/* Route */}
                         <View className="border-t border-white/[0.05] pt-4 mb-5">

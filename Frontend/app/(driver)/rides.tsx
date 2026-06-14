@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
     View,
     Text,
@@ -11,28 +11,53 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { Feather } from "@expo/vector-icons";
 import { router } from "expo-router";
 
+import { api } from "@/services/api";
 import { COLORS } from "@/constants/theme";
 import { glassCard } from "@/constants/styles";
 import EmptyStateCard from "@/components/common/EmptyStateCard";
 import RideHistoryCard from "@/components/common/RideHistoryCard";
 
-// TODO: replace with real data from GET /rides/history?role=driver
-const MOCK_EMPTY = true;
-const MOCK_RIDES: any[] = [];
-
 export default function DriverRidesScreen() {
     const [refreshing, setRefreshing] = useState(false);
     const [activeFilter, setActiveFilter] = useState("All");
+    const [rides, setRides] = useState<any[]>([]);
+    const [loading, setLoading] = useState(true);
+
+    const fetchRides = async () => {
+        try {
+            const res = await api.get("/rides/history");
+            if (res.data?.data?.rides) {
+                setRides(res.data.data.rides);
+            }
+        } catch (error) {
+            console.error("Failed to fetch rides:", error);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    useEffect(() => {
+        fetchRides();
+    }, []);
 
     const handleRefresh = async () => {
         setRefreshing(true);
-        // TODO: refetch driver ride history from API
-        setTimeout(() => setRefreshing(false), 1200);
+        await fetchRides();
+        setRefreshing(false);
     };
 
-    // TODO: compute from real data
-    const totalEarnings = "₹0";
-    const totalRides    = 0;
+    const filteredRides = rides.filter(ride => {
+        if (activeFilter === "All") return true;
+        if (activeFilter === "Completed") return ride.status === "completed";
+        if (activeFilter === "Cancelled") return ride.status === "cancelled";
+        if (activeFilter === "In Progress") return ["requested", "accepted", "arriving", "started"].includes(ride.status);
+        return true;
+    });
+
+    // Compute from real data
+    const completedRides = rides.filter(r => r.status === "completed");
+    const totalEarnings = completedRides.reduce((sum, r) => sum + (r.fare || 0), 0);
+    const totalRides = completedRides.length;
 
     return (
         <View className="flex-1" style={{ backgroundColor: COLORS.background }}>
@@ -85,7 +110,7 @@ export default function DriverRidesScreen() {
                                 Total Earned
                             </Text>
                             <Text className="text-white text-[22px] font-bold">
-                                {totalEarnings}
+                                ₹{totalEarnings}
                             </Text>
                             <Text className="text-[#748096] text-[10px] mt-0.5">
                                 Lifetime earnings
@@ -139,19 +164,19 @@ export default function DriverRidesScreen() {
                     </ScrollView>
 
                     {/* Content */}
-                    {MOCK_EMPTY || MOCK_RIDES.length === 0 ? (
+                    {!loading && filteredRides.length === 0 ? (
                         <EmptyStateCard
                             icon="briefcase"
                             iconColor="#11E0C5"
-                            title="No rides yet"
-                            subtitle="Go online and complete your first ride. Your earnings and trip history will appear here."
-                            ctaLabel="Go to Dashboard"
+                            title={rides.length === 0 ? "No rides yet" : `No ${activeFilter.toLowerCase()} rides`}
+                            subtitle={rides.length === 0 ? "Go online and complete your first ride. Your earnings and trip history will appear here." : ""}
+                            ctaLabel={rides.length === 0 ? "Go to Dashboard" : undefined}
                             onCtaPress={() => router.back()}
                             minHeight={220}
                         />
                     ) : (
                         <View className="gap-y-3">
-                            {MOCK_RIDES.map((ride, i) => (
+                            {filteredRides.map((ride, i) => (
                                 <RideHistoryCard
                                     key={ride._id ?? i}
                                     pickup={ride.pickup?.address ?? "Pickup"}
@@ -162,7 +187,9 @@ export default function DriverRidesScreen() {
                                     personName={ride.rider?.fullname}
                                     distance={ride.distance ? `${ride.distance} km` : undefined}
                                     onPress={() => {
-                                        // TODO: navigate to ride detail
+                                        if (["requested", "accepted", "arriving", "started"].includes(ride.status)) {
+                                            router.replace("/(driver)/home");
+                                        }
                                     }}
                                 />
                             ))}
@@ -174,4 +201,4 @@ export default function DriverRidesScreen() {
     );
 }
 
-const FILTERS = ["All", "Completed", "Cancelled"];
+const FILTERS = ["All", "Completed", "Cancelled", "In Progress"];

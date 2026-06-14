@@ -532,7 +532,7 @@ export const getCurrentRide = asyncHandler(async (req, res) => {
         throw new ApiError(403, "Unauthorized role");
     }
 
-    const ride = await Ride.findOne(query)
+    let rideQuery = Ride.findOne(query)
         .populate("rider", "username fullname avatar")
         .populate({
             path: "driver",
@@ -541,6 +541,13 @@ export const getCurrentRide = asyncHandler(async (req, res) => {
                 { path: "vehicle" }
             ]
         });
+
+    // Only expose the OTP to the rider who requested the ride
+    if (req.user.role === "rider") {
+        rideQuery = rideQuery.select("+otp");
+    }
+
+    const ride = await rideQuery;
 
     return res.status(200).json(
         new ApiResponse(200, ride, ride ? "Current active ride fetched successfully" : "No active ride found")

@@ -29,10 +29,11 @@ import {
     RefreshControl,
     ScrollView,
     Dimensions,
+    ActivityIndicator,
 } from "react-native";
 import MapView, { PROVIDER_DEFAULT } from "react-native-maps";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { router } from "expo-router";
+import { router, useFocusEffect } from "expo-router";
 import { Feather, Ionicons } from "@expo/vector-icons";
 
 import { api } from "@/services/api";
@@ -73,6 +74,7 @@ export default function RiderHomeScreen() {
     const [profileLoading, setProfileLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
     const [greeting, setGreeting] = useState("Welcome back");
+    const [checkingRide, setCheckingRide] = useState(true);
 
     // TODO: replace with real rides from GET /rides/history
     const recentRides: any[] = [];
@@ -122,7 +124,6 @@ export default function RiderHomeScreen() {
         };
 
         initSocket();
-        loadProfile();
 
         return () => {
             if (socket) {
@@ -136,9 +137,35 @@ export default function RiderHomeScreen() {
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
-    const loadProfile = async () => {
+    useFocusEffect(
+        React.useCallback(() => {
+            loadProfileAndRide();
+        }, [])
+    );
+
+    async function loadProfileAndRide() {
         setProfileLoading(true);
+        setCheckingRide(true);
         try {
+            // Check for active ride first
+            const rideRes = await api.get("/rides/current");
+            if (rideRes.data?.data) {
+                const status = rideRes.data.data.status;
+                if (status === "arriving" || status === "started") {
+                    router.replace("/(rider)/live-tracking");
+                    return;
+                } else if (status === "accepted") {
+                    router.replace({
+                        pathname: "/(rider)/driver-assigned",
+                        params: { otp: rideRes.data.data.otp || "" }
+                    });
+                    return;
+                } else if (status === "requested") {
+                    router.replace("/(rider)/searching-driver");
+                    return;
+                }
+            }
+
             const res = await api.get("/users/profile");
             if (res.data?.data) setUser(res.data.data);
         } catch {
@@ -151,12 +178,13 @@ export default function RiderHomeScreen() {
             });
         } finally {
             setProfileLoading(false);
+            setCheckingRide(false);
         }
     };
 
     const handleRefresh = async () => {
         setRefreshing(true);
-        await loadProfile();
+        await loadProfileAndRide();
         setRefreshing(false);
     };
 
@@ -169,6 +197,15 @@ export default function RiderHomeScreen() {
     };
 
     // ── Render ────────────────────────────────────────────────────────────────
+
+    if (checkingRide) {
+        return (
+            <View style={{ flex: 1, backgroundColor: "#070B12", justifyContent: "center", alignItems: "center" }}>
+                <StatusBar barStyle="light-content" translucent backgroundColor="transparent" />
+                <ActivityIndicator size="large" color="#11E0C5" />
+            </View>
+        );
+    }
 
     return (
         <View style={{ flex: 1, backgroundColor: "#070B12" }}>

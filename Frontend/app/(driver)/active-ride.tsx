@@ -31,10 +31,11 @@ import {
     Alert,
     ScrollView,
     ActivityIndicator,
+    AppState,
 } from "react-native";
 import MapView, { Marker, PROVIDER_DEFAULT } from "react-native-maps";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { router } from "expo-router";
+import { router, useFocusEffect } from "expo-router";
 import { Feather, Ionicons } from "@expo/vector-icons";
 
 import { api } from "@/services/api";
@@ -50,7 +51,9 @@ import {
     onRideStatusUpdated,
     onRideCompleted,
     onRideCancelled,
+    connectSocket,
 } from "@/services/socket";
+import { getAccessToken } from "@/services/storage";
 import type { RideAcceptedPayload } from "@/services/socket.types";
 
 // ─── Screen ──────────────────────────────────────────────────────────────────
@@ -66,30 +69,96 @@ export default function DriverActiveRide() {
 
     const mapRef = useRef<MapView>(null);
 
-    useEffect(() => {
-        const fetchCurrentRide = async () => {
-            try {
-                const res = await api.get("/rides/current");
-                const currentRide = res.data?.data;
-                if (currentRide) {
-                    setRideData({
-                        ride: currentRide,
-                        driver: currentRide.driver,
-                    });
-                    setRideStatus(currentRide.status);
-                } else {
-                    router.replace("/(driver)/home");
-                }
-            } catch (err) {
-                console.log("Error fetching current ride", err);
-                router.replace("/(driver)/home");
-            } finally {
-                setLoading(false);
-            }
-        };
+    // ── State Recovery & Socket Subscriptions ─────────────────────────────────
+    useFocusEffect(
+        useCallback(() => {
+            let isActive = true;
+            let offStatusUpdated: (() => void) | undefined;
+            let offCompleted: (() => void) | undefined;
+            let offCancelled: (() => void) | undefined;
 
-        fetchCurrentRide();
-    }, []);
+            const setupState = async () => {
+                try {
+                    setLoading(true);
+                    const res = await api.get("/rides/current");
+                    if (!isActive) return;
+
+                    const currentRide = res.data?.data;
+                    if (currentRide) {
+                        setRideData({
+                            ride: currentRide,
+                            driver: currentRide.driver,
+                        });
+                        setRideStatus(currentRide.status);
+                        setIsTrackingActive(true);
+
+                        // If already completed or cancelled while away, fast-forward
+                        if (currentRide.status === "completed") {
+                            setIsTrackingActive(false);
+                            router.replace("/(driver)/ride-complete");
+                            return;
+                        } else if (currentRide.status === "cancelled") {
+                            setIsTrackingActive(false);
+                            Alert.alert("Ride Cancelled", "The rider cancelled this trip.");
+                            router.replace("/(driver)/home");
+                            return;
+                        }
+
+                        // Socket setup
+                        const token = await getAccessToken();
+                        if (token && isActive) {
+                            connectSocket(token);
+
+                            if (offStatusUpdated) offStatusUpdated();
+                            if (offCompleted) offCompleted();
+                            if (offCancelled) offCancelled();
+
+                            offStatusUpdated = onRideStatusUpdated((payload) => {
+                                if (payload.status === "arriving" || payload.status === "started") {
+                                    setRideStatus(payload.status);
+                                }
+                            });
+
+                            offCompleted = onRideCompleted(() => {
+                                setIsTrackingActive(false);
+                                router.replace("/(driver)/ride-complete");
+                            });
+
+                            offCancelled = onRideCancelled(() => {
+                                setIsTrackingActive(false);
+                                Alert.alert("Ride Cancelled", "The rider cancelled this trip.");
+                                router.replace("/(driver)/home");
+                            });
+                        }
+                    } else {
+                        router.replace("/(driver)/home");
+                        return;
+                    }
+                } catch (err) {
+                    console.log("[ActiveRide] Recovery error:", err);
+                    router.replace("/(driver)/home");
+                } finally {
+                    if (isActive) setLoading(false);
+                }
+            };
+
+            setupState();
+
+            const subscription = AppState.addEventListener("change", (nextAppState) => {
+                if (nextAppState === "active") {
+                    setupState();
+                }
+            });
+
+            return () => {
+                isActive = false;
+                subscription.remove();
+                if (offStatusUpdated) offStatusUpdated();
+                if (offCompleted) offCompleted();
+                if (offCancelled) offCancelled();
+            };
+        }, [])
+    );
 
     // ── GPS tracking hook ─────────────────────────────────────────────────────
     const { permissionDenied, currentLocation, locationError } = useDriverLocation({
@@ -124,60 +193,36 @@ export default function DriverActiveRide() {
         );
     }, [currentLocation]);
 
-    // ── Socket event subscriptions ────────────────────────────────────────────
-    useEffect(() => {
-        let offStatusUpdated: (() => void) | null = null;
-        let offCompleted: (() => void) | null = null;
-        let offCancelled: (() => void) | null = null;
-
-        try {
-            // ride:status_updated — e.g. server confirms arriving / started
-            offStatusUpdated = onRideStatusUpdated((payload) => {
-                if (payload.status === "arriving" || payload.status === "started") {
-                    setRideStatus(payload.status);
-                }
-            });
-
-            // ride:completed — stop tracking and navigate to summary
-            offCompleted = onRideCompleted(() => {
-                setIsTrackingActive(false);
-                router.replace("/(driver)/ride-complete");
-            });
-
-            // ride:cancelled — stop tracking and go home
-            offCancelled = onRideCancelled(() => {
-                setIsTrackingActive(false);
-                Alert.alert("Ride Cancelled", "This ride has been cancelled.", [
-                    { text: "OK", onPress: () => router.replace("/(driver)/home") },
-                ]);
-            });
-        } catch (err) {
-            console.error("[DriverActiveRide] Socket subscription error:", err);
-        }
-
-        return () => {
-            offStatusUpdated?.();
-            offCompleted?.();
-            offCancelled?.();
-        };
-    }, []);
-
     // ── Handlers ──────────────────────────────────────────────────────────────
 
-    const handleMarkArriving = useCallback(() => {
-        // TODO: call POST /rides/:id/arriving
-        // TODO: on 200 → setRideStatus("arriving")
-    }, []);
+    const handleMarkArriving = useCallback(async () => {
+        if (!rideData) return;
+        try {
+            await api.post(`/rides/${rideData.ride._id}/arriving`);
+            setRideStatus("arriving");
+        } catch (err: any) {
+            Alert.alert("Error", err.response?.data?.message || "Failed to mark arriving");
+        }
+    }, [rideData]);
 
     const handleOpenOTPVerify = useCallback(() => {
-        // TODO: pass rideId as route param
-        router.push("/(driver)/otp-verify");
-    }, []);
+        if (!rideData) return;
+        router.push({
+            pathname: "/(driver)/otp-verify",
+            params: { rideId: rideData.ride._id }
+        });
+    }, [rideData]);
 
-    const handleCompleteRide = useCallback(() => {
-        // TODO: call POST /rides/:id/complete
-        // TODO: on 200 → setIsTrackingActive(false), router.replace("/(driver)/ride-complete")
-    }, []);
+    const handleCompleteRide = useCallback(async () => {
+        if (!rideData) return;
+        try {
+            await api.post(`/rides/${rideData.ride._id}/complete`);
+            setIsTrackingActive(false);
+            router.replace("/(driver)/ride-complete");
+        } catch (err: any) {
+            Alert.alert("Error", err.response?.data?.message || "Failed to complete ride");
+        }
+    }, [rideData]);
 
     const handleCancelRide = useCallback(() => {
         Alert.alert(
@@ -188,16 +233,23 @@ export default function DriverActiveRide() {
                 {
                     text: "Cancel Ride",
                     style: "destructive",
-                    onPress: () => {
+                    onPress: async () => {
+                        if (!rideData) return;
                         setCancelling(true);
                         setIsTrackingActive(false);
-                        // TODO: call POST /rides/:id/cancel with { cancelReason: "driver_cancelled" }
-                        // TODO: on success → router.replace("/(driver)/home")
+                        try {
+                            await api.post(`/rides/${rideData.ride._id}/cancel`, { cancelReason: "driver_cancelled" });
+                            router.replace("/(driver)/home");
+                        } catch (err: any) {
+                            setCancelling(false);
+                            setIsTrackingActive(true); // Resume tracking if cancel fails
+                            Alert.alert("Error", err.response?.data?.message || "Failed to cancel ride");
+                        }
                     },
                 },
             ]
         );
-    }, []);
+    }, [rideData]);
 
     const handleCallRider = useCallback(() => {
         // TODO: deep-link to phone dialler with rider's number

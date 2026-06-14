@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
     View,
     Text,
@@ -15,18 +15,44 @@ import { COLORS } from "@/constants/theme";
 import EmptyStateCard from "@/components/common/EmptyStateCard";
 import RideHistoryCard from "@/components/common/RideHistoryCard";
 
-// TODO: replace with real data from GET /rides/history
-const MOCK_EMPTY = true;
-const MOCK_RIDES: any[] = [];
+import { api } from "@/services/api";
 
 export default function RiderRidesScreen() {
     const [refreshing, setRefreshing] = useState(false);
+    const [rides, setRides] = useState<any[]>([]);
+    const [loading, setLoading] = useState(true);
+    const [activeFilter, setActiveFilter] = useState("All");
+
+    const fetchRides = async () => {
+        try {
+            const res = await api.get("/rides/history");
+            if (res.data?.data?.rides) {
+                setRides(res.data.data.rides);
+            }
+        } catch (error) {
+            console.error("Failed to fetch rides:", error);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    useEffect(() => {
+        fetchRides();
+    }, []);
 
     const handleRefresh = async () => {
         setRefreshing(true);
-        // TODO: refetch rides from API
-        setTimeout(() => setRefreshing(false), 1200);
+        await fetchRides();
+        setRefreshing(false);
     };
+
+    const filteredRides = rides.filter(ride => {
+        if (activeFilter === "All") return true;
+        if (activeFilter === "Completed") return ride.status === "completed";
+        if (activeFilter === "Cancelled") return ride.status === "cancelled";
+        if (activeFilter === "In Progress") return ["requested", "accepted", "arriving", "started"].includes(ride.status);
+        return true;
+    });
 
     return (
         <View className="flex-1" style={{ backgroundColor: COLORS.background }}>
@@ -84,17 +110,18 @@ export default function RiderRidesScreen() {
                             <TouchableOpacity
                                 key={f}
                                 activeOpacity={0.7}
+                                onPress={() => setActiveFilter(f)}
                                 accessibilityRole="button"
                                 accessibilityLabel={`Filter by ${f}`}
                                 className={`mr-2 px-4 py-2 rounded-full border ${
-                                    f === "All"
+                                    f === activeFilter
                                         ? "bg-[#11E0C5]/10 border-[#11E0C5]/30"
                                         : "bg-white/[0.03] border-white/[0.08]"
                                 }`}
                             >
                                 <Text
                                     className={`text-[12px] font-semibold ${
-                                        f === "All" ? "text-[#11E0C5]" : "text-[#748096]"
+                                        f === activeFilter ? "text-[#11E0C5]" : "text-[#748096]"
                                     }`}
                                 >
                                     {f}
@@ -104,19 +131,19 @@ export default function RiderRidesScreen() {
                     </ScrollView>
 
                     {/* Content */}
-                    {MOCK_EMPTY || MOCK_RIDES.length === 0 ? (
+                    {!loading && filteredRides.length === 0 ? (
                         <EmptyStateCard
                             icon="map"
                             iconColor="#11E0C5"
-                            title="No rides yet"
-                            subtitle="Your completed and upcoming rides will appear here once you book your first trip."
-                            ctaLabel="Book a Ride"
+                            title={rides.length === 0 ? "No rides yet" : `No ${activeFilter.toLowerCase()} rides`}
+                            subtitle={rides.length === 0 ? "Your completed and upcoming rides will appear here once you book your first trip." : ""}
+                            ctaLabel={rides.length === 0 ? "Book a Ride" : undefined}
                             onCtaPress={() => router.push("/(rider)/create-ride")}
                             minHeight={220}
                         />
                     ) : (
                         <View className="gap-y-3">
-                            {MOCK_RIDES.map((ride, i) => (
+                            {filteredRides.map((ride, i) => (
                                 <RideHistoryCard
                                     key={ride._id ?? i}
                                     pickup={ride.pickup?.address ?? "Pickup"}
@@ -127,7 +154,9 @@ export default function RiderRidesScreen() {
                                     personName={ride.driver?.user?.fullname}
                                     distance={ride.distance ? `${ride.distance} km` : undefined}
                                     onPress={() => {
-                                        // TODO: navigate to ride detail screen
+                                        if (["requested", "accepted", "arriving", "started"].includes(ride.status)) {
+                                            router.replace("/(rider)/home");
+                                        }
                                     }}
                                 />
                             ))}

@@ -78,6 +78,7 @@ export interface RideAcceptedPayload {
         distance: number | null;
         status: "accepted";
         acceptedAt: string;
+        otp?: string;
     };
     driver: DriverInfo;
 }

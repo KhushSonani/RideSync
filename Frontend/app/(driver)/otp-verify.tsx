@@ -11,9 +11,10 @@ import {
     Animated,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { router } from "expo-router";
+import { router, useLocalSearchParams } from "expo-router";
 import { Feather, Ionicons } from "@expo/vector-icons";
 
+import { api } from "@/services/api";
 import { COLORS } from "@/constants/theme";
 import { glassCard } from "@/constants/styles";
 import OTPInput from "@/components/ride/OTPInput";
@@ -21,6 +22,7 @@ import OTPInput from "@/components/ride/OTPInput";
 // ─── Screen ──────────────────────────────────────────────────────────────────
 
 export default function OTPVerifyScreen() {
+    const { rideId } = useLocalSearchParams();
     const [otp, setOtp] = useState("");
     const [verifying, setVerifying] = useState(false);
     const [error, setError] = useState("");
@@ -46,7 +48,7 @@ export default function OTPVerifyScreen() {
         if (error) setError("");
     }, [error]);
 
-    const handleStartRide = useCallback(() => {
+    const handleStartRide = useCallback(async () => {
         if (otp.length < 6) {
             setError("Please enter the full 6-digit OTP shared by the rider.");
             triggerShake();
@@ -54,11 +56,17 @@ export default function OTPVerifyScreen() {
         }
         setVerifying(true);
         setError("");
-        // TODO: call POST /rides/:id/start with body { otp }
-        // TODO: on 200 → router.replace("/(driver)/active-ride") with status="started"
-        // TODO: on 400 / wrong OTP → setError("Incorrect OTP. Please try again.") + triggerShake()
-        // TODO: finally → setVerifying(false)
-    }, [otp, triggerShake]);
+        
+        try {
+            await api.post(`/rides/${rideId}/start`, { otp });
+            router.replace("/(driver)/active-ride");
+        } catch (err: any) {
+            setError(err.response?.data?.message || "Incorrect OTP. Please try again.");
+            triggerShake();
+        } finally {
+            setVerifying(false);
+        }
+    }, [otp, triggerShake, rideId]);
 
     // ── Render ────────────────────────────────────────────────────────────────
 

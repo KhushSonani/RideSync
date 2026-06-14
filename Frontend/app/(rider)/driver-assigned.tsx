@@ -8,9 +8,10 @@ import {
     Animated,
     Alert,
     ActivityIndicator,
+    AppState,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { router } from "expo-router";
+import { router, useLocalSearchParams, useFocusEffect } from "expo-router";
 import { Feather, Ionicons } from "@expo/vector-icons";
 
 import { COLORS } from "@/constants/theme";
@@ -19,13 +20,17 @@ import DriverInfoCard from "@/components/ride/DriverInfoCard";
 import RouteRow from "@/components/ride/RouteRow";
 import FareDistanceRow from "@/components/ride/FareDistanceRow";
 import RideStatusCard from "@/components/ride/RideStatusCard";
+import OTPDisplay from "@/components/ride/OTPDisplay";
 import { api } from "@/services/api";
-import { onRideStatusUpdated, onRideCancelled } from "@/services/socket";
+import { onRideStatusUpdated, onRideCancelled, connectSocket } from "@/services/socket";
+import { getAccessToken } from "@/services/storage";
 
 // ─── Screen ──────────────────────────────────────────────────────────────────
 
 export default function DriverAssignedScreen() {
+    const { otp } = useLocalSearchParams();
     const [rideData, setRideData] = useState<any>(null);
+    const otpStr = (typeof otp === 'string' && otp) ? otp : (rideData?.otp || '');
     const [loading, setLoading] = useState(true);
     const [cancelling, setCancelling] = useState(false);
 
@@ -33,45 +38,87 @@ export default function DriverAssignedScreen() {
     const slideAnim = useRef(new Animated.Value(50)).current;
     const fadeAnim = useRef(new Animated.Value(0)).current;
 
-    useEffect(() => {
-        const fetchRide = async () => {
-            try {
-                const res = await api.get("/rides/current");
-                if (res.data?.data) {
-                    setRideData(res.data.data);
-                } else {
+    // ── State Recovery & Socket Subscriptions ─────────────────────────────────
+    useFocusEffect(
+        useCallback(() => {
+            let isActive = true;
+            let offStatus: (() => void) | undefined;
+            let offCancel: (() => void) | undefined;
+
+            const setupState = async () => {
+                try {
+                    setLoading(true);
+                    // 1. Fetch current ride state
+                    const res = await api.get("/rides/current");
+                    if (!isActive) return;
+
+                    const ride = res.data?.data;
+                    if (ride) {
+                        setRideData(ride);
+                        // Forward if status advanced while away
+                        if (ride.status === "arriving" || ride.status === "started") {
+                            router.replace("/(rider)/live-tracking");
+                            return;
+                        } else if (ride.status === "requested") {
+                            router.replace("/(rider)/searching-driver");
+                            return;
+                        }
+                    } else {
+                        router.replace("/(rider)/home");
+                        return;
+                    }
+
+                    // 2. Socket setup
+                    const token = await getAccessToken();
+                    if (token && isActive) {
+                        connectSocket(token);
+
+                        if (offStatus) offStatus();
+                        if (offCancel) offCancel();
+
+                        offStatus = onRideStatusUpdated((payload) => {
+                            if (payload.status === "arriving" || payload.status === "started") {
+                                router.replace("/(rider)/live-tracking");
+                            }
+                        });
+
+                        offCancel = onRideCancelled(() => {
+                            Alert.alert("Ride Cancelled", "The driver cancelled the ride.");
+                            router.replace("/(rider)/home");
+                        });
+                    }
+                } catch (error) {
+                    console.error("[DriverAssigned] Recovery error:", error);
+                    // Fallback home on unrecoverable error
                     router.replace("/(rider)/home");
+                } finally {
+                    if (isActive) setLoading(false);
                 }
-            } catch (error) {
-                console.error("[DriverAssigned] Error fetching ride:", error);
-                router.replace("/(rider)/home");
-            } finally {
-                setLoading(false);
-            }
-        };
+            };
 
-        fetchRide();
+            setupState();
 
+            const subscription = AppState.addEventListener("change", (nextAppState) => {
+                if (nextAppState === "active") {
+                    setupState();
+                }
+            });
+
+            return () => {
+                isActive = false;
+                subscription.remove();
+                if (offStatus) offStatus();
+                if (offCancel) offCancel();
+            };
+        }, [])
+    );
+
+    // ── Animations ────────────────────────────────────────────────────────────
+    useEffect(() => {
         Animated.parallel([
             Animated.timing(slideAnim, { toValue: 0, duration: 400, useNativeDriver: true }),
             Animated.timing(fadeAnim, { toValue: 1, duration: 400, useNativeDriver: true }),
         ]).start();
-
-        const offStatus = onRideStatusUpdated((payload) => {
-            if (payload.status === "arriving" || payload.status === "started") {
-                router.replace("/(rider)/live-tracking");
-            }
-        });
-
-        const offCancel = onRideCancelled(() => {
-            Alert.alert("Ride Cancelled", "The driver cancelled the ride.");
-            router.replace("/(rider)/home");
-        });
-
-        return () => {
-            offStatus();
-            offCancel();
-        };
     }, []);
 
     const ride = rideData;
@@ -104,7 +151,7 @@ export default function DriverAssignedScreen() {
                 },
             ]
         );
-    }, []);
+    }, [rideData]);
 
     const handleCallDriver = useCallback(() => {
         // TODO: deep-link to phone dialler with driver's number
@@ -218,33 +265,8 @@ export default function DriverAssignedScreen() {
                         </View>
 
                         {/* OTP CARD */}
-                        <View className="bg-[#11E0C5]/5 border border-[#11E0C5]/15 rounded-[20px] p-4 mb-4">
-                            <View className="flex-row items-start">
-                                <View className="w-8 h-8 rounded-lg bg-[#11E0C5]/10 items-center justify-center mr-3 mt-0.5 flex-shrink-0">
-                                    <Ionicons name="keypad-outline" size={16} color="#11E0C5" />
-                                </View>
-                                <View className="flex-1">
-                                    <Text className="text-[#11E0C5] font-bold text-[13px]">
-                                        Your Trip OTP
-                                    </Text>
-                                    <Text className="text-white/80 text-[11px] mt-1 leading-4">
-                                        Share this code with your driver to start the ride.
-                                    </Text>
-                                    {/* TODO: show real OTP from ride data */}
-                                    <View className="flex-row gap-x-2 mt-3">
-                                        {["·", "·", "·", "·", "·", "·"].map((_, i) => (
-                                            <View
-                                                key={i}
-                                                className="w-9 h-10 rounded-xl bg-[#131D2B] border border-[#11E0C5]/30 items-center justify-center"
-                                            >
-                                                <Text className="text-[#11E0C5] text-[18px] font-bold">
-                                                    ·
-                                                </Text>
-                                            </View>
-                                        ))}
-                                    </View>
-                                </View>
-                            </View>
+                        <View className="mb-4">
+                            <OTPDisplay otp={otpStr} />
                         </View>
 
                         {/* ROUTE CARD */}

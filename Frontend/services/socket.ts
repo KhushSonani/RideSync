@@ -49,15 +49,14 @@ let socket: Socket | null = null;
  * returned without creating a new connection.
  */
 export const connectSocket = (token: string): Socket => {
-    if (socket && socket.connected) {
-        return socket;
-    }
-
-    // Clean up any stale (disconnected) socket before creating a fresh one
     if (socket) {
-        socket.removeAllListeners();
-        socket.disconnect();
-        socket = null;
+        if (!socket.connected) {
+            // If disconnected, update the token (in case it was refreshed) and manually reconnect.
+            // This preserves the socket instance and all existing event listeners attached by components.
+            socket.auth = { token };
+            socket.connect();
+        }
+        return socket;
     }
 
     socket = io(SOCKET_URL, {
@@ -134,6 +133,24 @@ export const isSocketConnected = (): boolean => {
 // ─── Server → Client listener helpers ───────────────────────────────────────
 // Each helper returns an unsubscribe function so callers can clean up in
 // React useEffect return statements without importing SOCKET_EVENTS directly.
+
+/**
+ * Listen for socket connection success.
+ */
+export const onSocketConnect = (cb: () => void) => {
+    const s = getSocket();
+    s.on("connect", cb);
+    return () => s.off("connect", cb);
+};
+
+/**
+ * Listen for socket disconnect events.
+ */
+export const onSocketDisconnect = (cb: () => void) => {
+    const s = getSocket();
+    s.on("disconnect", cb);
+    return () => s.off("disconnect", cb);
+};
 
 /**
  * This are event Listener setup functions for socket.io

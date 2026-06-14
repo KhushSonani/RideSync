@@ -67,6 +67,7 @@ async function fetchPredictions(
     return (data.predictions ?? []) as Prediction[];
 }
 
+// Google Places API
 async function geocodePlaceId(placeId: string): Promise<{ lat: number; lng: number }> {
     const url = new URL(
         "https://maps.googleapis.com/maps/api/place/details/json"
@@ -84,6 +85,7 @@ async function geocodePlaceId(placeId: string): Promise<{ lat: number; lng: numb
     return { lat: loc.lat, lng: loc.lng };
 }
 
+// Google GeoCoding API
 async function reverseGeocode(lat: number, lng: number): Promise<string> {
     const url = new URL(
         "https://maps.googleapis.com/maps/api/geocode/json"

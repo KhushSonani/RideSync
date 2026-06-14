@@ -8,7 +8,7 @@
  *     └ Drop marker (red) — when drop.coords is set
  *     └ Route Polyline (teal) — when both coords set + route fetched
  *   Back button (absolute, top-left)
- *   Bottom card (absolute, bottom-0)
+ *   Bottom card (absolute, b  hgfdsa ottom-0)
  *     └ Pickup + Drop inputs (LocationSearchInput — existing component)
  *     └ Swap button
  *     └ Route / Fare card — visible when both coords set
@@ -178,7 +178,7 @@ export default function CreateRideScreen() {
         setCreateError(null);
 
         try {
-            await api.post("/rides/create", {
+            const res = await api.post("/rides/create", {
                 pickup: {
                     address: pickup.address,
                     location: {
@@ -198,7 +198,10 @@ export default function CreateRideScreen() {
             });
 
             clearLocations();
-            router.replace("/(rider)/searching-driver");
+            router.replace({
+                pathname: "/(rider)/searching-driver",
+                params: { otp: res.data.data.otp }
+            });
         } catch (err: any) {
             const message =
                 err?.response?.data?.message ??
@@ -213,17 +216,17 @@ export default function CreateRideScreen() {
 
     const initialRegion = pickup.coords
         ? {
-              latitude: pickup.coords.lat,
-              longitude: pickup.coords.lng,
-              latitudeDelta: 0.04,
-              longitudeDelta: 0.04,
-          }
+            latitude: pickup.coords.lat,
+            longitude: pickup.coords.lng,
+            latitudeDelta: 0.04,
+            longitudeDelta: 0.04,
+        }
         : {
-              latitude: 20.5937,
-              longitude: 78.9629,
-              latitudeDelta: 18,
-              longitudeDelta: 18,
-          };
+            latitude: 20.5937,
+            longitude: 78.9629,
+            latitudeDelta: 18,
+            longitudeDelta: 18,
+        };
 
     // ── Render ────────────────────────────────────────────────────────────────
 

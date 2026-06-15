@@ -8,7 +8,7 @@ import {
     Animated,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { router } from "expo-router";
+import { router, useLocalSearchParams } from "expo-router";
 import { Feather, Ionicons } from "@expo/vector-icons";
 
 import { COLORS } from "@/constants/theme";
@@ -63,7 +63,19 @@ function StarRating({
 // ─── Screen ──────────────────────────────────────────────────────────────────
 
 export default function DriverRideComplete() {
-    const [rideData] = useState(MOCK_COMPLETED);
+    const params = useLocalSearchParams();
+    const rideData = React.useMemo(() => {
+        return {
+            _id: (params.rideId as string) || "completed_ride",
+            status: "completed",
+            completedAt: (params.completedAt as string) || new Date().toISOString(),
+            fare: Number(params.fare) || 0,
+            distance: Number(params.distance) || 0,
+            pickup: { address: (params.pickupAddress as string) || "Pickup Location" },
+            drop: { address: (params.dropAddress as string) || "Drop Location" },
+        };
+    }, [params]);
+
     const [riderRating, setRiderRating] = useState(0);
 
     // Confetti-style fade-in entry animation
@@ -171,7 +183,7 @@ export default function DriverRideComplete() {
 
                             <FareDistanceRow
                                 fare={rideData.fare}
-                                distance={rideData.distance}
+                                distance={rideData.distance || 0}
                             />
 
                             <View className="h-[1px] bg-white/[0.05] my-4" />
@@ -222,7 +234,7 @@ export default function DriverRideComplete() {
                                 <Feather name="navigation" size={16} color="#748096" />
                                 <Text className="text-[#748096] text-[10px] mt-1">Distance</Text>
                                 <Text className="text-white text-[15px] font-bold mt-0.5">
-                                    {rideData.distance.toFixed(1)} km
+                                    {(rideData.distance || 0).toFixed(1)} km
                                 </Text>
                             </View>
                             <View className={`${glassCard} flex-1 p-4 items-center`}>

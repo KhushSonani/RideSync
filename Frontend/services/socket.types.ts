@@ -104,6 +104,7 @@ export interface RideCompletedPayload {
     status: "completed";
     completedAt: string;
     fare: number;
+    distance: number;
 }
 
 /**

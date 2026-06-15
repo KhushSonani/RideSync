@@ -40,12 +40,14 @@ export default function SearchingDriverScreen() {
     // Elapsed search timer
     const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
+    // ── Listener refs — prevent stale-closure in AppState handler ────────────
+    const offAcceptedRef = useRef<(() => void) | undefined>(undefined);
+    const offCancelledRef = useRef<(() => void) | undefined>(undefined);
+
     // ── State Recovery & Socket Subscriptions ─────────────────────────────────
     useFocusEffect(
         useCallback(() => {
             let isActive = true;
-            let offAccepted: (() => void) | undefined;
-            let offCancelled: (() => void) | undefined;
 
             const setupState = async () => {
                 try {
@@ -77,19 +79,20 @@ export default function SearchingDriverScreen() {
                     const token = await getAccessToken();
                     if (token && isActive) {
                         connectSocket(token);
-                        
-                        // Clean up previous listeners if re-running
-                        if (offAccepted) offAccepted();
-                        if (offCancelled) offCancelled();
 
-                        offAccepted = onRideAccepted((payload) => {
+                        // Clean up previous listeners — refs ensure we see current values
+                        if (offAcceptedRef.current) offAcceptedRef.current();
+                        if (offCancelledRef.current) offCancelledRef.current();
+
+                        offAcceptedRef.current = onRideAccepted((payload) => {
                             router.replace({
                                 pathname: "/(rider)/driver-assigned",
                                 params: { otp: payload.ride?.otp || otp || "" }
                             });
                         });
 
-                        offCancelled = onRideCancelled((payload) => {
+                        offCancelledRef.current = onRideCancelled((payload) => {
+                            if (payload.cancelledBy === "rider") return;
                             Alert.alert("Ride Cancelled", "Your ride request was cancelled.");
                             router.replace("/(rider)/home");
                         });
@@ -112,8 +115,10 @@ export default function SearchingDriverScreen() {
             return () => {
                 isActive = false;
                 subscription.remove();
-                if (offAccepted) offAccepted();
-                if (offCancelled) offCancelled();
+                if (offAcceptedRef.current) offAcceptedRef.current();
+                if (offCancelledRef.current) offCancelledRef.current();
+                offAcceptedRef.current = undefined;
+                offCancelledRef.current = undefined;
             };
         }, [otp])
     );
@@ -200,7 +205,8 @@ export default function SearchingDriverScreen() {
                                 });
                             }
                             // Navigate home regardless of whether we found the ID
-                            router.replace("/(rider)/home");
+                            router.push("/(rider)/home");
+                            setTimeout(() => setCancelling(false), 500);
                         } catch (err: any) {
                             setCancelling(false);
                             Alert.alert("Error", err.response?.data?.message || "Failed to cancel ride.");

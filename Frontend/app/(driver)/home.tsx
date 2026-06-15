@@ -149,9 +149,11 @@ export default function DriverHome() {
 
         // 2. Listen for new incoming ride requests
         let offNewRide: (() => void) | undefined;
+        let socketSetupCancelled = false;
         const setupSocket = async () => {
             try {
                 const token = await getAccessToken();
+                if (socketSetupCancelled) return; // effect cleaned up while awaiting
                 if (token) connectSocket(token);
 
                 offNewRide = onNewRideRequest((payload) => {
@@ -168,9 +170,11 @@ export default function DriverHome() {
         setupSocket();
 
         return () => {
+            socketSetupCancelled = true;
             if (offNewRide) offNewRide();
         };
     }, [isOnline]);
+
 
     if (loading) {
         return (

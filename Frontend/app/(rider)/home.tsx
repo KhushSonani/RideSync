@@ -37,7 +37,7 @@ import { router, useFocusEffect } from "expo-router";
 import { Feather, Ionicons } from "@expo/vector-icons";
 
 import { api } from "@/services/api";
-import { connectSocket, getSocket } from "@/services/socket";
+import { connectSocket } from "@/services/socket";
 import { getAccessToken } from "@/services/storage";
 import { useRiderLocation } from "@/services/useRiderLocation";
 import EmptyStateCard from "@/components/common/EmptyStateCard";
@@ -101,41 +101,24 @@ export default function RiderHomeScreen() {
         }
     }, [currentLocation]);
 
-    // ── App lifecycle (socket + profile — unchanged from original) ────────────
+    // ── App lifecycle (socket init + greeting) ────────────────────────────
     useEffect(() => {
         const h = new Date().getHours();
         if (h < 12) setGreeting("Good morning");
         else if (h < 18) setGreeting("Good afternoon");
         else setGreeting("Good evening");
 
-        let socket: ReturnType<typeof getSocket> | null = null;
-
         const initSocket = async () => {
             const token = await getAccessToken();
             if (!token) return;
-            socket = connectSocket(token);
-
-            // TODO: wire up ride lifecycle events
-            socket.on("new_ride_request", (ride: any) => { console.log("[Socket] new_ride_request:", ride?._id); });
-            socket.on("ride_accepted", (ride: any) => { console.log("[Socket] ride_accepted:", ride?._id); });
-            socket.on("ride_status_updated", (ride: any) => { console.log("[Socket] ride_status_updated:", ride?.status); });
-            socket.on("ride_completed", (ride: any) => { console.log("[Socket] ride_completed:", ride?._id); });
-            socket.on("ride_cancelled", (ride: any) => { console.log("[Socket] ride_cancelled:", ride?._id); });
+            connectSocket(token);
+            // Ride lifecycle events are NOT wired here — home.tsx has no active
+            // ride and navigation recovery is handled by useFocusEffect below.
         };
 
         initSocket();
-
-        return () => {
-            if (socket) {
-                socket.off("new_ride_request");
-                socket.off("ride_accepted");
-                socket.off("ride_status_updated");
-                socket.off("ride_completed");
-                socket.off("ride_cancelled");
-            }
-        };
-        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
+
 
     useFocusEffect(
         React.useCallback(() => {

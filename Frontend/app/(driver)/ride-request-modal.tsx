@@ -7,6 +7,7 @@ import {
     ScrollView,
     Animated,
     ActivityIndicator,
+    Alert,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { router, useLocalSearchParams } from "expo-router";
@@ -19,6 +20,7 @@ import { glassCard } from "@/constants/styles";
 import RouteRow from "@/components/ride/RouteRow";
 import FareDistanceRow from "@/components/ride/FareDistanceRow";
 import type { NewRideRequestPayload } from "@/services/socket.types";
+import { onRideUnavailable } from "@/services/socket";
 
 const COUNTDOWN_SECONDS = 30;
 
@@ -84,8 +86,20 @@ export default function RideRequestModal() {
             });
         }, 1000);
 
+        // Listen for ride unavailable event
+        let offUnavailable: (() => void) | undefined;
+        if (initialRequest) {
+            offUnavailable = onRideUnavailable((payload) => {
+                if (payload.rideId === initialRequest._id) {
+                    if (countdownRef.current) clearInterval(countdownRef.current);
+                    router.back();
+                }
+            });
+        }
+
         return () => {
             if (countdownRef.current) clearInterval(countdownRef.current);
+            if (offUnavailable) offUnavailable();
         };
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
@@ -99,17 +113,19 @@ export default function RideRequestModal() {
         
         try {
             await api.post(`/rides/${request._id}/accept`);
-            // On success, navigate to active-ride. active-ride will fetch /rides/current.
-            router.replace("/(driver)/active-ride");
+            // On success, navigate to active-ride.
+            router.push("/(driver)/active-ride");
+            
+            // Just in case router.push doesn't immediately unmount this component,
+            // reset the loading state after a tiny delay so it doesn't spin forever
+            setTimeout(() => setAccepting(false), 500);
         } catch (error: any) {
             console.log("Accept ride error", error?.response?.data || error);
-            // We use standard React Native Alert, so make sure it's imported (already in RN imports)
-            // wait, Alert is not imported! I need to import it. I'll add it to the first chunk if needed, but since I can't guarantee, I'll just use console.error or import it.
-            // Wait, Alert is imported at the top? No, let me just add it. Oh wait, I am already editing.
-            // Let's just use alert() or assume Alert is imported. Actually, I didn't import Alert.
-            // I'll just skip Alert if not imported, or just use try/catch and router.back().
             setAccepting(false);
-            router.back();
+            const errMsg = error?.response?.data?.message || "Failed to accept ride. It may have been cancelled or assigned to another driver.";
+            Alert.alert("Cannot Accept", errMsg, [
+                { text: "OK", onPress: () => router.back() }
+            ]);
         }
     }, [accepting, request]);
 

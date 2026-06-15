@@ -11,6 +11,9 @@ export const api = axios.create({
     headers: {
         'Content-Type': 'application/json',
         'ngrok-skip-browser-warning': 'true',
+        'Cache-Control': 'no-cache, no-store, must-revalidate',
+        'Pragma': 'no-cache',
+        'Expires': '0',
     },
     timeout: 15000,
 });

@@ -98,6 +98,12 @@ export default function LiveTrackingScreen() {
 
     const mapRef = useRef<MapView>(null);
 
+    // ── Listener refs — prevent stale-closure in AppState handler ────────────
+    const offDriverLocationRef = useRef<(() => void) | undefined>(undefined);
+    const offStatusUpdatedRef  = useRef<(() => void) | undefined>(undefined);
+    const offCompletedRef      = useRef<(() => void) | undefined>(undefined);
+    const offCancelledRef      = useRef<(() => void) | undefined>(undefined);
+
     // ── Check socket health ──────────────────────────────────────────
     useEffect(() => {
         let offConnect: (() => void) | undefined;
@@ -107,7 +113,7 @@ export default function LiveTrackingScreen() {
             try {
                 const token = await getAccessToken();
                 if (token) connectSocket(token);
-                
+
                 setIsOffline(!isSocketConnected());
                 offConnect = onSocketConnect(() => setIsOffline(false));
                 offDisconnect = onSocketDisconnect(() => setIsOffline(true));
@@ -128,10 +134,6 @@ export default function LiveTrackingScreen() {
     useFocusEffect(
         useCallback(() => {
             let isActive = true;
-            let offDriverLocation: (() => void) | undefined;
-            let offStatusUpdated: (() => void) | undefined;
-            let offCompleted: (() => void) | undefined;
-            let offCancelled: (() => void) | undefined;
 
             const setupState = async () => {
                 try {
@@ -142,7 +144,7 @@ export default function LiveTrackingScreen() {
                     const ride = res.data?.data;
                     if (ride) {
                         setRideData(ride);
-                        
+
                         if (ride.status === "arriving" || ride.status === "started") {
                             setRideStatus(ride.status);
                         } else if (ride.status === "completed") {
@@ -190,15 +192,16 @@ export default function LiveTrackingScreen() {
                         if (token && isActive) {
                             connectSocket(token);
 
-                            if (offDriverLocation) offDriverLocation();
-                            if (offStatusUpdated) offStatusUpdated();
-                            if (offCompleted) offCompleted();
-                            if (offCancelled) offCancelled();
+                            // Clean up previous listeners — refs ensure we see current values
+                            if (offDriverLocationRef.current) offDriverLocationRef.current();
+                            if (offStatusUpdatedRef.current)  offStatusUpdatedRef.current();
+                            if (offCompletedRef.current)      offCompletedRef.current();
+                            if (offCancelledRef.current)      offCancelledRef.current();
 
-                            offDriverLocation = onDriverLocation((payload: DriverLocationPayload) => {
+                            offDriverLocationRef.current = onDriverLocation((payload: DriverLocationPayload) => {
                                 const { lat, lng } = payload.location;
                                 if (typeof lat !== "number" || typeof lng !== "number") return;
-                                
+
                                 setDriverLocation({ lat, lng });
 
                                 if (!hasFirstFixRef.current) {
@@ -216,13 +219,13 @@ export default function LiveTrackingScreen() {
                                 }
                             });
 
-                            offStatusUpdated = onRideStatusUpdated((payload) => {
+                            offStatusUpdatedRef.current = onRideStatusUpdated((payload) => {
                                 if (payload.status === "arriving" || payload.status === "started") {
                                     setRideStatus(payload.status);
                                 }
                             });
 
-                            offCompleted = onRideCompleted((payload) => {
+                            offCompletedRef.current = onRideCompleted((payload) => {
                                 router.replace({
                                     pathname: "/(rider)/ride-complete",
                                     params: {
@@ -230,13 +233,14 @@ export default function LiveTrackingScreen() {
                                         completedAt: payload.completedAt,
                                         pickupAddress: ride.pickup.address,
                                         dropAddress: ride.drop.address,
-                                        distance: ride.distance,
-                                        driverName: ride.driver.user.fullname
+                                        distance: payload.distance || ride.distance,
+                                        driverName: ride.driver?.user?.fullname || "Driver"
                                     }
                                 });
                             });
 
-                            offCancelled = onRideCancelled(() => {
+                            offCancelledRef.current = onRideCancelled((payload) => {
+                                if (payload.cancelledBy === "rider") return;
                                 Alert.alert("Ride Cancelled", "Your ride has been cancelled.", [
                                     { text: "OK", onPress: () => router.replace("/(rider)/home") },
                                 ]);
@@ -265,10 +269,14 @@ export default function LiveTrackingScreen() {
             return () => {
                 isActive = false;
                 subscription.remove();
-                if (offDriverLocation) offDriverLocation();
-                if (offStatusUpdated) offStatusUpdated();
-                if (offCompleted) offCompleted();
-                if (offCancelled) offCancelled();
+                if (offDriverLocationRef.current) offDriverLocationRef.current();
+                if (offStatusUpdatedRef.current)  offStatusUpdatedRef.current();
+                if (offCompletedRef.current)      offCompletedRef.current();
+                if (offCancelledRef.current)      offCancelledRef.current();
+                offDriverLocationRef.current = undefined;
+                offStatusUpdatedRef.current  = undefined;
+                offCompletedRef.current      = undefined;
+                offCancelledRef.current      = undefined;
             };
         }, [])
     );
@@ -293,7 +301,8 @@ export default function LiveTrackingScreen() {
                                     cancelReason: "rider_cancelled"
                                 });
                             }
-                            router.replace("/(rider)/home");
+                            router.push("/(rider)/home");
+                            setTimeout(() => setCancelling(false), 500);
                         } catch (err: any) {
                             setCancelling(false);
                             Alert.alert("Error", err.response?.data?.message || "Failed to cancel ride.");

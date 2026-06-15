@@ -38,12 +38,14 @@ export default function DriverAssignedScreen() {
     const slideAnim = useRef(new Animated.Value(50)).current;
     const fadeAnim = useRef(new Animated.Value(0)).current;
 
+    // ── Listener refs — prevent stale-closure in AppState handler ────────────
+    const offStatusRef = useRef<(() => void) | undefined>(undefined);
+    const offCancelRef = useRef<(() => void) | undefined>(undefined);
+
     // ── State Recovery & Socket Subscriptions ─────────────────────────────────
     useFocusEffect(
         useCallback(() => {
             let isActive = true;
-            let offStatus: (() => void) | undefined;
-            let offCancel: (() => void) | undefined;
 
             const setupState = async () => {
                 try {
@@ -73,16 +75,19 @@ export default function DriverAssignedScreen() {
                     if (token && isActive) {
                         connectSocket(token);
 
-                        if (offStatus) offStatus();
-                        if (offCancel) offCancel();
+                        // Always clean up previous listeners before re-registering
+                        // Using refs ensures the AppState re-entry reads current values
+                        if (offStatusRef.current) offStatusRef.current();
+                        if (offCancelRef.current) offCancelRef.current();
 
-                        offStatus = onRideStatusUpdated((payload) => {
+                        offStatusRef.current = onRideStatusUpdated((payload) => {
                             if (payload.status === "arriving" || payload.status === "started") {
                                 router.replace("/(rider)/live-tracking");
                             }
                         });
 
-                        offCancel = onRideCancelled(() => {
+                        offCancelRef.current = onRideCancelled((payload) => {
+                            if (payload.cancelledBy === "rider") return;
                             Alert.alert("Ride Cancelled", "The driver cancelled the ride.");
                             router.replace("/(rider)/home");
                         });
@@ -107,8 +112,10 @@ export default function DriverAssignedScreen() {
             return () => {
                 isActive = false;
                 subscription.remove();
-                if (offStatus) offStatus();
-                if (offCancel) offCancel();
+                if (offStatusRef.current) offStatusRef.current();
+                if (offCancelRef.current) offCancelRef.current();
+                offStatusRef.current = undefined;
+                offCancelRef.current = undefined;
             };
         }, [])
     );
@@ -142,7 +149,8 @@ export default function DriverAssignedScreen() {
                                     cancelReason: "rider_cancelled"
                                 });
                             }
-                            router.replace("/(rider)/home");
+                            router.push("/(rider)/home");
+                            setTimeout(() => setCancelling(false), 500);
                         } catch (err: any) {
                             setCancelling(false);
                             Alert.alert("Error", err.response?.data?.message || "Failed to cancel ride.");
@@ -184,7 +192,7 @@ export default function DriverAssignedScreen() {
                 <View className="absolute bottom-[-100px] right-[-50px] w-[300px] h-[300px] rounded-full bg-[#11E0C5]/5" />
             </View>
 
-            {loading ? (
+            {loading || !rideData ? (
                 <View className="flex-1 items-center justify-center">
                     <ActivityIndicator size="large" color="#11E0C5" />
                 </View>

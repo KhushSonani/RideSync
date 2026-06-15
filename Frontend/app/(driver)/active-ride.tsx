@@ -1,26 +1,26 @@
 /**
- * @file active-ride.tsx
- * @description Driver's active ride screen.
- *
- * Integrates:
- *   1. useDriverLocation — continuous GPS tracking + socket update_location emission
- *   2. MapView — shows driver's current position and the pickup/drop-off route
- *   3. Socket status listeners — ride:status_updated, ride:completed, ride:cancelled
- *
- * Socket events emitted (via useDriverLocation hook):
- *   - update_location  { lat, lng }  — throttled at 2 500 ms client-side
- *
- * Socket events consumed:
- *   - ride:status_updated → update local rideStatus state
- *   - ride:completed      → stop tracking, navigate to ride-complete screen
- *   - ride:cancelled      → stop tracking, navigate home
- *
- * Design rules followed:
- *   - Uses existing getSocket() singleton — no new socket instance created
- *   - Single useEffect per event set — no duplicate listeners
- *   - All subscriptions cleaned up on unmount
- *   - Tracking stops when ride completes or component unmounts
- */
+* @file active-ride.tsx
+* @description Driver's active ride screen.
+*
+* Integrates:
+*   1. useDriverLocation — continuous GPS tracking + socket update_location emission
+*   2. MapView — shows driver's current position and the pickup/drop-off route
+*   3. Socket status listeners — ride:status_updated, ride:completed, ride:cancelled
+*
+* Socket events emitted (via useDriverLocation hook):
+*   - update_location  { lat, lng }  — throttled at 2 500 ms client-side
+*
+* Socket events consumed:
+*   - ride:status_updated → update local rideStatus state
+*   - ride:completed      → stop tracking, navigate to ride-complete screen
+*   - ride:cancelled      → stop tracking, navigate home
+*
+* Design rules followed:
+*   - Uses existing getSocket() singleton — no new socket instance created
+*   - Single useEffect per event set — no duplicate listeners
+*   - All subscriptions cleaned up on unmount
+*   - Tracking stops when ride completes or component unmounts
+*/
 
 import React, { useState, useCallback, useEffect, useRef } from "react";
 import {
@@ -45,7 +45,7 @@ import { glassCard } from "@/constants/styles";
 import RouteRow from "@/components/ride/RouteRow";
 import FareDistanceRow from "@/components/ride/FareDistanceRow";
 import RideStatusCard, { type RideStatus } from "@/components/ride/RideStatusCard";
-import DriverInfoCard from "@/components/ride/DriverInfoCard";
+import RiderInfoCard from "@/components/ride/RiderInfoCard";
 import { useDriverLocation } from "@/services/useDriverLocation";
 import {
     onRideStatusUpdated,
@@ -69,13 +69,15 @@ export default function DriverActiveRide() {
 
     const mapRef = useRef<MapView>(null);
 
+    // ── Listener refs — prevent stale-closure in AppState handler ────────────
+    const offStatusUpdatedRef = useRef<(() => void) | undefined>(undefined);
+    const offCompletedRef = useRef<(() => void) | undefined>(undefined);
+    const offCancelledRef = useRef<(() => void) | undefined>(undefined);
+
     // ── State Recovery & Socket Subscriptions ─────────────────────────────────
     useFocusEffect(
         useCallback(() => {
             let isActive = true;
-            let offStatusUpdated: (() => void) | undefined;
-            let offCompleted: (() => void) | undefined;
-            let offCancelled: (() => void) | undefined;
 
             const setupState = async () => {
                 try {
@@ -95,7 +97,17 @@ export default function DriverActiveRide() {
                         // If already completed or cancelled while away, fast-forward
                         if (currentRide.status === "completed") {
                             setIsTrackingActive(false);
-                            router.replace("/(driver)/ride-complete");
+                            router.replace({
+                                pathname: "/(driver)/ride-complete",
+                                params: {
+                                    rideId: currentRide._id,
+                                    fare: currentRide.fare,
+                                    distance: currentRide.distance,
+                                    pickupAddress: currentRide.pickup.address,
+                                    dropAddress: currentRide.drop.address,
+                                    completedAt: currentRide.completedAt || new Date().toISOString()
+                                }
+                            });
                             return;
                         } else if (currentRide.status === "cancelled") {
                             setIsTrackingActive(false);
@@ -109,22 +121,34 @@ export default function DriverActiveRide() {
                         if (token && isActive) {
                             connectSocket(token);
 
-                            if (offStatusUpdated) offStatusUpdated();
-                            if (offCompleted) offCompleted();
-                            if (offCancelled) offCancelled();
+                            // Clean up previous listeners — refs ensure we see current values
+                            if (offStatusUpdatedRef.current) offStatusUpdatedRef.current();
+                            if (offCompletedRef.current) offCompletedRef.current();
+                            if (offCancelledRef.current) offCancelledRef.current();
 
-                            offStatusUpdated = onRideStatusUpdated((payload) => {
+                            offStatusUpdatedRef.current = onRideStatusUpdated((payload) => {
                                 if (payload.status === "arriving" || payload.status === "started") {
                                     setRideStatus(payload.status);
                                 }
                             });
 
-                            offCompleted = onRideCompleted(() => {
+                            offCompletedRef.current = onRideCompleted((payload) => {
                                 setIsTrackingActive(false);
-                                router.replace("/(driver)/ride-complete");
+                                router.replace({
+                                    pathname: "/(driver)/ride-complete",
+                                    params: {
+                                        ride: JSON.stringify({
+                                            ...currentRide,
+                                            status: "completed",
+                                            completedAt: payload.completedAt,
+                                            fare: payload.fare
+                                        })
+                                    }
+                                });
                             });
 
-                            offCancelled = onRideCancelled(() => {
+                            offCancelledRef.current = onRideCancelled((payload) => {
+                                if (payload.cancelledBy === "driver") return;
                                 setIsTrackingActive(false);
                                 Alert.alert("Ride Cancelled", "The rider cancelled this trip.");
                                 router.replace("/(driver)/home");
@@ -153,9 +177,12 @@ export default function DriverActiveRide() {
             return () => {
                 isActive = false;
                 subscription.remove();
-                if (offStatusUpdated) offStatusUpdated();
-                if (offCompleted) offCompleted();
-                if (offCancelled) offCancelled();
+                if (offStatusUpdatedRef.current) offStatusUpdatedRef.current();
+                if (offCompletedRef.current) offCompletedRef.current();
+                if (offCancelledRef.current) offCancelledRef.current();
+                offStatusUpdatedRef.current = undefined;
+                offCompletedRef.current = undefined;
+                offCancelledRef.current = undefined;
             };
         }, [])
     );
@@ -216,9 +243,19 @@ export default function DriverActiveRide() {
     const handleCompleteRide = useCallback(async () => {
         if (!rideData) return;
         try {
-            await api.post(`/rides/${rideData.ride._id}/complete`);
+            const res = await api.post(`/rides/${rideData.ride._id}/complete`);
             setIsTrackingActive(false);
-            router.replace("/(driver)/ride-complete");
+            router.replace({
+                pathname: "/(driver)/ride-complete",
+                params: {
+                    rideId: rideData.ride._id,
+                    fare: res.data?.data?.fare || rideData.ride.fare,
+                    distance: res.data?.data?.distance || rideData.ride.distance,
+                    pickupAddress: rideData.ride.pickup.address,
+                    dropAddress: rideData.ride.drop.address,
+                    completedAt: res.data?.data?.completedAt || new Date().toISOString()
+                }
+            });
         } catch (err: any) {
             Alert.alert("Error", err.response?.data?.message || "Failed to complete ride");
         }
@@ -239,7 +276,8 @@ export default function DriverActiveRide() {
                         setIsTrackingActive(false);
                         try {
                             await api.post(`/rides/${rideData.ride._id}/cancel`, { cancelReason: "driver_cancelled" });
-                            router.replace("/(driver)/home");
+                            router.push("/(driver)/home");
+                            setTimeout(() => setCancelling(false), 500);
                         } catch (err: any) {
                             setCancelling(false);
                             setIsTrackingActive(true); // Resume tracking if cancel fails
@@ -479,8 +517,8 @@ export default function DriverActiveRide() {
 
                         {/* Rider info */}
                         <View className="mb-4">
-                            <DriverInfoCard
-                                driver={rideData.driver}
+                            <RiderInfoCard
+                                rider={rideData.ride.rider}
                                 onCallPress={handleCallRider}
                                 onMessagePress={handleMessageRider}
                             />

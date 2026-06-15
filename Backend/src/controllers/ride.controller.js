@@ -489,7 +489,7 @@ export const cancelRide = asyncHandler(async (req, res) => {
         // This ensures the re-queued ride only goes to drivers near the pickup,
         // not every online driver globally.
         const rideObj = ride.toObject();
-        const nearbyDrivers = await findNearbyAvailableDrivers(ride.pickup.location.coordinates, req.driver._id);
+        const nearbyDrivers = await findNearbyAvailableDrivers(ride.pickup.location.coordinates, driver._id);
 
         if (nearbyDrivers.length > 0) {
             for (const d of nearbyDrivers) {

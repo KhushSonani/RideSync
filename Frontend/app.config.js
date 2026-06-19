@@ -65,10 +65,29 @@ export default ({ config }) => ({
           "RideSync needs your location to track your position during active rides.",
       },
     ],
+    [
+      "expo-notifications",
+      {
+        // Android notification icon (monochrome, white on transparent)
+        icon: "./assets/images/android-icon-monochrome.png",
+        color: "#11E0C5",
+        defaultChannel: "default",
+        sounds: [],
+        enableBackgroundRemoteNotifications: true,
+      },
+    ],
   ],
 
   experiments: {
     typedRoutes: true,
     reactCompiler: true,
+  },
+
+  // Required by getExpoPushTokenAsync() in production builds.
+  // Replace with your actual EAS project ID from: https://expo.dev
+  extra: {
+    eas: {
+      projectId: process.env.EXPO_PUBLIC_EAS_PROJECT_ID || "",
+    },
   },
 });

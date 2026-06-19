@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import {
     View,
     Text,
@@ -17,7 +17,7 @@ import { Feather } from "@expo/vector-icons";
 
 import { getDriverStatus, getDriverProfile, updateDriverStatus } from "@/services/driver";
 import { api } from "@/services/api";
-import { onNewRideRequest, connectSocket } from "@/services/socket";
+import { onNewRideRequest, connectSocket, emitGoOnline, emitGoOffline, isSocketConnected } from "@/services/socket";
 import { useDriverLocation } from "@/services/useDriverLocation";
 import { getAccessToken } from "@/services/storage";
 import { COLORS } from "@/constants/theme";
@@ -32,6 +32,9 @@ export default function DriverHome() {
     const [refreshing, setRefreshing] = useState(false);
     const [greeting, setGreeting] = useState("Welcome back");
     const [togglingStatus, setTogglingStatus] = useState(false);
+    // MED-3: track whether this tab is the focused screen; prevents dual GPS
+    // watcher when the driver navigates to active-ride (Tab keeps home mounted)
+    const [isScreenFocused, setIsScreenFocused] = useState(false);
 
     // TODO: replace with real earnings from GET /rides/history
     const recentRides: any[] = [];
@@ -41,18 +44,24 @@ export default function DriverHome() {
         if (hours < 12) setGreeting("Good morning");
         else if (hours < 18) setGreeting("Good afternoon");
         else setGreeting("Good evening");
-        
+
         const initSocket = async () => {
             const token = await getAccessToken();
             if (token) connectSocket(token);
         };
-        
+
         initSocket();
     }, []);
 
     useFocusEffect(
-        React.useCallback(() => {
+        useCallback(() => {
+            // MED-3: mark screen as focused so useDriverLocation activates
+            setIsScreenFocused(true);
             fetchData();
+            return () => {
+                // MED-3: stop GPS tracking when screen loses focus (e.g. active-ride tab)
+                setIsScreenFocused(false);
+            };
         }, [])
     );
 
@@ -61,6 +70,7 @@ export default function DriverHome() {
             setLoading(true);
 
             // 1. Check for active ride first
+            let hasActiveRide = false;
             try {
                 const rideRes = await api.get("/rides/current");
                 if (rideRes.data?.data) {
@@ -69,6 +79,7 @@ export default function DriverHome() {
                         router.replace("/(driver)/active-ride");
                         return;
                     }
+                    hasActiveRide = !!rideRes.data.data;
                 }
             } catch (err) {
                 // Ignore errors and continue fetching profile
@@ -78,6 +89,16 @@ export default function DriverHome() {
             if (profileRes?.data) setUser(profileRes.data.user);
             const statusData = await getDriverStatus();
             setDriverState(statusData);
+
+            // HIGH-3: If the driver's DB status is "busy" but we found no active ride
+            // (e.g. server crashed mid-accept), reset them to available so they can
+            // receive new requests. This is a self-healing recovery path.
+            if (statusData?.status === "busy" && !hasActiveRide) {
+                try {
+                    await updateDriverStatus("available");
+                    setDriverState((p: any) => ({ ...p, status: "available" }));
+                } catch { /* non-critical — driver can manually toggle */ }
+            }
         } catch {
             setUser({ fullname: "RideSync Driver", username: "driver", role: "driver", avatar: null });
             setDriverState({ status: "offline", isActive: false, driverVerified: "pending", verificationNote: null });
@@ -106,7 +127,18 @@ export default function DriverHome() {
         try {
             setTogglingStatus(true);
             const res = await updateDriverStatus(newStatus);
-            if (res?.data) setDriverState((p: any) => ({ ...p, status: res.data.status }));
+            if (res?.data) {
+                setDriverState((p: any) => ({ ...p, status: res.data.status }));
+                // CRIT-1: Sync socket room membership immediately after REST update.
+                // Without this, the driver's status is updated in the DB but their
+                // socket never joins/leaves drivers:available — they receive zero
+                // ride requests despite showing as "online".
+                if (newStatus === "available") {
+                    emitGoOnline();
+                } else {
+                    emitGoOffline();
+                }
+            }
         } catch (err: any) {
             Alert.alert("Error", err?.response?.data?.message || "Failed to update status.");
         } finally {
@@ -125,8 +157,11 @@ export default function DriverHome() {
     const isOnline = driverState?.status === "available";
     const isVerified = driverState?.driverVerified === "verified" && driverState?.isActive;
 
-    // ── Track location while online ───────────────────────────────────────────
-    useDriverLocation({ isActive: isOnline });
+    // MED-3: Only track location when this tab is focused AND driver is online.
+    // The Tab navigator keeps all screens mounted; without isScreenFocused, the
+    // home-screen GPS watcher and the active-ride watcher run simultaneously,
+    // causing duplicate socket emissions.
+    useDriverLocation({ isActive: isOnline && isScreenFocused });
 
     useEffect(() => {
         if (!isOnline) return;
@@ -147,14 +182,20 @@ export default function DriverHome() {
         };
         checkAvailable();
 
-        // 2. Listen for new incoming ride requests
+        // 2. Listen for new incoming ride requests.
+        // HIGH-2: Do NOT call connectSocket here — the mount useEffect already
+        // connects on startup. Calling it again on every isOnline toggle creates
+        // redundant SecureStore reads and potential ordering issues during token
+        // refresh. Guard with isSocketConnected() as a safety net only.
         let offNewRide: (() => void) | undefined;
         let socketSetupCancelled = false;
         const setupSocket = async () => {
             try {
-                const token = await getAccessToken();
-                if (socketSetupCancelled) return; // effect cleaned up while awaiting
-                if (token) connectSocket(token);
+                if (!isSocketConnected()) {
+                    const token = await getAccessToken();
+                    if (socketSetupCancelled) return;
+                    if (token) connectSocket(token);
+                }
 
                 offNewRide = onNewRideRequest((payload) => {
                     router.push({

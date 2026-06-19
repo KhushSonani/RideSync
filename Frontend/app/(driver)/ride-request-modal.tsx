@@ -36,17 +36,20 @@ function getInitials(name: string): string {
 export default function RideRequestModal() {
     const params = useLocalSearchParams();
     const requestDataStr = params.requestData as string;
-    const initialRequest: NewRideRequestPayload | null = requestDataStr 
-        ? JSON.parse(requestDataStr) 
+    const initialRequest: NewRideRequestPayload | null = requestDataStr
+        ? JSON.parse(requestDataStr)
         : null;
 
     const [request] = useState<NewRideRequestPayload | null>(initialRequest);
     const [accepting, setAccepting] = useState(false);
     const [countdown, setCountdown] = useState(COUNTDOWN_SECONDS);
 
-    // Countdown animation progress bar
-    const progressAnim = useRef(new Animated.Value(1)).current;
+    // MED-1: Progress bar width is derived from countdown state directly, so bar
+    // and numeric badge are always perfectly in sync. The old Animated.timing
+    // ran independently from the JS setInterval and could desync when backgrounded.
     const countdownRef = useRef<ReturnType<typeof setInterval> | null>(null);
+    // Track whether decline has already been triggered (prevents double-fire)
+    const declineFiredRef = useRef(false);
 
     // Slide-in animation for the card
     const slideAnim = useRef(new Animated.Value(80)).current;
@@ -67,23 +70,13 @@ export default function RideRequestModal() {
             }),
         ]).start();
 
-        // Progress bar drains over COUNTDOWN_SECONDS
-        Animated.timing(progressAnim, {
-            toValue: 0,
-            duration: COUNTDOWN_SECONDS * 1000,
-            useNativeDriver: false,
-        }).start();
-
-        // Tick the numeric countdown
+        // HIGH-1: Tick the numeric countdown using only the setState updater.
+        // Side effects (navigation) are NOT called here — they live in the
+        // useEffect below that observes countdown === 0. Calling router.back()
+        // inside a setState updater violates React rules and double-fires in
+        // Concurrent Mode / React 18 strict mode.
         countdownRef.current = setInterval(() => {
-            setCountdown((prev) => {
-                if (prev <= 1) {
-                    clearInterval(countdownRef.current!);
-                    handleDeclineRide();
-                    return 0;
-                }
-                return prev - 1;
-            });
+            setCountdown((prev) => (prev > 0 ? prev - 1 : 0));
         }, 1000);
 
         // Listen for ride unavailable event
@@ -104,18 +97,20 @@ export default function RideRequestModal() {
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
+
+
     // ── Handlers ──────────────────────────────────────────────────────────────
 
     const handleAcceptRide = useCallback(async () => {
         if (accepting || !request) return;
         if (countdownRef.current) clearInterval(countdownRef.current);
         setAccepting(true);
-        
+
         try {
             await api.post(`/rides/${request._id}/accept`);
             // On success, navigate to active-ride.
             router.push("/(driver)/active-ride");
-            
+
             // Just in case router.push doesn't immediately unmount this component,
             // reset the loading state after a tiny delay so it doesn't spin forever
             setTimeout(() => setAccepting(false), 500);
@@ -134,6 +129,17 @@ export default function RideRequestModal() {
         // TODO: optionally emit a "decline" event to backend
         router.back();
     }, []);
+
+    // HIGH-1: React to countdown hitting 0 in a proper useEffect (not inside
+    // a setState updater). declineFiredRef prevents the effect from firing more
+    // than once if the component re-renders after countdown reaches 0.
+    // NOTE: This must be declared after handleDeclineRide to avoid TDZ errors.
+    useEffect(() => {
+        if (countdown === 0 && !declineFiredRef.current) {
+            declineFiredRef.current = true;
+            handleDeclineRide();
+        }
+    }, [countdown, handleDeclineRide]);
 
     // ── Render ────────────────────────────────────────────────────────────────
 
@@ -187,16 +193,14 @@ export default function RideRequestModal() {
                     </View>
                 </View>
 
-                {/* Countdown progress bar */}
+                {/* Countdown progress bar — MED-1: width derived from countdown state
+                    so it stays perfectly in sync with the numeric badge. */}
                 <View className="h-1 bg-white/[0.05] rounded-full overflow-hidden mb-6">
-                    <Animated.View
+                    <View
                         className="h-full rounded-full"
                         style={{
                             backgroundColor: countdown <= 10 ? "#EF4444" : "#11E0C5",
-                            width: progressAnim.interpolate({
-                                inputRange: [0, 1],
-                                outputRange: ["0%", "100%"],
-                            }),
+                            width: `${(countdown / COUNTDOWN_SECONDS) * 100}%`,
                         }}
                     />
                 </View>

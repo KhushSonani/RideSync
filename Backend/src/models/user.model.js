@@ -50,6 +50,11 @@ const userSchema = new mongoose.Schema({
     socketId: {
         type: String,
     },
+    expoPushToken: {
+        type: String,
+        default: null,
+        select: false,
+    },
     refreshToken: {
         type: String,
         select: false,

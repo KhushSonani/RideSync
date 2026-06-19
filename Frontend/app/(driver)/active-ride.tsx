@@ -449,12 +449,15 @@ export default function DriverActiveRide() {
                 </SafeAreaView>
             )}
 
-            {/* ── Back button ───────────────────────────────────────────── */}
+            {/* ── Back button — LOW-4: disabled during active ride to prevent
+                 the driver from leaving this screen while a trip is in progress. */}
             <SafeAreaView className="absolute top-4 left-4 z-10">
                 <TouchableOpacity
                     activeOpacity={0.8}
                     onPress={() => router.back()}
+                    disabled={rideStatus === "accepted" || rideStatus === "arriving" || rideStatus === "started"}
                     className="w-10 h-10 rounded-full bg-[#0D1420]/90 border border-white/10 items-center justify-center shadow-lg"
+                    style={{ opacity: (rideStatus === "accepted" || rideStatus === "arriving" || rideStatus === "started") ? 0.3 : 1 }}
                     accessibilityLabel="Go back"
                 >
                     <Feather name="arrow-left" size={18} color="white" />

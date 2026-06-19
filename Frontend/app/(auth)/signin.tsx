@@ -29,6 +29,7 @@ import {
     saveRefreshToken,
     saveUserRole
 } from "@/services/storage";
+import { registerPushTokenWithServer } from "@/services/notifications";
 
 export default function SignIn() {
     const [identifier, setIdentifier] = useState('');
@@ -80,6 +81,9 @@ export default function SignIn() {
             await saveRefreshToken(refreshToken);
             await saveUserRole(user.role);
             console.log("LOGIN RESPONSE:", response.data);
+            // Register push token now that auth tokens are persisted.
+            // Fire-and-forget — failure never blocks navigation.
+            registerPushTokenWithServer();
             showAnimatedMessage("Logged in successfully!", "success");
             setTimeout(() => {
                 if (user.role === "rider") {

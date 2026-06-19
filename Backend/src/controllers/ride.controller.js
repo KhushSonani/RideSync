@@ -9,6 +9,14 @@ import { getIO, joinRideRoom, leaveRideRoom, joinRequestRoom, dissolveRequestRoo
 import { SOCKET_EVENTS } from "../Socket/socket.events.js";
 import { config } from "../config/env.js";
 import { findNearbyAvailableDrivers } from "../utils/dispatch.js";
+import {
+    sendNewRideRequest,
+    sendRideAccepted,
+    sendDriverArriving,
+    sendRideStarted,
+    sendRideCompleted,
+    sendRideCancelled,
+} from "../services/notification.service.js";
 
 // ─── Create a new ride request ───────────────────────────────────────────────
 // POST /api/v1/rides/create
@@ -58,12 +66,17 @@ export const createRide = asyncHandler(async (req, res) => {
     const rideIdStr = ride._id.toString();
 
     if (nearbyDrivers.length > 0) {
+        const dispatchObj = { ...rideObj };
+        delete dispatchObj.otp; // Do not leak OTP to drivers
+
         for (const driver of nearbyDrivers) {
             const driverUserId = driver.user.toString();
             // Emit only to this specific driver's personal room
-            getIO().to(`user:${driverUserId}`).emit(SOCKET_EVENTS.NEW_RIDE_REQUEST, rideObj);
+            getIO().to(`user:${driverUserId}`).emit(SOCKET_EVENTS.NEW_RIDE_REQUEST, dispatchObj);
             // Stage this driver in the request room so we can dissolve it later
             joinRequestRoom(driverUserId, rideIdStr);
+            // Push notification — fire-and-forget; failure never breaks ride creation
+            sendNewRideRequest(driverUserId, dispatchObj);
         }
         console.log(
             `[Dispatch] Ride ${rideIdStr} sent to ${nearbyDrivers.length} nearby driver(s)`
@@ -94,6 +107,13 @@ export const getAvailableRides = asyncHandler(async (req, res) => {
     // Driver instance populated and verified by requireVerifiedDriver middleware
     if (req.driver.status !== "available") {
         throw new ApiError(400, "You must set your status to available to receive ride requests");
+    }
+
+    // MED-7: guard against missing GPS coordinates (driver has never emitted location)
+    if (!req.driver.location?.coordinates?.length) {
+        return res.status(200).json(
+            new ApiResponse(200, [], "Enable GPS and share your location to see nearby rides")
+        );
     }
 
     const rides = await Ride.find({
@@ -195,9 +215,11 @@ export const acceptRide = asyncHandler(async (req, res) => {
     // then forces everyone out of the room, cleaning it up completely.
     dissolveRequestRoom(rideIdStr);
 
-    // Notify the rider that their ride was accepted — include driver details
-    // so the UI can display driver name, photo, and vehicle info immediately.
-    getIO().to(`ride:${rideIdStr}`).emit(SOCKET_EVENTS.RIDE_ACCEPTED, {
+    // CRIT-2: Emit RIDE_ACCEPTED to both the ride room AND the rider's personal
+    // user room. If the rider is backgrounded, their socket may not have joined
+    // ride:{rideId} yet (socketsJoin is async). Emitting to user:{riderId} ensures
+    // the event reaches the rider's socket regardless of room-join timing.
+    const rideAcceptedPayload = {
         ride,
         driver: {
             _id: driver._id,
@@ -205,7 +227,11 @@ export const acceptRide = asyncHandler(async (req, res) => {
             vehicle: driver.vehicle,
             status: driver.status,
         },
-    });
+    };
+    getIO().to(`ride:${rideIdStr}`).to(`user:${riderId}`).emit(SOCKET_EVENTS.RIDE_ACCEPTED, rideAcceptedPayload);
+
+    // Push notification to rider — fire-and-forget
+    sendRideAccepted(riderId, ride, driver);
 
     return res.status(200).json(
         new ApiResponse(200, ride, "Ride accepted successfully")
@@ -245,6 +271,10 @@ export const arrivingRide = asyncHandler(async (req, res) => {
         status: ride.status,
         arrivedAt: ride.arrivedAt,
     });
+
+    // Push notification to rider — fire-and-forget
+    const riderIdStr = ride.rider._id?.toString() ?? ride.rider.toString();
+    sendDriverArriving(riderIdStr, ride);
 
     return res.status(200).json(
         new ApiResponse(200, ride, "Driver is arriving at the pickup location")
@@ -296,6 +326,10 @@ export const startRide = asyncHandler(async (req, res) => {
         startedAt: rideObj.startedAt,
     });
 
+    // Push notification to rider — fire-and-forget
+    const riderIdForStart = ride.rider._id?.toString() ?? ride.rider.toString();
+    sendRideStarted(riderIdForStart, rideObj);
+
     return res.status(200).json(
         new ApiResponse(200, rideObj, "Ride started successfully")
     );
@@ -328,9 +362,10 @@ export const completeRide = asyncHandler(async (req, res) => {
         throw new ApiError(400, "Ride not found, not started, or you are not authorized to complete it");
     }
 
-    // Set driver status back to available and rejoin the available room
-    req.driver.status = "available";
-    await req.driver.save();
+    // MED-5: Use a targeted update instead of req.driver.save() to avoid
+    // overwriting concurrent changes to the driver document.
+    await Driver.findByIdAndUpdate(req.driver._id, { status: "available" });
+    req.driver.status = "available"; // keep in-memory copy aligned
 
     const riderId = ride.rider._id.toString();
     const driverUserId = req.user._id.toString();
@@ -342,6 +377,9 @@ export const completeRide = asyncHandler(async (req, res) => {
         completedAt: ride.completedAt,
         fare: ride.fare,
     });
+
+    // Push notification to rider — fire-and-forget
+    sendRideCompleted(riderId, ride);
 
     // ── Room cleanup ─────────────────────────────────────────────────────────
     leaveRideRoom(riderId, rideId);
@@ -386,6 +424,24 @@ export const cancelRide = asyncHandler(async (req, res) => {
         const assignedDriverId = ride.driver?.toString() ?? null;
         let assignedDriverDoc = null;
 
+        // Fix: Atomic update prevents TOCTOU race conditions
+        const updatedRide = await Ride.findOneAndUpdate(
+            { _id: rideId, status: { $in: ["requested", "accepted", "arriving"] } },
+            {
+                $set: {
+                    status: "cancelled",
+                    cancelledBy: "rider",
+                    cancelledAt: new Date(),
+                    cancelReason: cancelReason || defaultCancelMsg
+                }
+            },
+            { new: true }
+        );
+
+        if (!updatedRide) {
+            throw new ApiError(400, "Ride state changed before cancellation could complete.");
+        }
+
         // If a driver was assigned, free that driver back to available
         if (hadDriver) {
             assignedDriverDoc = await Driver.findByIdAndUpdate(assignedDriverId, { status: "available" }).select("user").lean();
@@ -398,19 +454,13 @@ export const cancelRide = asyncHandler(async (req, res) => {
             }
         }
 
-        ride.status = "cancelled";
-        ride.cancelledBy = "rider";
-        ride.cancelledAt = new Date();
-        ride.cancelReason = cancelReason || defaultCancelMsg;
-        await ride.save();
-
         const riderId = req.user._id.toString();
         const cancelPayload = {
-            _id: ride._id,
-            status: ride.status,
-            cancelledBy: ride.cancelledBy,
-            cancelReason: ride.cancelReason,
-            cancelledAt: ride.cancelledAt,
+            _id: updatedRide._id,
+            status: updatedRide.status,
+            cancelledBy: updatedRide.cancelledBy,
+            cancelReason: updatedRide.cancelReason,
+            cancelledAt: updatedRide.cancelledAt,
         };
 
         if (hadDriver) {
@@ -420,6 +470,8 @@ export const cancelRide = asyncHandler(async (req, res) => {
             leaveRideRoom(riderId, rideId);
             if (assignedDriverDoc) {
                 leaveRideRoom(assignedDriverDoc.user.toString(), rideId);
+                // Push notification to driver that rider cancelled — fire-and-forget
+                sendRideCancelled(assignedDriverDoc.user.toString(), "rider", updatedRide);
             }
         } else {
             // No driver assigned yet — notify the rider directly
@@ -430,7 +482,7 @@ export const cancelRide = asyncHandler(async (req, res) => {
         }
 
         return res.status(200).json(
-            new ApiResponse(200, ride, "Ride cancelled successfully by rider")
+            new ApiResponse(200, updatedRide, "Ride cancelled successfully by rider")
         );
     }
 
@@ -453,30 +505,45 @@ export const cancelRide = asyncHandler(async (req, res) => {
         const driverUserId = req.user._id.toString();
 
         // Re-queue the ride (back to "requested" with no driver)
-        ride.status = "requested";
-        ride.driver = null;
-        ride.cancelledBy = undefined;
-        ride.cancelledAt = undefined;
-        ride.cancelReason = undefined;
-        await ride.save();
+        // Fix: Atomic update to prevent TOCTOU race condition if rider concurrently cancels
+        const updatedRide = await Ride.findOneAndUpdate(
+            { _id: rideId, status: { $in: ["accepted", "arriving"] } },
+            {
+                $set: {
+                    status: "requested",
+                    driver: null,
+                    cancelledBy: null,
+                    cancelledAt: null,
+                    cancelReason: null
+                }
+            },
+            { new: true }
+        );
+
+        if (!updatedRide) {
+            throw new ApiError(400, "Ride state changed before cancellation could complete.");
+        }
 
         // Re-populate rider for the broadcast payload
-        await ride.populate("rider", "username fullname avatar");
+        await updatedRide.populate("rider", "username fullname avatar");
 
         // Make the driver available again
         driver.status = "available";
         await driver.save();
 
         const cancelPayload = {
-            _id: ride._id,
+            _id: updatedRide._id,
             status: "cancelled",
             cancelledBy: "driver",
-            cancelReason: ride.cancelReason,
-            cancelledAt: ride.cancelledAt,
+            cancelReason: updatedRide.cancelReason,
+            cancelledAt: updatedRide.cancelledAt,
         };
 
         // Notify the rider their driver cancelled
         getIO().to(`ride:${rideId}`).emit(SOCKET_EVENTS.RIDE_CANCELLED, cancelPayload);
+
+        // Push notification to rider — fire-and-forget
+        sendRideCancelled(riderId, "driver", updatedRide);
 
         // ── Room cleanup ─────────────────────────────────────────────────────
         leaveRideRoom(riderId, rideId);
@@ -488,8 +555,10 @@ export const cancelRide = asyncHandler(async (req, res) => {
         // Re-dispatch to nearby available drivers using the same geo-query logic.
         // This ensures the re-queued ride only goes to drivers near the pickup,
         // not every online driver globally.
-        const rideObj = ride.toObject();
-        const nearbyDrivers = await findNearbyAvailableDrivers(ride.pickup.location.coordinates, driver._id);
+        const rideObj = updatedRide.toObject();
+        // CRIT-4: Strip OTP from the re-dispatch payload.
+        delete rideObj.otp;
+        const nearbyDrivers = await findNearbyAvailableDrivers(updatedRide.pickup.location.coordinates, driver._id);
 
         if (nearbyDrivers.length > 0) {
             for (const d of nearbyDrivers) {
@@ -503,7 +572,7 @@ export const cancelRide = asyncHandler(async (req, res) => {
         }
 
         return res.status(200).json(
-            new ApiResponse(200, ride, "Ride returned to available rides queue")
+            new ApiResponse(200, updatedRide, "Ride returned to available rides queue")
         );
     }
 

@@ -9,7 +9,9 @@ import {
     resetPassword,
     changeCurrentPassword,
     updateUserAvatar,
-    deleteUserAvatar
+    deleteUserAvatar,
+    registerPushToken,
+    removePushToken,
 } from "../controllers/user.controller.js";
 import { profilePhotoUpload } from "../middlewares/multer.middleware.js";
 import {
@@ -84,6 +86,18 @@ router.post(
     "/reset-password/:token",
     resetPasswordValidator,
     resetPassword
+);
+
+// Push token endpoints
+router.post(
+    "/push-token",
+    verifyJWT,
+    registerPushToken
+);
+router.delete(
+    "/push-token",
+    verifyJWT,
+    removePushToken
 );
 
 export default router;

@@ -481,3 +481,47 @@ export const deleteUserAvatar = asyncHandler(async (req, res) => {
         .status(200)
         .json(new ApiResponse(200, user, "Avatar deleted successfully"));
 });
+
+// ─── Push token management ───────────────────────────────────────────────────
+
+/**
+ * POST /api/v1/users/push-token
+ * Register or update the Expo push token for the authenticated user.
+ * Safe to call multiple times — uses $set so it is fully idempotent.
+ */
+export const registerPushToken = asyncHandler(async (req, res) => {
+    const { expoPushToken } = req.body;
+
+    if (!expoPushToken || typeof expoPushToken !== "string") {
+        throw new ApiError(400, "expoPushToken is required and must be a string");
+    }
+
+    await User.findByIdAndUpdate(
+        req.user._id,
+        { $set: { expoPushToken } }
+    );
+
+    console.log(`[Push] Token registered for user ${req.user._id}`);
+
+    return res
+        .status(200)
+        .json(new ApiResponse(200, {}, "Push token registered successfully"));
+});
+
+/**
+ * DELETE /api/v1/users/push-token
+ * Clear the Expo push token for the authenticated user.
+ * Called on logout to prevent notifications to signed-out devices.
+ */
+export const removePushToken = asyncHandler(async (req, res) => {
+    await User.findByIdAndUpdate(
+        req.user._id,
+        { $set: { expoPushToken: null } }
+    );
+
+    console.log(`[Push] Token removed for user ${req.user._id}`);
+
+    return res
+        .status(200)
+        .json(new ApiResponse(200, {}, "Push token removed successfully"));
+});

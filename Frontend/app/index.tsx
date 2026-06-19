@@ -20,6 +20,7 @@ import { Link, router, useRootNavigationState } from "expo-router";
 import { Feather } from "@expo/vector-icons";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { ONBOARDING_KEY } from "@/app/onboarding";
+import { registerPushTokenWithServer } from "@/services/notifications";
 
 export default function App() {
   const [checkingAuth, setCheckingAuth] = useState(true);
@@ -47,6 +48,10 @@ export default function App() {
       }
 
       if (accessToken) {
+        // Register push token now that we have a valid auth token.
+        // Fire-and-forget — failure never blocks navigation.
+        registerPushTokenWithServer();
+
         const role = await getUserRole();
         if (role === "rider") {
           try {

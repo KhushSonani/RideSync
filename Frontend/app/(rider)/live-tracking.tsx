@@ -105,28 +105,16 @@ export default function LiveTrackingScreen() {
     const offCancelledRef      = useRef<(() => void) | undefined>(undefined);
 
     // ── Check socket health ──────────────────────────────────────────
+    // HIGH-4: Do NOT call connectSocket here. The useFocusEffect below already
+    // calls connectSocket inside setupState. Duplicating it causes an extra
+    // SecureStore read and ordering issues during token refresh.
     useEffect(() => {
-        let offConnect: (() => void) | undefined;
-        let offDisconnect: (() => void) | undefined;
-
-        const setupHealthListeners = async () => {
-            try {
-                const token = await getAccessToken();
-                if (token) connectSocket(token);
-
-                setIsOffline(!isSocketConnected());
-                offConnect = onSocketConnect(() => setIsOffline(false));
-                offDisconnect = onSocketDisconnect(() => setIsOffline(true));
-            } catch (err) {
-                console.warn("Socket health listener error:", err);
-            }
-        };
-
-        setupHealthListeners();
-
+        setIsOffline(!isSocketConnected());
+        const offConnect = onSocketConnect(() => setIsOffline(false));
+        const offDisconnect = onSocketDisconnect(() => setIsOffline(true));
         return () => {
-            if (offConnect) offConnect();
-            if (offDisconnect) offDisconnect();
+            offConnect();
+            offDisconnect();
         };
     }, []);
 
@@ -311,7 +299,9 @@ export default function LiveTrackingScreen() {
                 },
             ]
         );
-    }, [rideStatus]);
+        // MED-4: include rideData so closure always sees the current ride ID.
+        // rideData._id is immutable per ride, but this is required for correctness.
+    }, [rideStatus, rideData]);
 
     const handleCallDriver = useCallback(() => {
         // TODO: deep-link to phone dialler
@@ -443,12 +433,15 @@ export default function LiveTrackingScreen() {
                 </SafeAreaView>
             )}
 
-            {/* ── Back button ───────────────────────────────────────────── */}
+            {/* ── Back button — LOW-4: disabled during an active ride to prevent
+                 the rider from escaping the tracking screen mid-trip. ───────── */}
             <SafeAreaView className="absolute top-4 left-4 z-10">
                 <TouchableOpacity
                     activeOpacity={0.8}
                     onPress={() => router.back()}
+                    disabled={rideStatus === "arriving" || rideStatus === "started"}
                     className="w-10 h-10 rounded-full bg-[#0D1420]/90 border border-white/10 items-center justify-center shadow-lg"
+                    style={{ opacity: (rideStatus === "arriving" || rideStatus === "started") ? 0.3 : 1 }}
                     accessibilityLabel="Go back"
                 >
                     <Feather name="arrow-left" size={18} color="white" />

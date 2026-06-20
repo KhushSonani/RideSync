@@ -19,10 +19,12 @@ import { COLORS } from "@/constants/theme";
 import { glassCard, inputField, primaryButton } from "@/constants/styles";
 import { pickImageFromGallery } from "@/services/upload";
 import VerificationBanner from "@/components/VerificationBanner";
+import { useTheme } from "@/store/ThemeContext";
 
 type DocTab = "license" | "rc" | "insurance" | "puc" | "permit";
 
 export default function DocumentUpload() {
+    const { colorScheme, theme } = useTheme();
     const [driver, setDriver] = useState<any>(null);
     const [loading, setLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
@@ -306,7 +308,7 @@ export default function DocumentUpload() {
                         value={licenseNo}
                         onChangeText={setLicenseNo}
                         autoCapitalize="characters"
-                        className="flex-1 text-white text-[15px]"
+                        className="flex-1 text-foreground text-[15px]"
                     />
                 </View>
 
@@ -317,26 +319,26 @@ export default function DocumentUpload() {
                         placeholderTextColor="#667085"
                         value={licenseExpiry}
                         onChangeText={setLicenseExpiry}
-                        className="flex-1 text-white text-[15px]"
+                        className="flex-1 text-foreground text-[15px]"
                     />
                 </View>
 
                 <TouchableOpacity
                     activeOpacity={0.8}
                     onPress={() => handleSelectFile("license")}
-                    className="border border-dashed border-white/20 rounded-xl h-24 items-center justify-center bg-white/[0.01]"
+                    className="border border-dashed border-border rounded-xl h-24 items-center justify-center bg-foreground/[0.01]"
                 >
                     {licenseFile || driver?.license?.file?.url ? (
                         <View className="flex-row items-center">
-                            <Feather name="file-text" size={20} color="#11E0C5" />
-                            <Text className="text-white text-xs font-semibold ml-2">
+                            <Feather name="file-text" size={20} color={theme.colors.primary} />
+                            <Text className="text-foreground text-xs font-semibold ml-2">
                                 {licenseFile ? "New file selected" : "File uploaded (Review)"}
                             </Text>
                         </View>
                     ) : (
                         <View className="items-center">
-                            <Feather name="upload-cloud" size={22} color="#748096" />
-                            <Text className="text-[#748096] text-xs mt-1">Select Photo/Document</Text>
+                            <Feather name="upload-cloud" size={22} color={theme.colors.textMuted} />
+                            <Text className="text-muted text-xs mt-1">Select Photo/Document</Text>
                         </View>
                     )}
                 </TouchableOpacity>
@@ -350,16 +352,16 @@ export default function DocumentUpload() {
                     {submitting ? (
                         <ActivityIndicator color="#071018" />
                     ) : (
-                        <Text className="text-[#071018] text-sm font-bold">Upload Driver License</Text>
+                        <Text className="text-background text-sm font-bold">Upload Driver License</Text>
                     )}
                 </TouchableOpacity>
 
                 <TouchableOpacity
                     activeOpacity={0.8}
                     onPress={() => setEditingDoc(null)}
-                    className="w-full h-11 bg-white/[0.05] border border-white/[0.08] rounded-xl flex-row items-center justify-center mt-2"
+                    className="w-full h-11 bg-foreground/[0.05] border border-border rounded-xl flex-row items-center justify-center mt-2"
                 >
-                    <Text className="text-white/60 text-sm font-bold">Cancel</Text>
+                    <Text className="text-foreground/60 text-sm font-bold">Cancel</Text>
                 </TouchableOpacity>
             </View>
         );
@@ -376,7 +378,7 @@ export default function DocumentUpload() {
                         value={rcNo}
                         onChangeText={setRcNo}
                         autoCapitalize="characters"
-                        className="flex-1 text-white text-[15px]"
+                        className="flex-1 text-foreground text-[15px]"
                     />
                 </View>
 
@@ -387,26 +389,26 @@ export default function DocumentUpload() {
                         placeholderTextColor="#667085"
                         value={rcOwner}
                         onChangeText={setRcOwner}
-                        className="flex-1 text-white text-[15px]"
+                        className="flex-1 text-foreground text-[15px]"
                     />
                 </View>
 
                 <TouchableOpacity
                     activeOpacity={0.8}
                     onPress={() => handleSelectFile("rc")}
-                    className="border border-dashed border-white/20 rounded-xl h-24 items-center justify-center bg-white/[0.01]"
+                    className="border border-dashed border-border rounded-xl h-24 items-center justify-center bg-foreground/[0.01]"
                 >
                     {rcFile || driver?.vehicle?.rc?.file?.url ? (
                         <View className="flex-row items-center">
-                            <Feather name="file-text" size={20} color="#11E0C5" />
-                            <Text className="text-white text-xs font-semibold ml-2">
+                            <Feather name="file-text" size={20} color={theme.colors.primary} />
+                            <Text className="text-foreground text-xs font-semibold ml-2">
                                 {rcFile ? "New file selected" : "File uploaded (Review)"}
                             </Text>
                         </View>
                     ) : (
                         <View className="items-center">
-                            <Feather name="upload-cloud" size={22} color="#748096" />
-                            <Text className="text-[#748096] text-xs mt-1">Select Photo/Document</Text>
+                            <Feather name="upload-cloud" size={22} color={theme.colors.textMuted} />
+                            <Text className="text-muted text-xs mt-1">Select Photo/Document</Text>
                         </View>
                     )}
                 </TouchableOpacity>
@@ -420,16 +422,16 @@ export default function DocumentUpload() {
                     {submitting ? (
                         <ActivityIndicator color="#071018" />
                     ) : (
-                        <Text className="text-[#071018] text-sm font-bold">Upload RC</Text>
+                        <Text className="text-background text-sm font-bold">Upload RC</Text>
                     )}
                 </TouchableOpacity>
 
                 <TouchableOpacity
                     activeOpacity={0.8}
                     onPress={() => setEditingDoc(null)}
-                    className="w-full h-11 bg-white/[0.05] border border-white/[0.08] rounded-xl flex-row items-center justify-center mt-2"
+                    className="w-full h-11 bg-foreground/[0.05] border border-border rounded-xl flex-row items-center justify-center mt-2"
                 >
-                    <Text className="text-white/60 text-sm font-bold">Cancel</Text>
+                    <Text className="text-foreground/60 text-sm font-bold">Cancel</Text>
                 </TouchableOpacity>
             </View>
         );
@@ -445,7 +447,7 @@ export default function DocumentUpload() {
                         placeholderTextColor="#667085"
                         value={insProvider}
                         onChangeText={setInsProvider}
-                        className="flex-1 text-white text-[15px]"
+                        className="flex-1 text-foreground text-[15px]"
                     />
                 </View>
 
@@ -456,7 +458,7 @@ export default function DocumentUpload() {
                         placeholderTextColor="#667085"
                         value={insPolicy}
                         onChangeText={setInsPolicy}
-                        className="flex-1 text-white text-[15px]"
+                        className="flex-1 text-foreground text-[15px]"
                     />
                 </View>
 
@@ -467,26 +469,26 @@ export default function DocumentUpload() {
                         placeholderTextColor="#667085"
                         value={insExpiry}
                         onChangeText={setInsExpiry}
-                        className="flex-1 text-white text-[15px]"
+                        className="flex-1 text-foreground text-[15px]"
                     />
                 </View>
 
                 <TouchableOpacity
                     activeOpacity={0.8}
                     onPress={() => handleSelectFile("insurance")}
-                    className="border border-dashed border-white/20 rounded-xl h-24 items-center justify-center bg-white/[0.01]"
+                    className="border border-dashed border-border rounded-xl h-24 items-center justify-center bg-foreground/[0.01]"
                 >
                     {insFile || driver?.vehicle?.insurance?.file?.url ? (
                         <View className="flex-row items-center">
-                            <Feather name="file-text" size={20} color="#11E0C5" />
-                            <Text className="text-white text-xs font-semibold ml-2">
+                            <Feather name="file-text" size={20} color={theme.colors.primary} />
+                            <Text className="text-foreground text-xs font-semibold ml-2">
                                 {insFile ? "New file selected" : "File uploaded (Review)"}
                             </Text>
                         </View>
                     ) : (
                         <View className="items-center">
-                            <Feather name="upload-cloud" size={22} color="#748096" />
-                            <Text className="text-[#748096] text-xs mt-1">Select Photo/Document</Text>
+                            <Feather name="upload-cloud" size={22} color={theme.colors.textMuted} />
+                            <Text className="text-muted text-xs mt-1">Select Photo/Document</Text>
                         </View>
                     )}
                 </TouchableOpacity>
@@ -500,16 +502,16 @@ export default function DocumentUpload() {
                     {submitting ? (
                         <ActivityIndicator color="#071018" />
                     ) : (
-                        <Text className="text-[#071018] text-sm font-bold">Upload Insurance</Text>
+                        <Text className="text-background text-sm font-bold">Upload Insurance</Text>
                     )}
                 </TouchableOpacity>
 
                 <TouchableOpacity
                     activeOpacity={0.8}
                     onPress={() => setEditingDoc(null)}
-                    className="w-full h-11 bg-white/[0.05] border border-white/[0.08] rounded-xl flex-row items-center justify-center mt-2"
+                    className="w-full h-11 bg-foreground/[0.05] border border-border rounded-xl flex-row items-center justify-center mt-2"
                 >
-                    <Text className="text-white/60 text-sm font-bold">Cancel</Text>
+                    <Text className="text-foreground/60 text-sm font-bold">Cancel</Text>
                 </TouchableOpacity>
             </View>
         );
@@ -525,26 +527,26 @@ export default function DocumentUpload() {
                         placeholderTextColor="#667085"
                         value={pucExpiry}
                         onChangeText={setPucExpiry}
-                        className="flex-1 text-white text-[15px]"
+                        className="flex-1 text-foreground text-[15px]"
                     />
                 </View>
 
                 <TouchableOpacity
                     activeOpacity={0.8}
                     onPress={() => handleSelectFile("puc")}
-                    className="border border-dashed border-white/20 rounded-xl h-24 items-center justify-center bg-white/[0.01]"
+                    className="border border-dashed border-border rounded-xl h-24 items-center justify-center bg-foreground/[0.01]"
                 >
                     {pucFile || driver?.vehicle?.puc?.file?.url ? (
                         <View className="flex-row items-center">
-                            <Feather name="file-text" size={20} color="#11E0C5" />
-                            <Text className="text-white text-xs font-semibold ml-2">
+                            <Feather name="file-text" size={20} color={theme.colors.primary} />
+                            <Text className="text-foreground text-xs font-semibold ml-2">
                                 {pucFile ? "New file selected" : "File uploaded (Review)"}
                             </Text>
                         </View>
                     ) : (
                         <View className="items-center">
-                            <Feather name="upload-cloud" size={22} color="#748096" />
-                            <Text className="text-[#748096] text-xs mt-1">Select Photo/Document</Text>
+                            <Feather name="upload-cloud" size={22} color={theme.colors.textMuted} />
+                            <Text className="text-muted text-xs mt-1">Select Photo/Document</Text>
                         </View>
                     )}
                 </TouchableOpacity>
@@ -558,16 +560,16 @@ export default function DocumentUpload() {
                     {submitting ? (
                         <ActivityIndicator color="#071018" />
                     ) : (
-                        <Text className="text-[#071018] text-sm font-bold">Upload PUC</Text>
+                        <Text className="text-background text-sm font-bold">Upload PUC</Text>
                     )}
                 </TouchableOpacity>
 
                 <TouchableOpacity
                     activeOpacity={0.8}
                     onPress={() => setEditingDoc(null)}
-                    className="w-full h-11 bg-white/[0.05] border border-white/[0.08] rounded-xl flex-row items-center justify-center mt-2"
+                    className="w-full h-11 bg-foreground/[0.05] border border-border rounded-xl flex-row items-center justify-center mt-2"
                 >
-                    <Text className="text-white/60 text-sm font-bold">Cancel</Text>
+                    <Text className="text-foreground/60 text-sm font-bold">Cancel</Text>
                 </TouchableOpacity>
             </View>
         );
@@ -583,7 +585,7 @@ export default function DocumentUpload() {
                         placeholderTextColor="#667085"
                         value={permitType}
                         onChangeText={setPermitType}
-                        className="flex-1 text-white text-[15px]"
+                        className="flex-1 text-foreground text-[15px]"
                     />
                 </View>
 
@@ -594,26 +596,26 @@ export default function DocumentUpload() {
                         placeholderTextColor="#667085"
                         value={permitExpiry}
                         onChangeText={setPermitExpiry}
-                        className="flex-1 text-white text-[15px]"
+                        className="flex-1 text-foreground text-[15px]"
                     />
                 </View>
 
                 <TouchableOpacity
                     activeOpacity={0.8}
                     onPress={() => handleSelectFile("permit")}
-                    className="border border-dashed border-white/20 rounded-xl h-24 items-center justify-center bg-white/[0.01]"
+                    className="border border-dashed border-border rounded-xl h-24 items-center justify-center bg-foreground/[0.01]"
                 >
                     {permitFile || driver?.vehicle?.permit?.file?.url ? (
                         <View className="flex-row items-center">
-                            <Feather name="file-text" size={20} color="#11E0C5" />
-                            <Text className="text-white text-xs font-semibold ml-2">
+                            <Feather name="file-text" size={20} color={theme.colors.primary} />
+                            <Text className="text-foreground text-xs font-semibold ml-2">
                                 {permitFile ? "New file selected" : "File uploaded (Review)"}
                             </Text>
                         </View>
                     ) : (
                         <View className="items-center">
-                            <Feather name="upload-cloud" size={22} color="#748096" />
-                            <Text className="text-[#748096] text-xs mt-1">Select Photo/Document</Text>
+                            <Feather name="upload-cloud" size={22} color={theme.colors.textMuted} />
+                            <Text className="text-muted text-xs mt-1">Select Photo/Document</Text>
                         </View>
                     )}
                 </TouchableOpacity>
@@ -627,16 +629,16 @@ export default function DocumentUpload() {
                     {submitting ? (
                         <ActivityIndicator color="#071018" />
                     ) : (
-                        <Text className="text-[#071018] text-sm font-bold">Upload Permit</Text>
+                        <Text className="text-background text-sm font-bold">Upload Permit</Text>
                     )}
                 </TouchableOpacity>
 
                 <TouchableOpacity
                     activeOpacity={0.8}
                     onPress={() => setEditingDoc(null)}
-                    className="w-full h-11 bg-white/[0.05] border border-white/[0.08] rounded-xl flex-row items-center justify-center mt-2"
+                    className="w-full h-11 bg-foreground/[0.05] border border-border rounded-xl flex-row items-center justify-center mt-2"
                 >
-                    <Text className="text-white/60 text-sm font-bold">Cancel</Text>
+                    <Text className="text-foreground/60 text-sm font-bold">Cancel</Text>
                 </TouchableOpacity>
             </View>
         );
@@ -644,15 +646,15 @@ export default function DocumentUpload() {
 
     if (loading) {
         return (
-            <View className="flex-1 bg-[#070B12] items-center justify-center">
+            <View className="flex-1 bg-background items-center justify-center">
                 <StatusBar barStyle="light-content" translucent backgroundColor="transparent" />
-                <ActivityIndicator size="large" color="#11E0C5" />
+                <ActivityIndicator size="large" color={theme.colors.primary} />
             </View>
         );
     }
 
     return (
-        <View className="flex-1" style={{ backgroundColor: COLORS.background }}>
+        <View className="flex-1 bg-background">
             <StatusBar barStyle="light-content" translucent backgroundColor="transparent" />
 
             <SafeAreaView className="flex-1 px-5 pt-3">
@@ -663,17 +665,17 @@ export default function DocumentUpload() {
                         <RefreshControl
                             refreshing={refreshing}
                             onRefresh={handleRefresh}
-                            tintColor="#11E0C5"
-                            colors={["#11E0C5"]}
+                            tintColor={theme.colors.primary}
+                            colors={[theme.colors.primary]}
                         />
                     }
                 >
                     {/* TITLE */}
                     <View className="mt-3 mb-4">
-                        <Text className="text-white text-[28px] font-bold tracking-tight">
+                        <Text className="text-foreground text-[28px] font-bold tracking-tight">
                             Documents
                         </Text>
-                        <Text className="text-[#748096] text-[13px] mt-1 leading-5">
+                        <Text className="text-muted text-[13px] mt-1 leading-5">
                             Upload required identification and vehicle documentation for verification.
                         </Text>
                     </View>
@@ -690,9 +692,9 @@ export default function DocumentUpload() {
                     {/* ALL DOCUMENT CARDS STACKED VERTICALLY */}
                     <View className="gap-y-4 mt-2">
                         {/* Driver License Card */}
-                        <View className={`${glassCard} p-5 border border-white/[0.08]`}>
+                        <View className={`${glassCard} p-5 border border-border`}>
                             <View className="flex-row justify-between items-center mb-3">
-                                <Text className="text-white text-base font-bold">Driver License</Text>
+                                <Text className="text-foreground text-base font-bold">Driver License</Text>
                                 <View className={`px-2.5 py-1 rounded-full border flex-row items-center ${getStatusColor(driver?.license?.status)}`}>
                                     <Text className="text-[10px] font-bold capitalize text-current">
                                         {getStatusText(driver?.license?.status)}
@@ -701,25 +703,25 @@ export default function DocumentUpload() {
                             </View>
 
                             {hasUploadedLicense ? (
-                                <View className="bg-[#131D2B]/40 rounded-xl p-3.5 border border-white/[0.03] gap-y-1 mb-3">
+                                <View className="bg-input/40 rounded-xl p-3.5 border border-white/[0.03] gap-y-1 mb-3">
                                     <View className="flex-row justify-between py-2 border-b border-white/[0.04]">
-                                        <Text className="text-[#748096] text-xs">License Number</Text>
-                                        <Text className="text-white text-sm font-semibold">{driver.license.number}</Text>
+                                        <Text className="text-muted text-xs">License Number</Text>
+                                        <Text className="text-foreground text-sm font-semibold">{driver.license.number}</Text>
                                     </View>
                                     <View className="flex-row justify-between py-2 border-b border-white/[0.04]">
-                                        <Text className="text-[#748096] text-xs">Expiry Date</Text>
-                                        <Text className="text-white text-sm font-semibold">{formatDateStr(driver.license.expiryDate)}</Text>
+                                        <Text className="text-muted text-xs">Expiry Date</Text>
+                                        <Text className="text-foreground text-sm font-semibold">{formatDateStr(driver.license.expiryDate)}</Text>
                                     </View>
                                     <View className="flex-row justify-between py-2 items-center">
-                                        <Text className="text-[#748096] text-xs">Document Attachment</Text>
+                                        <Text className="text-muted text-xs">Document Attachment</Text>
                                         <View className="flex-row items-center">
-                                            <Feather name="check-circle" size={13} color="#11E0C5" className="mr-1" />
-                                            <Text className="text-[#11E0C5] text-xs font-semibold">Uploaded</Text>
+                                            <Feather name="check-circle" size={13} color={theme.colors.primary} className="mr-1" />
+                                            <Text className="text-primary text-xs font-semibold">Uploaded</Text>
                                         </View>
                                     </View>
                                 </View>
                             ) : (
-                                <Text className="text-[#748096] text-xs mb-3 leading-5">
+                                <Text className="text-muted text-xs mb-3 leading-5">
                                     No driver license uploaded yet. Please upload your license to get verified.
                                 </Text>
                             )}
@@ -732,19 +734,19 @@ export default function DocumentUpload() {
                                     setLicenseFile(null);
                                     setEditingDoc("license");
                                 }}
-                                className="w-full h-11 bg-white/[0.03] border border-white/[0.08] rounded-xl flex-row items-center justify-center gap-x-2"
+                                className="w-full h-11 bg-foreground/[0.03] border border-border rounded-xl flex-row items-center justify-center gap-x-2"
                             >
-                                <Feather name={hasUploadedLicense ? "edit-2" : "upload-cloud"} size={14} color="#11E0C5" />
-                                <Text className="text-[#11E0C5] text-xs font-bold">
+                                <Feather name={hasUploadedLicense ? "edit-2" : "upload-cloud"} size={14} color={theme.colors.primary} />
+                                <Text className="text-primary text-xs font-bold">
                                     {hasUploadedLicense ? "Edit / Re-upload" : "Upload Document"}
                                 </Text>
                             </TouchableOpacity>
                         </View>
 
                         {/* Registration Certificate (RC) Card */}
-                        <View className={`${glassCard} p-5 border border-white/[0.08]`}>
+                        <View className={`${glassCard} p-5 border border-border`}>
                             <View className="flex-row justify-between items-center mb-3">
-                                <Text className="text-white text-base font-bold">Registration Certificate (RC)</Text>
+                                <Text className="text-foreground text-base font-bold">Registration Certificate (RC)</Text>
                                 <View className={`px-2.5 py-1 rounded-full border flex-row items-center ${getStatusColor(driver?.vehicle?.rc?.status)}`}>
                                     <Text className="text-[10px] font-bold capitalize text-current">
                                         {getStatusText(driver?.vehicle?.rc?.status)}
@@ -753,25 +755,25 @@ export default function DocumentUpload() {
                             </View>
 
                             {hasUploadedRc ? (
-                                <View className="bg-[#131D2B]/40 rounded-xl p-3.5 border border-white/[0.03] gap-y-1 mb-3">
+                                <View className="bg-input/40 rounded-xl p-3.5 border border-white/[0.03] gap-y-1 mb-3">
                                     <View className="flex-row justify-between py-2 border-b border-white/[0.04]">
-                                        <Text className="text-[#748096] text-xs">RC Number</Text>
-                                        <Text className="text-white text-sm font-semibold">{driver.vehicle.rc.number}</Text>
+                                        <Text className="text-muted text-xs">RC Number</Text>
+                                        <Text className="text-foreground text-sm font-semibold">{driver.vehicle.rc.number}</Text>
                                     </View>
                                     <View className="flex-row justify-between py-2 border-b border-white/[0.04]">
-                                        <Text className="text-[#748096] text-xs">Owner Name</Text>
-                                        <Text className="text-white text-sm font-semibold">{driver.vehicle.rc.ownerName}</Text>
+                                        <Text className="text-muted text-xs">Owner Name</Text>
+                                        <Text className="text-foreground text-sm font-semibold">{driver.vehicle.rc.ownerName}</Text>
                                     </View>
                                     <View className="flex-row justify-between py-2 items-center">
-                                        <Text className="text-[#748096] text-xs">Document Attachment</Text>
+                                        <Text className="text-muted text-xs">Document Attachment</Text>
                                         <View className="flex-row items-center">
-                                            <Feather name="check-circle" size={13} color="#11E0C5" className="mr-1" />
-                                            <Text className="text-[#11E0C5] text-xs font-semibold">Uploaded</Text>
+                                            <Feather name="check-circle" size={13} color={theme.colors.primary} className="mr-1" />
+                                            <Text className="text-primary text-xs font-semibold">Uploaded</Text>
                                         </View>
                                     </View>
                                 </View>
                             ) : (
-                                <Text className="text-[#748096] text-xs mb-3 leading-5">
+                                <Text className="text-muted text-xs mb-3 leading-5">
                                     No registration certificate uploaded yet. Please upload your vehicle RC to get verified.
                                 </Text>
                             )}
@@ -784,19 +786,19 @@ export default function DocumentUpload() {
                                     setRcFile(null);
                                     setEditingDoc("rc");
                                 }}
-                                className="w-full h-11 bg-white/[0.03] border border-white/[0.08] rounded-xl flex-row items-center justify-center gap-x-2"
+                                className="w-full h-11 bg-foreground/[0.03] border border-border rounded-xl flex-row items-center justify-center gap-x-2"
                             >
-                                <Feather name={hasUploadedRc ? "edit-2" : "upload-cloud"} size={14} color="#11E0C5" />
-                                <Text className="text-[#11E0C5] text-xs font-bold">
+                                <Feather name={hasUploadedRc ? "edit-2" : "upload-cloud"} size={14} color={theme.colors.primary} />
+                                <Text className="text-primary text-xs font-bold">
                                     {hasUploadedRc ? "Edit / Re-upload" : "Upload Document"}
                                 </Text>
                             </TouchableOpacity>
                         </View>
 
                         {/* Vehicle Insurance Card */}
-                        <View className={`${glassCard} p-5 border border-white/[0.08]`}>
+                        <View className={`${glassCard} p-5 border border-border`}>
                             <View className="flex-row justify-between items-center mb-3">
-                                <Text className="text-white text-base font-bold">Vehicle Insurance</Text>
+                                <Text className="text-foreground text-base font-bold">Vehicle Insurance</Text>
                                 <View className={`px-2.5 py-1 rounded-full border flex-row items-center ${getStatusColor(driver?.vehicle?.insurance?.status)}`}>
                                     <Text className="text-[10px] font-bold capitalize text-current">
                                         {getStatusText(driver?.vehicle?.insurance?.status)}
@@ -805,29 +807,29 @@ export default function DocumentUpload() {
                             </View>
 
                             {hasUploadedIns ? (
-                                <View className="bg-[#131D2B]/40 rounded-xl p-3.5 border border-white/[0.03] gap-y-1 mb-3">
+                                <View className="bg-input/40 rounded-xl p-3.5 border border-white/[0.03] gap-y-1 mb-3">
                                     <View className="flex-row justify-between py-2 border-b border-white/[0.04]">
-                                        <Text className="text-[#748096] text-xs">Provider Company</Text>
-                                        <Text className="text-white text-sm font-semibold">{driver.vehicle.insurance.provider}</Text>
+                                        <Text className="text-muted text-xs">Provider Company</Text>
+                                        <Text className="text-foreground text-sm font-semibold">{driver.vehicle.insurance.provider}</Text>
                                     </View>
                                     <View className="flex-row justify-between py-2 border-b border-white/[0.04]">
-                                        <Text className="text-[#748096] text-xs">Policy Number</Text>
-                                        <Text className="text-white text-sm font-semibold">{driver.vehicle.insurance.policyNumber}</Text>
+                                        <Text className="text-muted text-xs">Policy Number</Text>
+                                        <Text className="text-foreground text-sm font-semibold">{driver.vehicle.insurance.policyNumber}</Text>
                                     </View>
                                     <View className="flex-row justify-between py-2 border-b border-white/[0.04]">
-                                        <Text className="text-[#748096] text-xs">Expiry Date</Text>
-                                        <Text className="text-white text-sm font-semibold">{formatDateStr(driver.vehicle.insurance.expiryDate)}</Text>
+                                        <Text className="text-muted text-xs">Expiry Date</Text>
+                                        <Text className="text-foreground text-sm font-semibold">{formatDateStr(driver.vehicle.insurance.expiryDate)}</Text>
                                     </View>
                                     <View className="flex-row justify-between py-2 items-center">
-                                        <Text className="text-[#748096] text-xs">Document Attachment</Text>
+                                        <Text className="text-muted text-xs">Document Attachment</Text>
                                         <View className="flex-row items-center">
-                                            <Feather name="check-circle" size={13} color="#11E0C5" className="mr-1" />
-                                            <Text className="text-[#11E0C5] text-xs font-semibold">Uploaded</Text>
+                                            <Feather name="check-circle" size={13} color={theme.colors.primary} className="mr-1" />
+                                            <Text className="text-primary text-xs font-semibold">Uploaded</Text>
                                         </View>
                                     </View>
                                 </View>
                             ) : (
-                                <Text className="text-[#748096] text-xs mb-3 leading-5">
+                                <Text className="text-muted text-xs mb-3 leading-5">
                                     No vehicle insurance uploaded yet. Please upload insurance documents to get verified.
                                 </Text>
                             )}
@@ -841,19 +843,19 @@ export default function DocumentUpload() {
                                     setInsFile(null);
                                     setEditingDoc("insurance");
                                 }}
-                                className="w-full h-11 bg-white/[0.03] border border-white/[0.08] rounded-xl flex-row items-center justify-center gap-x-2"
+                                className="w-full h-11 bg-foreground/[0.03] border border-border rounded-xl flex-row items-center justify-center gap-x-2"
                             >
-                                <Feather name={hasUploadedIns ? "edit-2" : "upload-cloud"} size={14} color="#11E0C5" />
-                                <Text className="text-[#11E0C5] text-xs font-bold">
+                                <Feather name={hasUploadedIns ? "edit-2" : "upload-cloud"} size={14} color={theme.colors.primary} />
+                                <Text className="text-primary text-xs font-bold">
                                     {hasUploadedIns ? "Edit / Re-upload" : "Upload Document"}
                                 </Text>
                             </TouchableOpacity>
                         </View>
 
                         {/* PUC Certificate Card */}
-                        <View className={`${glassCard} p-5 border border-white/[0.08]`}>
+                        <View className={`${glassCard} p-5 border border-border`}>
                             <View className="flex-row justify-between items-center mb-3">
-                                <Text className="text-white text-base font-bold">PUC Certificate</Text>
+                                <Text className="text-foreground text-base font-bold">PUC Certificate</Text>
                                 <View className={`px-2.5 py-1 rounded-full border flex-row items-center ${getStatusColor(driver?.vehicle?.puc?.status)}`}>
                                     <Text className="text-[10px] font-bold capitalize text-current">
                                         {getStatusText(driver?.vehicle?.puc?.status)}
@@ -862,21 +864,21 @@ export default function DocumentUpload() {
                             </View>
 
                             {hasUploadedPuc ? (
-                                <View className="bg-[#131D2B]/40 rounded-xl p-3.5 border border-white/[0.03] gap-y-1 mb-3">
+                                <View className="bg-input/40 rounded-xl p-3.5 border border-white/[0.03] gap-y-1 mb-3">
                                     <View className="flex-row justify-between py-2 border-b border-white/[0.04]">
-                                        <Text className="text-[#748096] text-xs">Expiry Date</Text>
-                                        <Text className="text-white text-sm font-semibold">{formatDateStr(driver.vehicle.puc.expiryDate)}</Text>
+                                        <Text className="text-muted text-xs">Expiry Date</Text>
+                                        <Text className="text-foreground text-sm font-semibold">{formatDateStr(driver.vehicle.puc.expiryDate)}</Text>
                                     </View>
                                     <View className="flex-row justify-between py-2 items-center">
-                                        <Text className="text-[#748096] text-xs">Document Attachment</Text>
+                                        <Text className="text-muted text-xs">Document Attachment</Text>
                                         <View className="flex-row items-center">
-                                            <Feather name="check-circle" size={13} color="#11E0C5" className="mr-1" />
-                                            <Text className="text-[#11E0C5] text-xs font-semibold">Uploaded</Text>
+                                            <Feather name="check-circle" size={13} color={theme.colors.primary} className="mr-1" />
+                                            <Text className="text-primary text-xs font-semibold">Uploaded</Text>
                                         </View>
                                     </View>
                                 </View>
                             ) : (
-                                <Text className="text-[#748096] text-xs mb-3 leading-5">
+                                <Text className="text-muted text-xs mb-3 leading-5">
                                     No PUC certificate uploaded yet. Please upload your PUC to get verified.
                                 </Text>
                             )}
@@ -888,19 +890,19 @@ export default function DocumentUpload() {
                                     setPucFile(null);
                                     setEditingDoc("puc");
                                 }}
-                                className="w-full h-11 bg-white/[0.03] border border-white/[0.08] rounded-xl flex-row items-center justify-center gap-x-2"
+                                className="w-full h-11 bg-foreground/[0.03] border border-border rounded-xl flex-row items-center justify-center gap-x-2"
                             >
-                                <Feather name={hasUploadedPuc ? "edit-2" : "upload-cloud"} size={14} color="#11E0C5" />
-                                <Text className="text-[#11E0C5] text-xs font-bold">
+                                <Feather name={hasUploadedPuc ? "edit-2" : "upload-cloud"} size={14} color={theme.colors.primary} />
+                                <Text className="text-primary text-xs font-bold">
                                     {hasUploadedPuc ? "Edit / Re-upload" : "Upload Document"}
                                 </Text>
                             </TouchableOpacity>
                         </View>
 
                         {/* Commercial Permit Card */}
-                        <View className={`${glassCard} p-5 border border-white/[0.08]`}>
+                        <View className={`${glassCard} p-5 border border-border`}>
                             <View className="flex-row justify-between items-center mb-3">
-                                <Text className="text-white text-base font-bold">Commercial Permit</Text>
+                                <Text className="text-foreground text-base font-bold">Commercial Permit</Text>
                                 <View className={`px-2.5 py-1 rounded-full border flex-row items-center ${getStatusColor(driver?.vehicle?.permit?.status)}`}>
                                     <Text className="text-[10px] font-bold capitalize text-current">
                                         {getStatusText(driver?.vehicle?.permit?.status)}
@@ -909,27 +911,27 @@ export default function DocumentUpload() {
                             </View>
 
                             {hasUploadedPermit ? (
-                                <View className="bg-[#131D2B]/40 rounded-xl p-3.5 border border-white/[0.03] gap-y-1 mb-3">
+                                <View className="bg-input/40 rounded-xl p-3.5 border border-white/[0.03] gap-y-1 mb-3">
                                     <View className="flex-row justify-between py-2 border-b border-white/[0.04]">
-                                        <Text className="text-[#748096] text-xs">Permit Type</Text>
-                                        <Text className="text-white text-sm font-semibold">{driver.vehicle.permit.type}</Text>
+                                        <Text className="text-muted text-xs">Permit Type</Text>
+                                        <Text className="text-foreground text-sm font-semibold">{driver.vehicle.permit.type}</Text>
                                     </View>
                                     <View className="flex-row justify-between py-2 border-b border-white/[0.04]">
-                                        <Text className="text-[#748096] text-xs">Expiry Date</Text>
-                                        <Text className="text-white text-sm font-semibold">
+                                        <Text className="text-muted text-xs">Expiry Date</Text>
+                                        <Text className="text-foreground text-sm font-semibold">
                                             {driver.vehicle.permit.expiryDate ? formatDateStr(driver.vehicle.permit.expiryDate) : "No Expiry Date"}
                                         </Text>
                                     </View>
                                     <View className="flex-row justify-between py-2 items-center">
-                                        <Text className="text-[#748096] text-xs">Document Attachment</Text>
+                                        <Text className="text-muted text-xs">Document Attachment</Text>
                                         <View className="flex-row items-center">
-                                            <Feather name="check-circle" size={13} color="#11E0C5" className="mr-1" />
-                                            <Text className="text-[#11E0C5] text-xs font-semibold">Uploaded</Text>
+                                            <Feather name="check-circle" size={13} color={theme.colors.primary} className="mr-1" />
+                                            <Text className="text-primary text-xs font-semibold">Uploaded</Text>
                                         </View>
                                     </View>
                                 </View>
                             ) : (
-                                <Text className="text-[#748096] text-xs mb-3 leading-5">
+                                <Text className="text-muted text-xs mb-3 leading-5">
                                     No commercial permit uploaded yet. Please upload your permit to get verified.
                                 </Text>
                             )}
@@ -942,10 +944,10 @@ export default function DocumentUpload() {
                                     setPermitFile(null);
                                     setEditingDoc("permit");
                                 }}
-                                className="w-full h-11 bg-white/[0.03] border border-white/[0.08] rounded-xl flex-row items-center justify-center gap-x-2"
+                                className="w-full h-11 bg-foreground/[0.03] border border-border rounded-xl flex-row items-center justify-center gap-x-2"
                             >
-                                <Feather name={hasUploadedPermit ? "edit-2" : "upload-cloud"} size={14} color="#11E0C5" />
-                                <Text className="text-[#11E0C5] text-xs font-bold">
+                                <Feather name={hasUploadedPermit ? "edit-2" : "upload-cloud"} size={14} color={theme.colors.primary} />
+                                <Text className="text-primary text-xs font-bold">
                                     {hasUploadedPermit ? "Edit / Re-upload" : "Upload Document"}
                                 </Text>
                             </TouchableOpacity>
@@ -961,27 +963,27 @@ export default function DocumentUpload() {
                 transparent={true}
                 onRequestClose={() => setEditingDoc(null)}
             >
-                <View className="flex-1 justify-end bg-black/75">
-                    <View className="bg-[#070B12] rounded-t-[32px] border-t border-white/[0.08] max-h-[85%] min-h-[50%] p-6">
+                <View className="flex-1 justify-end bg-foreground/75">
+                    <View className="bg-background rounded-t-[32px] border-t border-border max-h-[85%] min-h-[50%] p-6">
                         {/* Header of Modal */}
                         <View className="flex-row justify-between items-center mb-6">
                             <View>
-                                <Text className="text-white text-lg font-bold">
+                                <Text className="text-foreground text-lg font-bold">
                                     {editingDoc === "license" && "Upload Driver License"}
                                     {editingDoc === "rc" && "Upload Vehicle RC"}
                                     {editingDoc === "insurance" && "Upload Vehicle Insurance"}
                                     {editingDoc === "puc" && "Upload PUC Certificate"}
                                     {editingDoc === "permit" && "Upload Commercial Permit"}
                                 </Text>
-                                <Text className="text-[#748096] text-xs mt-1">
+                                <Text className="text-muted text-xs mt-1">
                                     Fill in details and upload document photo
                                 </Text>
                             </View>
                             <TouchableOpacity
                                 onPress={() => setEditingDoc(null)}
-                                className="h-8 w-8 rounded-full bg-white/[0.05] items-center justify-center border border-white/[0.05]"
+                                className="h-8 w-8 rounded-full bg-foreground/[0.05] items-center justify-center border border-border"
                             >
-                                <Feather name="x" size={18} color="#748096" />
+                                <Feather name="x" size={18} color={theme.colors.textMuted} />
                             </TouchableOpacity>
                         </View>
 

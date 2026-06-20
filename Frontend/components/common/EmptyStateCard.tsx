@@ -2,6 +2,7 @@ import React, { memo } from "react";
 import { View, Text, TouchableOpacity } from "react-native";
 import { Feather } from "@expo/vector-icons";
 import { glassCard } from "@/constants/styles";
+import { useTheme } from "@/store/ThemeContext";
 
 interface EmptyStateCardProps {
     /** Feather icon name */
@@ -26,6 +27,9 @@ const EmptyStateCard = memo(function EmptyStateCard({
     className = "",
     minHeight = 160,
 }: EmptyStateCardProps) {
+    const { theme } = useTheme();
+    const resolvedIconColor = iconColor === "#748096" ? theme.colors.textMuted : iconColor;
+
     return (
         <View
             className={`${glassCard} p-6 items-center justify-center ${className}`}
@@ -35,19 +39,19 @@ const EmptyStateCard = memo(function EmptyStateCard({
             {/* Icon halo */}
             <View
                 className="w-14 h-14 rounded-2xl items-center justify-center mb-4"
-                style={{ backgroundColor: `${iconColor}14` }}
+                style={{ backgroundColor: `${resolvedIconColor}14` }}
             >
-                <Feather name={icon} size={26} color={iconColor} />
+                <Feather name={icon} size={26} color={resolvedIconColor} />
             </View>
 
             {/* Title */}
-            <Text className="text-white text-[15px] font-bold text-center">
+            <Text className="text-foreground text-[15px] font-bold text-center">
                 {title}
             </Text>
 
             {/* Subtitle */}
             {subtitle ? (
-                <Text className="text-[#748096] text-[13px] text-center mt-1.5 leading-5 max-w-[240px]">
+                <Text className="text-muted text-[13px] text-center mt-1.5 leading-5 max-w-[240px]">
                     {subtitle}
                 </Text>
             ) : null}
@@ -59,9 +63,9 @@ const EmptyStateCard = memo(function EmptyStateCard({
                     onPress={onCtaPress}
                     accessibilityRole="button"
                     accessibilityLabel={ctaLabel}
-                    className="mt-5 h-11 px-6 bg-[#11E0C5] rounded-xl items-center justify-center"
+                    className="mt-5 h-11 px-6 bg-primary rounded-xl items-center justify-center"
                 >
-                    <Text className="text-[#071018] text-[13px] font-bold">
+                    <Text className="text-background text-[13px] font-bold">
                         {ctaLabel}
                     </Text>
                 </TouchableOpacity>

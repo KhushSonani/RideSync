@@ -22,6 +22,7 @@ import * as Location from "expo-location";
 
 import { useLocation, type LocationEntry } from "@/store/LocationContext";
 import { COLORS } from "@/constants/theme";
+import { useTheme } from "@/store/ThemeContext";
 
 // ─── Types ─────────────────────────────────────────────────────────────────────
 
@@ -106,6 +107,7 @@ async function reverseGeocode(lat: number, lng: number): Promise<string> {
 // ─── Screen ────────────────────────────────────────────────────────────────────
 
 export default function LocationSearchScreen() {
+    const { colorScheme, theme } = useTheme();
     const { type } = useLocalSearchParams<{ type: "pickup" | "drop" }>();
     const locationType = type === "drop" ? "drop" : "pickup";
 
@@ -223,11 +225,11 @@ export default function LocationSearchScreen() {
     }, []);
 
     const isPickup = locationType === "pickup";
-    const dotColor = isPickup ? "#11E0C5" : "#EF4444";
+    const dotColor = isPickup ? theme.colors.primary : theme.colors.danger;
     const label = isPickup ? "Pickup location" : "Destination";
 
     return (
-        <View className="flex-1" style={{ backgroundColor: COLORS.background }}>
+        <View className="flex-1 bg-background">
             <StatusBar barStyle="light-content" translucent backgroundColor="transparent" />
 
             {/* Glow */}
@@ -241,17 +243,29 @@ export default function LocationSearchScreen() {
 
             <SafeAreaView className="flex-1">
                 {/* ── Header ─────────────────────────────────────────────── */}
-                <View className="flex-row items-center px-4 pt-2 pb-3 border-b border-white/[0.06]">
+                <View className="flex-row items-center px-4 pt-2 pb-3 border-b border-border">
                     <TouchableOpacity
                         onPress={() => router.back()}
                         className="w-10 h-10 items-center justify-center -ml-1 mr-2"
                         accessibilityLabel="Go back"
                     >
-                        <Feather name="arrow-left" size={22} color="rgba(255,255,255,0.9)" />
+                        <Feather name="arrow-left" size={22} color={(theme.colors.border)} />
                     </TouchableOpacity>
 
                     {/* Search input */}
-                    <View className="flex-1 h-12 bg-[#131D2B]/95 border border-white/[0.08] rounded-2xl px-4 flex-row items-center">
+                    <View 
+                        className="flex-1 h-12 rounded-2xl px-4 flex-row items-center"
+                        style={{
+                            backgroundColor: theme.colors.card,
+                            borderWidth: 1,
+                            borderColor: theme.colors.border,
+                            shadowColor: theme.colors.textPrimary,
+                            shadowOpacity: 0.04,
+                            shadowRadius: 12,
+                            shadowOffset: { width: 0, height: 4 },
+                            elevation: 2
+                        }}
+                    >
                         {/* Dot indicator */}
                         <View
                             className="w-2.5 h-2.5 rounded-full mr-3 flex-shrink-0"
@@ -260,7 +274,7 @@ export default function LocationSearchScreen() {
 
                         <TextInput
                             ref={inputRef}
-                            className="flex-1 text-white text-[15px]"
+                            className="flex-1 text-foreground text-[15px]"
                             placeholder={`Search ${label.toLowerCase()}…`}
                             placeholderTextColor="#748096"
                             value={query}
@@ -277,12 +291,12 @@ export default function LocationSearchScreen() {
                                 className="w-7 h-7 items-center justify-center"
                                 accessibilityLabel="Clear search"
                             >
-                                <Feather name="x" size={16} color="#748096" />
+                                <Feather name="x" size={16} color={theme.colors.textMuted} />
                             </TouchableOpacity>
                         )}
 
                         {loading && (
-                            <ActivityIndicator size="small" color="#748096" style={{ marginLeft: 6 }} />
+                            <ActivityIndicator size="small" color={theme.colors.textMuted} style={{ marginLeft: 6 }} />
                         )}
                     </View>
                 </View>
@@ -295,7 +309,7 @@ export default function LocationSearchScreen() {
                     >
                         <View className="w-2 h-2 rounded-full" style={{ backgroundColor: dotColor }} />
                     </View>
-                    <Text className="text-[#748096] text-[12px] uppercase tracking-widest font-semibold">
+                    <Text className="text-muted text-[12px] uppercase tracking-widest font-semibold">
                         {label}
                     </Text>
                 </View>
@@ -305,15 +319,20 @@ export default function LocationSearchScreen() {
                     onPress={handleUseCurrentLocation}
                     disabled={geoLoading}
                     activeOpacity={0.8}
-                    className="mx-5 mt-3 mb-2 h-12 bg-[#11E0C5]/10 border border-[#11E0C5]/20 rounded-2xl flex-row items-center px-4"
+                    className="mx-5 mt-3 mb-2 h-12 rounded-2xl flex-row items-center px-4"
+                    style={{
+                        backgroundColor: theme.colors.primary + "1A",
+                        borderWidth: 1,
+                        borderColor: theme.colors.primary + "33"
+                    }}
                     accessibilityLabel="Use my current location"
                 >
                     {geoLoading ? (
-                        <ActivityIndicator size="small" color="#11E0C5" />
+                        <ActivityIndicator size="small" color={theme.colors.primary} />
                     ) : (
-                        <Ionicons name="locate-outline" size={18} color="#11E0C5" />
+                        <Ionicons name="locate-outline" size={18} color={theme.colors.primary} />
                     )}
-                    <Text className="text-[#11E0C5] text-[14px] font-semibold ml-3">
+                    <Text className="text-primary text-[14px] font-semibold ml-3">
                         {geoLoading ? "Detecting location…" : "Use my current location"}
                     </Text>
                 </TouchableOpacity>
@@ -321,18 +340,18 @@ export default function LocationSearchScreen() {
                 {/* ── Separator ─────────────────────────────────────────── */}
                 {predictions.length > 0 && (
                     <View className="mx-5 my-3 flex-row items-center gap-x-3">
-                        <View className="flex-1 h-[0.5px] bg-white/10" />
-                        <Text className="text-[#748096] text-[10px] uppercase tracking-widest">
+                        <View className="flex-1 h-[0.5px] bg-foreground/10" />
+                        <Text className="text-muted text-[10px] uppercase tracking-widest">
                             Suggestions
                         </Text>
-                        <View className="flex-1 h-[0.5px] bg-white/10" />
+                        <View className="flex-1 h-[0.5px] bg-foreground/10" />
                     </View>
                 )}
 
                 {/* ── Error ─────────────────────────────────────────────── */}
                 {error && (
                     <View className="mx-5 mt-3 p-4 bg-red-500/10 border border-red-500/20 rounded-2xl flex-row items-center">
-                        <Feather name="alert-circle" size={16} color="#EF4444" />
+                        <Feather name="alert-circle" size={16} color={theme.colors.danger} />
                         <Text className="text-red-400 text-[13px] ml-3 flex-1">{error}</Text>
                     </View>
                 )}
@@ -340,11 +359,11 @@ export default function LocationSearchScreen() {
                 {/* ── Empty state (after typing) ────────────────────────── */}
                 {!loading && !error && query.trim().length >= 2 && predictions.length === 0 && (
                     <View className="flex-1 items-center justify-center pb-24">
-                        <View className="w-14 h-14 rounded-2xl bg-white/5 items-center justify-center mb-4">
-                            <Feather name="map-pin" size={24} color="#748096" />
+                        <View className="w-14 h-14 rounded-2xl bg-foreground/5 items-center justify-center mb-4">
+                            <Feather name="map-pin" size={24} color={theme.colors.textMuted} />
                         </View>
-                        <Text className="text-white font-semibold text-[15px]">No results found</Text>
-                        <Text className="text-[#748096] text-[13px] mt-1.5 text-center max-w-[220px]">
+                        <Text className="text-foreground font-semibold text-[15px]">No results found</Text>
+                        <Text className="text-muted text-[13px] mt-1.5 text-center max-w-[220px]">
                             Try a different spelling or a nearby landmark.
                         </Text>
                     </View>
@@ -358,31 +377,32 @@ export default function LocationSearchScreen() {
                     contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 40 }}
                     renderItem={({ item, index }) => (
                         <TouchableOpacity
-                            activeOpacity={0.75}
+                            activeOpacity={0.6}
                             onPress={() => handleSelectPrediction(item)}
                             accessibilityLabel={item.description}
-                            className="flex-row items-center py-4"
+                            className="flex-row items-center py-4 px-2 rounded-xl"
                             style={{
                                 borderBottomWidth: index < predictions.length - 1 ? 0.5 : 0,
-                                borderBottomColor: "rgba(255,255,255,0.06)",
+                                borderBottomColor: (theme.colors.border),
+                                marginBottom: 4,
                             }}
                         >
                             {/* Icon */}
-                            <View className="w-9 h-9 rounded-xl bg-white/[0.05] border border-white/[0.07] items-center justify-center mr-4 flex-shrink-0">
+                            <View className="w-9 h-9 rounded-xl bg-foreground/[0.05] border border-white/[0.07] items-center justify-center mr-4 flex-shrink-0">
                                 <Feather name="map-pin" size={15} color={dotColor} />
                             </View>
 
                             {/* Text */}
                             <View className="flex-1">
                                 <Text
-                                    className="text-white text-[14px] font-semibold"
+                                    className="text-foreground text-[14px] font-semibold"
                                     numberOfLines={1}
                                 >
                                     {item.structured_formatting?.main_text ?? item.description}
                                 </Text>
                                 {item.structured_formatting?.secondary_text ? (
                                     <Text
-                                        className="text-[#748096] text-[12px] mt-0.5"
+                                        className="text-muted text-[12px] mt-0.5"
                                         numberOfLines={1}
                                     >
                                         {item.structured_formatting.secondary_text}
@@ -390,7 +410,7 @@ export default function LocationSearchScreen() {
                                 ) : null}
                             </View>
 
-                            <Feather name="chevron-right" size={16} color="#748096" />
+                            <Feather name="chevron-right" size={16} color={theme.colors.textMuted} />
                         </TouchableOpacity>
                     )}
                 />

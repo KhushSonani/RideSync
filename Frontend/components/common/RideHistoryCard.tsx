@@ -1,5 +1,6 @@
+import { useTheme } from "@/store/ThemeContext";
 import React, { memo } from "react";
-import { View, Text, TouchableOpacity } from "react-native";
+import { View, Text, TouchableOpacity, StyleSheet, useColorScheme } from "react-native";
 import { Feather } from "@expo/vector-icons";
 import { glassCard } from "@/constants/styles";
 
@@ -23,17 +24,17 @@ interface RideHistoryCardProps {
     onPress?: () => void;
 }
 
-const STATUS_CONFIG: Record<
+const getStatusConfig = (theme: any): Record<
     RideStatus,
     { label: string; color: string; bg: string }
-> = {
-    requested:  { label: "Requested",  color: "#F59E0B", bg: "#F59E0B14" },
-    accepted:   { label: "Accepted",   color: "#3B82F6", bg: "#3B82F614" },
-    arriving:   { label: "Arriving",   color: "#0A84FF", bg: "#0A84FF14" },
-    started:    { label: "In Progress",color: "#11E0C5", bg: "#11E0C514" },
-    completed:  { label: "Completed",  color: "#10B981", bg: "#10B98114" },
-    cancelled:  { label: "Cancelled",  color: "#EF4444", bg: "#EF444414" },
-};
+> => ({
+    requested: { label: "Requested", color: "#F59E0B", bg: "#F59E0B14" },
+    accepted: { label: "Accepted", color: "#3B82F6", bg: "#3B82F614" },
+    arriving: { label: "Arriving", color: "#0A84FF", bg: "#0A84FF14" },
+    started: { label: "In Progress", color: theme.colors.primary, bg: theme.colors.primary + "14" },
+    completed: { label: "Completed", color: theme.colors.success, bg: theme.colors.success + "14" },
+    cancelled: { label: "Cancelled", color: theme.colors.danger, bg: theme.colors.danger + "14" },
+});
 
 const RideHistoryCard = memo(function RideHistoryCard({
     pickup,
@@ -45,26 +46,29 @@ const RideHistoryCard = memo(function RideHistoryCard({
     distance,
     onPress,
 }: RideHistoryCardProps) {
+    const { colorScheme, theme } = useTheme();
+    const STATUS_CONFIG = getStatusConfig(theme);
     const { label, color, bg } = STATUS_CONFIG[status] ?? STATUS_CONFIG.completed;
 
     return (
         <TouchableOpacity
-            activeOpacity={onPress ? 0.75 : 1}
+            activeOpacity={onPress ? 0.72 : 1}
             onPress={onPress}
             disabled={!onPress}
             accessibilityRole="button"
             accessibilityLabel={`Ride from ${pickup} to ${drop}, ${label}`}
+            style={styles.cardWrapper}
         >
-            <View className={`${glassCard} p-4`}>
+            <View className={`${glassCard} p-4`} style={styles.cardInner}>
                 {/* Top row: route + fare */}
                 <View className="flex-row items-start justify-between mb-3">
                     {/* Route column */}
                     <View className="flex-1 pr-3">
                         {/* Pickup */}
                         <View className="flex-row items-center mb-2">
-                            <View className="w-2.5 h-2.5 rounded-full bg-[#11E0C5] mr-2.5 mt-0.5" />
+                            <View className="w-2.5 h-2.5 rounded-full bg-primary mr-2.5 mt-0.5" />
                             <Text
-                                className="text-white text-[13px] font-semibold flex-1"
+                                className="text-foreground text-[13px] font-semibold flex-1"
                                 numberOfLines={1}
                             >
                                 {pickup}
@@ -72,13 +76,13 @@ const RideHistoryCard = memo(function RideHistoryCard({
                         </View>
 
                         {/* Connector line */}
-                        <View className="w-[1px] h-3 bg-white/10 ml-[5px] mb-2" />
+                        <View className="w-[1px] h-3 bg-foreground/10 ml-[5px] mb-2" />
 
                         {/* Drop */}
                         <View className="flex-row items-center">
                             <View className="w-2.5 h-2.5 rounded-full bg-red-500 mr-2.5 mt-0.5" />
                             <Text
-                                className="text-white text-[13px] font-semibold flex-1"
+                                className="text-foreground text-[13px] font-semibold flex-1"
                                 numberOfLines={1}
                             >
                                 {drop}
@@ -88,11 +92,11 @@ const RideHistoryCard = memo(function RideHistoryCard({
 
                     {/* Fare */}
                     <View className="items-end">
-                        <Text className="text-white text-[16px] font-bold">
+                        <Text className="text-foreground text-[16px] font-bold">
                             {fare}
                         </Text>
                         {distance ? (
-                            <Text className="text-[#748096] text-[11px] mt-0.5">
+                            <Text className="text-muted text-[11px] mt-0.5">
                                 {distance}
                             </Text>
                         ) : null}
@@ -100,17 +104,17 @@ const RideHistoryCard = memo(function RideHistoryCard({
                 </View>
 
                 {/* Bottom row: date / person / status */}
-                <View className="flex-row items-center justify-between border-t border-white/[0.05] pt-3">
+                <View className="flex-row items-center justify-between border-t border-border pt-3">
                     <View className="flex-row items-center">
-                        <Feather name="clock" size={11} color="#748096" />
-                        <Text className="text-[#748096] text-[11px] ml-1.5">
+                        <Feather name="clock" size={11} color={theme.colors.textMuted} />
+                        <Text className="text-muted text-[11px] ml-1.5">
                             {date}
                         </Text>
                         {personName ? (
                             <>
-                                <View className="w-[1px] h-3 bg-white/10 mx-2" />
-                                <Feather name="user" size={11} color="#748096" />
-                                <Text className="text-[#748096] text-[11px] ml-1">
+                                <View className="w-[1px] h-3 bg-foreground/10 mx-2" />
+                                <Feather name="user" size={11} color={theme.colors.textMuted} />
+                                <Text className="text-muted text-[11px] ml-1">
                                     {personName}
                                 </Text>
                             </>
@@ -136,3 +140,22 @@ const RideHistoryCard = memo(function RideHistoryCard({
 });
 
 export default RideHistoryCard;
+
+// ─── Styles ───────────────────────────────────────────────────────────────────
+
+const styles = StyleSheet.create({
+    cardWrapper: {
+        // iOS shadow
+        shadowColor: "#000",
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.28,
+        shadowRadius: 10,
+        // Android elevation
+        elevation: 6,
+        borderRadius: 30,
+        marginBottom: 2,
+    },
+    cardInner: {
+        overflow: "hidden",
+    },
+});

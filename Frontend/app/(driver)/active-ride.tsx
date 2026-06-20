@@ -55,10 +55,13 @@ import {
 } from "@/services/socket";
 import { getAccessToken } from "@/services/storage";
 import type { RideAcceptedPayload } from "@/services/socket.types";
+import { useTheme } from "@/store/ThemeContext";
+import { BlurView } from "expo-blur";
 
 // ─── Screen ──────────────────────────────────────────────────────────────────
 
 export default function DriverActiveRide() {
+    const { colorScheme, theme } = useTheme();
     const [rideData, setRideData] = useState<RideAcceptedPayload | null>(null);
     const [loading, setLoading] = useState(true);
     const [rideStatus, setRideStatus] = useState<RideStatus>("accepted");
@@ -304,10 +307,10 @@ export default function DriverActiveRide() {
                 <TouchableOpacity
                     activeOpacity={0.85}
                     onPress={handleMarkArriving}
-                    className="flex-[2] h-14 bg-[#11E0C5] rounded-2xl items-center justify-center border border-[#6FFFEF]/10"
+                    className="flex-[2] h-14 bg-primary rounded-2xl items-center justify-center border border-[#6FFFEF]/10"
                     accessibilityLabel="Mark as arriving"
                 >
-                    <Text className="text-[#071018] text-[14px] font-bold">
+                    <Text className="text-background text-[14px] font-bold">
                         I'm Arriving
                     </Text>
                 </TouchableOpacity>
@@ -318,12 +321,12 @@ export default function DriverActiveRide() {
                 <TouchableOpacity
                     activeOpacity={0.85}
                     onPress={handleOpenOTPVerify}
-                    className="flex-[2] h-14 bg-[#11E0C5] rounded-2xl items-center justify-center border border-[#6FFFEF]/10"
+                    className="flex-[2] h-14 bg-primary rounded-2xl items-center justify-center border border-[#6FFFEF]/10"
                     accessibilityLabel="Verify OTP to start ride"
                 >
                     <View className="flex-row items-center gap-x-2">
                         <Ionicons name="keypad-outline" size={17} color="#071018" />
-                        <Text className="text-[#071018] text-[14px] font-bold">
+                        <Text className="text-background text-[14px] font-bold">
                             Enter OTP
                         </Text>
                     </View>
@@ -338,7 +341,7 @@ export default function DriverActiveRide() {
                     className="flex-[2] h-14 bg-[#10B981] rounded-2xl items-center justify-center"
                     accessibilityLabel="Complete ride"
                 >
-                    <Text className="text-white text-[14px] font-bold">Complete Ride</Text>
+                    <Text className="text-foreground text-[14px] font-bold">Complete Ride</Text>
                 </TouchableOpacity>
             );
         }
@@ -357,9 +360,9 @@ export default function DriverActiveRide() {
 
     if (loading || !rideData) {
         return (
-            <View className="flex-1 bg-[#131D2B] items-center justify-center">
+            <View className="flex-1 bg-input items-center justify-center">
                 <StatusBar barStyle="light-content" translucent backgroundColor="transparent" />
-                <ActivityIndicator size="large" color="#11E0C5" />
+                <ActivityIndicator size="large" color={theme.colors.primary} />
             </View>
         );
     }
@@ -371,7 +374,7 @@ export default function DriverActiveRide() {
     const dropLng = ride.drop.location.coordinates[0];
 
     return (
-        <View className="flex-1 bg-[#131D2B] relative">
+        <View className="flex-1 bg-input relative">
             <StatusBar barStyle="light-content" translucent backgroundColor="transparent" />
 
             {/* ── LIVE MAP ──────────────────────────────────────────────── */}
@@ -383,14 +386,14 @@ export default function DriverActiveRide() {
                 showsUserLocation={false}
                 showsCompass={false}
                 toolbarEnabled={false}
-                customMapStyle={DARK_MAP_STYLE}
+                customMapStyle={colorScheme === 'light' ? [] : DARK_MAP_STYLE}
             >
                 {/* Pickup marker */}
                 <Marker
                     coordinate={{ latitude: pickupLat, longitude: pickupLng }}
                     title="Pickup"
                     description={ride.pickup.address}
-                    pinColor="#11E0C5"
+                    pinColor={theme.colors.primary}
                     identifier="pickup-marker"
                 />
 
@@ -418,12 +421,12 @@ export default function DriverActiveRide() {
                                 width: 40,
                                 height: 40,
                                 borderRadius: 20,
-                                backgroundColor: "#11E0C5",
+                                backgroundColor: theme.colors.primary,
                                 alignItems: "center",
                                 justifyContent: "center",
                                 borderWidth: 2,
                                 borderColor: "#fff",
-                                shadowColor: "#11E0C5",
+                                shadowColor: theme.colors.primary,
                                 shadowOpacity: 0.8,
                                 shadowRadius: 8,
                                 elevation: 6,
@@ -439,7 +442,7 @@ export default function DriverActiveRide() {
             {(permissionDenied || locationError) && (
                 <SafeAreaView className="absolute top-0 left-0 right-0 z-20">
                     <View className="mx-4 mt-2 bg-red-500/20 border border-red-500/40 px-4 py-2 rounded-xl flex-row items-center">
-                        <Feather name="alert-triangle" size={13} color="#EF4444" />
+                        <Feather name="alert-triangle" size={13} color={theme.colors.danger} />
                         <Text className="text-red-400 text-[11px] font-semibold ml-2 flex-1" numberOfLines={2}>
                             {permissionDenied
                                 ? "Location permission denied — rider cannot see your position."
@@ -456,7 +459,7 @@ export default function DriverActiveRide() {
                     activeOpacity={0.8}
                     onPress={() => router.back()}
                     disabled={rideStatus === "accepted" || rideStatus === "arriving" || rideStatus === "started"}
-                    className="w-10 h-10 rounded-full bg-[#0D1420]/90 border border-white/10 items-center justify-center shadow-lg"
+                    className="w-10 h-10 rounded-full bg-card/90 border border-border items-center justify-center shadow-lg"
                     style={{ opacity: (rideStatus === "accepted" || rideStatus === "arriving" || rideStatus === "started") ? 0.3 : 1 }}
                     accessibilityLabel="Go back"
                 >
@@ -466,18 +469,18 @@ export default function DriverActiveRide() {
 
             {/* ── GPS status badge (top-right) ──────────────────────────── */}
             <SafeAreaView className="absolute top-4 right-4 z-10">
-                <View className="bg-[#0D1420]/90 border border-white/10 px-3 py-1.5 rounded-xl flex-row items-center gap-x-1.5">
+                <View className="bg-card/90 border border-border px-3 py-1.5 rounded-xl flex-row items-center gap-x-1.5">
                     {currentLocation ? (
                         <>
                             <View className="w-2 h-2 rounded-full bg-[#10B981]" />
-                            <Text className="text-[#11E0C5] text-[10px] font-semibold">
+                            <Text className="text-primary text-[10px] font-semibold">
                                 GPS Active
                             </Text>
                         </>
                     ) : (
                         <>
-                            <ActivityIndicator size={10} color="#748096" />
-                            <Text className="text-[#748096] text-[10px]">Acquiring GPS…</Text>
+                            <ActivityIndicator size={10} color={theme.colors.textMuted} />
+                            <Text className="text-muted text-[10px]">Acquiring GPS…</Text>
                         </>
                     )}
                 </View>
@@ -485,11 +488,23 @@ export default function DriverActiveRide() {
 
             {/* ── BOTTOM SLIDE-UP CARD ──────────────────────────────────── */}
             <View className="absolute bottom-0 left-0 right-0 z-10">
-                <ScrollView
-                    showsVerticalScrollIndicator={false}
-                    contentContainerStyle={{ padding: 20, paddingBottom: 36 }}
-                    bounces={false}
+                <BlurView
+                    tint={colorScheme === 'dark' ? 'dark' : 'light'}
+                    intensity={80}
+                    style={{
+                        borderTopLeftRadius: 32,
+                        borderTopRightRadius: 32,
+                        overflow: 'hidden',
+                        borderTopWidth: 1,
+                        borderColor: theme.colors.border,
+                        backgroundColor: colorScheme === 'dark' ? 'rgba(7, 16, 24, 0.7)' : 'rgba(255, 255, 255, 0.7)',
+                    }}
                 >
+                    <ScrollView
+                        showsVerticalScrollIndicator={false}
+                        contentContainerStyle={{ padding: 20, paddingBottom: 40 }}
+                        bounces={false}
+                    >
                     {/* Status badge */}
                     <View className="mb-3">
                         <RideStatusCard status={rideStatus} />
@@ -505,13 +520,13 @@ export default function DriverActiveRide() {
                         }}
                     >
                         {/* Trip stats */}
-                        <View className="flex-row items-center justify-between border-b border-white/[0.05] pb-4 mb-4">
+                        <View className="flex-row items-center justify-between border-b border-border pb-4 mb-4">
                             <View>
-                                <Text className="text-[#748096] text-[10px] uppercase tracking-wider">
+                                <Text className="text-muted text-[10px] uppercase tracking-wider">
                                     Estimated Time
                                 </Text>
                                 {/* TODO: replace with real ETA from maps SDK */}
-                                <Text className="text-white text-[17px] font-bold mt-0.5">
+                                <Text className="text-foreground text-[17px] font-bold mt-0.5">
                                     ~12 min
                                 </Text>
                             </View>
@@ -528,7 +543,7 @@ export default function DriverActiveRide() {
                         </View>
 
                         {/* Route */}
-                        <View className="border-t border-white/[0.05] pt-4 mb-5">
+                        <View className="border-t border-border pt-4 mb-5">
                             <RouteRow pickup={ride.pickup} drop={ride.drop} />
                         </View>
 
@@ -542,7 +557,7 @@ export default function DriverActiveRide() {
                                 accessibilityLabel="Cancel ride"
                             >
                                 {cancelling ? (
-                                    <ActivityIndicator size="small" color="#EF4444" />
+                                    <ActivityIndicator size="small" color={theme.colors.danger} />
                                 ) : (
                                     <Text className="text-red-400 text-[13px] font-bold">
                                         Cancel
@@ -552,8 +567,9 @@ export default function DriverActiveRide() {
 
                             {renderPrimaryAction()}
                         </View>
-                    </View>
-                </ScrollView>
+                        </View>
+                    </ScrollView>
+                </BlurView>
             </View>
         </View>
     );

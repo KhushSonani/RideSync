@@ -1,6 +1,7 @@
 import React, { memo } from "react";
 import { View, Text } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
+import { useTheme } from "@/store/ThemeContext";
 
 export type RideStatus =
     | "requested"
@@ -29,7 +30,7 @@ const STATUS_CONFIG: Record<RideStatus, StatusConfig> = {
     },
     accepted: {
         label: "Driver assigned",
-        color: "#11E0C5",
+        color: "#11E0C5", // fallback, overridden in component
         bg: "rgba(17,224,197,0.10)",
         border: "rgba(17,224,197,0.25)",
         icon: "checkmark-circle-outline",
@@ -78,7 +79,11 @@ const RideStatusCard = memo(function RideStatusCard({
     status,
     subtitle,
 }: RideStatusCardProps) {
-    const cfg = STATUS_CONFIG[status];
+    const { colorScheme, theme } = useTheme();
+    const cfg = { ...STATUS_CONFIG[status] };
+    if (status === 'accepted') {
+        cfg.color = theme.colors.primary;
+    }
 
     return (
         <View
@@ -93,7 +98,7 @@ const RideStatusCard = memo(function RideStatusCard({
                     {cfg.label}
                 </Text>
                 {subtitle ? (
-                    <Text className="text-white/60 text-[11px] mt-0.5">{subtitle}</Text>
+                    <Text className="text-foreground/60 text-[11px] mt-0.5">{subtitle}</Text>
                 ) : null}
             </View>
         </View>

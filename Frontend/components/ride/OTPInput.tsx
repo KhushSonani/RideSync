@@ -1,4 +1,5 @@
 import React, { useRef, useCallback, memo } from "react";
+import { useTheme } from "@/store/ThemeContext";
 import {
     View,
     TextInput,
@@ -34,6 +35,7 @@ const OTPInput = memo(function OTPInput({
     disabled = false,
 }: OTPInputProps) {
     const refs = useRef<Array<TextInput | null>>(Array(length).fill(null));
+    const { colorScheme, theme } = useTheme();
 
     // Pad / slice so digits array always has exactly `length` elements
     const digits = value
@@ -77,7 +79,10 @@ const OTPInput = memo(function OTPInput({
                     }}
                     style={[
                         styles.box,
-                        digits[i] ? styles.boxFilled : styles.boxEmpty,
+                        { color: theme.colors.textPrimary },
+                        digits[i] 
+                            ? styles.boxFilled 
+                            : [styles.boxEmpty, { borderColor: theme.colors.border }],
                         disabled && styles.boxDisabled,
                     ]}
                     value={digits[i] || ""}
@@ -112,12 +117,10 @@ const styles = StyleSheet.create({
         textAlign: "center",
         fontSize: 24,
         fontWeight: "700",
-        color: "#FFFFFF",
     },
     boxEmpty: {
         backgroundColor: "rgba(19,29,43,0.95)",
         borderWidth: 1.5,
-        borderColor: "rgba(255,255,255,0.08)",
     },
     boxFilled: {
         backgroundColor: "rgba(17,224,197,0.10)",

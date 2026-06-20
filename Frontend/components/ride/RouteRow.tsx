@@ -20,15 +20,15 @@ const RouteRow = memo(function RouteRow({ pickup, drop }: RouteRowProps) {
             {/* Pickup */}
             <View className="flex-row items-start">
                 <View className="items-center mr-3 mt-[3px]">
-                    <View className="w-2.5 h-2.5 rounded-full bg-[#11E0C5]" />
-                    <View className="w-[1.5px] h-5 bg-white/10 mt-[3px]" />
+                    <View className="w-2.5 h-2.5 rounded-full bg-primary" />
+                    <View className="w-[1.5px] h-5 bg-foreground/10 mt-[3px]" />
                 </View>
                 <View className="flex-1 pb-1">
-                    <Text className="text-[#748096] text-[10px] uppercase tracking-wider mb-0.5">
+                    <Text className="text-muted text-[10px] uppercase tracking-wider mb-0.5">
                         Pickup
                     </Text>
                     <Text
-                        className="text-white text-[13px] leading-4"
+                        className="text-foreground text-[13px] leading-4"
                         numberOfLines={1}
                     >
                         {pickup.address}
@@ -42,11 +42,11 @@ const RouteRow = memo(function RouteRow({ pickup, drop }: RouteRowProps) {
                     <View className="w-2.5 h-2.5 rounded-full bg-red-500" />
                 </View>
                 <View className="flex-1">
-                    <Text className="text-[#748096] text-[10px] uppercase tracking-wider mb-0.5">
+                    <Text className="text-muted text-[10px] uppercase tracking-wider mb-0.5">
                         Destination
                     </Text>
                     <Text
-                        className="text-white text-[13px] leading-4"
+                        className="text-foreground text-[13px] leading-4"
                         numberOfLines={1}
                     >
                         {drop.address}

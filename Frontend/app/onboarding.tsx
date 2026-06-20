@@ -15,6 +15,7 @@ import * as SecureStore from "expo-secure-store";
 
 import { COLORS } from "@/constants/theme";
 import OnboardingSlide from "@/components/common/OnboardingSlide";
+import { useTheme } from "@/store/ThemeContext";
 
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
 export const ONBOARDING_KEY = "ridesync_onboarded_v1";
@@ -47,6 +48,7 @@ const SLIDES = [
 ];
 
 export default function OnboardingScreen() {
+    const { colorScheme, theme } = useTheme();
     const [activeIndex, setActiveIndex] = useState(0);
     const scrollRef = useRef<ScrollView>(null);
     const isLast = activeIndex === SLIDES.length - 1;
@@ -77,7 +79,7 @@ export default function OnboardingScreen() {
     };
 
     return (
-        <View className="flex-1" style={{ backgroundColor: COLORS.background }}>
+        <View className="flex-1 bg-background">
             <StatusBar barStyle="light-content" translucent backgroundColor="transparent" />
 
             {/* Glow background */}
@@ -108,7 +110,7 @@ export default function OnboardingScreen() {
                             accessibilityRole="button"
                             accessibilityLabel="Skip onboarding"
                         >
-                            <Text className="text-[#748096] text-[14px] font-semibold">
+                            <Text className="text-muted text-[14px] font-semibold">
                                 Skip
                             </Text>
                         </TouchableOpacity>
@@ -150,7 +152,7 @@ export default function OnboardingScreen() {
                                     width: i === activeIndex ? 24 : 8,
                                     height: 8,
                                     backgroundColor:
-                                        i === activeIndex ? COLORS.primary : "rgba(255,255,255,0.15)",
+                                        i === activeIndex ? COLORS.primary : (theme.colors.border),
                                 }}
                             />
                         ))}
@@ -162,16 +164,16 @@ export default function OnboardingScreen() {
                         onPress={handleNext}
                         accessibilityRole="button"
                         accessibilityLabel={isLast ? "Get Started" : "Next"}
-                        className="h-14 bg-[#11E0C5] rounded-2xl items-center justify-center"
+                        className="h-14 bg-primary rounded-2xl items-center justify-center"
                         style={{
-                            shadowColor: "#11E0C5",
+                            shadowColor: theme.colors.primary,
                             shadowOpacity: 0.3,
                             shadowRadius: 16,
                             shadowOffset: { width: 0, height: 6 },
                             elevation: 8,
                         }}
                     >
-                        <Text className="text-[#071018] text-[16px] font-bold">
+                        <Text className="text-background text-[16px] font-bold">
                             {isLast ? "Get Started" : "Next"}
                         </Text>
                     </TouchableOpacity>

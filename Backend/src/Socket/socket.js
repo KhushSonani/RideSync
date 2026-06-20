@@ -279,6 +279,16 @@ async function handleDriverGoOnline(socket) {
     }
 
     try {
+        // Fix: Prevent driver from going online if they are currently on a ride
+        const hasActiveRide = await Ride.exists({
+            driver: socket.driver._id,
+            status: { $in: ["accepted", "arriving", "started"] }
+        });
+
+        if (hasActiveRide) {
+            return emitError(socket, "Cannot go online while on an active ride", SOCKET_EVENTS.DRIVER_GO_ONLINE);
+        }
+
         await Driver.findByIdAndUpdate(socket.driver._id, { status: "available" });
         socket.driver.status = "available";
 
@@ -308,6 +318,16 @@ async function handleDriverGoOffline(socket) {
     }
 
     try {
+        // Fix: Prevent driver from going offline if they are currently on a ride
+        const hasActiveRide = await Ride.exists({
+            driver: socket.driver._id,
+            status: { $in: ["accepted", "arriving", "started"] }
+        });
+
+        if (hasActiveRide) {
+            return emitError(socket, "Cannot go offline while on an active ride", SOCKET_EVENTS.DRIVER_GO_OFFLINE);
+        }
+
         await Driver.findByIdAndUpdate(socket.driver._id, { status: "offline" });
         socket.driver.status = "offline";
 

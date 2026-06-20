@@ -23,8 +23,8 @@ const OnboardingSlide = memo(function OnboardingSlide({
         <View className="flex-1 items-center justify-center px-8">
             {/* Tag */}
             {tag ? (
-                <View className="bg-[#11E0C5]/10 border border-[#11E0C5]/20 px-4 py-1 rounded-full mb-8">
-                    <Text className="text-[#11E0C5] text-[11px] font-bold uppercase tracking-widest">
+                <View className="bg-primary/10 border border-primary/20 px-4 py-1 rounded-full mb-8">
+                    <Text className="text-primary text-[11px] font-bold uppercase tracking-widest">
                         {tag}
                     </Text>
                 </View>
@@ -49,12 +49,12 @@ const OnboardingSlide = memo(function OnboardingSlide({
             </View>
 
             {/* Title */}
-            <Text className="text-white text-[28px] font-bold text-center tracking-tight leading-9">
+            <Text className="text-foreground text-[28px] font-bold text-center tracking-tight leading-9">
                 {title}
             </Text>
 
             {/* Subtitle */}
-            <Text className="text-[#748096] text-[15px] text-center mt-4 leading-[26px] max-w-[300px]">
+            <Text className="text-muted text-[15px] text-center mt-4 leading-[26px] max-w-[300px]">
                 {subtitle}
             </Text>
         </View>

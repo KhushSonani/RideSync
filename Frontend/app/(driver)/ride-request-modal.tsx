@@ -20,7 +20,9 @@ import { glassCard } from "@/constants/styles";
 import RouteRow from "@/components/ride/RouteRow";
 import FareDistanceRow from "@/components/ride/FareDistanceRow";
 import type { NewRideRequestPayload } from "@/services/socket.types";
-import { onRideUnavailable } from "@/services/socket";
+import { onRideUnavailable, connectSocket } from "@/services/socket";
+import { getAccessToken } from "@/services/storage";
+import { useTheme } from "@/store/ThemeContext";
 
 const COUNTDOWN_SECONDS = 30;
 
@@ -34,6 +36,7 @@ function getInitials(name: string): string {
 // ─── Screen ──────────────────────────────────────────────────────────────────
 
 export default function RideRequestModal() {
+    const { colorScheme, theme } = useTheme();
     const params = useLocalSearchParams();
     const requestDataStr = params.requestData as string;
     const initialRequest: NewRideRequestPayload | null = requestDataStr
@@ -79,18 +82,29 @@ export default function RideRequestModal() {
             setCountdown((prev) => (prev > 0 ? prev - 1 : 0));
         }, 1000);
 
-        // Listen for ride unavailable event
+        // Listen for ride unavailable event (wrap in async to ensure socket is connected first)
         let offUnavailable: (() => void) | undefined;
-        if (initialRequest) {
-            offUnavailable = onRideUnavailable((payload) => {
-                if (payload.rideId === initialRequest._id) {
-                    if (countdownRef.current) clearInterval(countdownRef.current);
-                    router.back();
+        let isActive = true;
+
+        const setupSocket = async () => {
+            if (initialRequest && isActive) {
+                const token = await getAccessToken();
+                if (token && isActive) {
+                    try { connectSocket(token); } catch (e) { console.log("Socket connect error:", e); }
+
+                    offUnavailable = onRideUnavailable((payload) => {
+                        if (payload.rideId === initialRequest._id) {
+                            if (countdownRef.current) clearInterval(countdownRef.current);
+                            router.back();
+                        }
+                    });
                 }
-            });
-        }
+            }
+        };
+        setupSocket();
 
         return () => {
+            isActive = false;
             if (countdownRef.current) clearInterval(countdownRef.current);
             if (offUnavailable) offUnavailable();
         };
@@ -146,14 +160,14 @@ export default function RideRequestModal() {
     // Safety guard
     if (!request) {
         return (
-            <View className="flex-1 bg-[#070B12] items-center justify-center">
-                <ActivityIndicator size="large" color="#11E0C5" />
+            <View className="flex-1 bg-background items-center justify-center">
+                <ActivityIndicator size="large" color={theme.colors.primary} />
             </View>
         );
     }
 
     return (
-        <View className="flex-1" style={{ backgroundColor: COLORS.background }}>
+        <View className="flex-1 bg-background">
             <StatusBar barStyle="light-content" translucent backgroundColor="transparent" />
 
             {/* PREMIUM GLOW BACKGROUND */}
@@ -179,14 +193,14 @@ export default function RideRequestModal() {
                     >
                         <View className="w-4 h-4 border-l-2 border-t-2 border-white/90 transform -rotate-45 mt-0.5 ml-1" />
                     </TouchableOpacity>
-                    <Text className="text-white text-[24px] italic tracking-wide">
+                    <Text className="text-foreground text-[24px] italic tracking-wide">
                         new request
                     </Text>
                     {/* Countdown badge */}
-                    <View className="bg-[#131D2B]/95 border border-white/[0.06] rounded-xl px-3 py-1.5 min-w-[44px] items-center">
+                    <View className="bg-input/95 border border-border rounded-xl px-3 py-1.5 min-w-[44px] items-center">
                         <Text
                             className="font-bold text-[15px]"
-                            style={{ color: countdown <= 10 ? "#EF4444" : "#11E0C5" }}
+                            style={{ color: countdown <= 10 ? theme.colors.danger : theme.colors.primary }}
                         >
                             {countdown}s
                         </Text>
@@ -195,11 +209,11 @@ export default function RideRequestModal() {
 
                 {/* Countdown progress bar — MED-1: width derived from countdown state
                     so it stays perfectly in sync with the numeric badge. */}
-                <View className="h-1 bg-white/[0.05] rounded-full overflow-hidden mb-6">
+                <View className="h-1 bg-foreground/[0.05] rounded-full overflow-hidden mb-6">
                     <View
                         className="h-full rounded-full"
                         style={{
-                            backgroundColor: countdown <= 10 ? "#EF4444" : "#11E0C5",
+                            backgroundColor: countdown <= 10 ? theme.colors.danger : theme.colors.primary,
                             width: `${(countdown / COUNTDOWN_SECONDS) * 100}%`,
                         }}
                     />
@@ -207,7 +221,7 @@ export default function RideRequestModal() {
 
                 <ScrollView
                     showsVerticalScrollIndicator={false}
-                    contentContainerStyle={{ paddingBottom: 32 }}
+                    contentContainerStyle={{ paddingBottom: 64 }}
                 >
                     <Animated.View
                         style={{
@@ -218,26 +232,26 @@ export default function RideRequestModal() {
                         {/* RIDER INFO */}
                         <View className={`${glassCard} p-5 mb-4`}>
                             <View className="flex-row items-center mb-4">
-                                <View className="w-12 h-12 rounded-full bg-[#131D2B] border border-white/15 items-center justify-center mr-3">
-                                    <Text className="text-[#11E0C5] font-bold text-[14px]">
+                                <View className="w-12 h-12 rounded-full bg-input border border-white/15 items-center justify-center mr-3">
+                                    <Text className="text-primary font-bold text-[14px]">
                                         {getInitials(request.rider.fullname)}
                                     </Text>
                                 </View>
                                 <View className="flex-1">
-                                    <Text className="text-white font-bold text-[15px]">
+                                    <Text className="text-foreground font-bold text-[15px]">
                                         {request.rider.fullname}
                                     </Text>
-                                    <Text className="text-[#748096] text-[12px] mt-0.5">
+                                    <Text className="text-muted text-[12px] mt-0.5">
                                         @{request.rider.username}  ·  ⭐ 4.8
                                     </Text>
                                 </View>
-                                <View className="bg-[#11E0C5]/10 border border-[#11E0C5]/20 px-2.5 py-1 rounded-lg">
-                                    <Text className="text-[#11E0C5] text-[11px] font-bold">NEW</Text>
+                                <View className="bg-primary/10 border border-primary/20 px-2.5 py-1 rounded-lg">
+                                    <Text className="text-primary text-[11px] font-bold">NEW</Text>
                                 </View>
                             </View>
 
                             {/* Divider */}
-                            <View className="h-[1px] bg-white/[0.05] mb-4" />
+                            <View className="h-[1px] bg-foreground/[0.05] mb-4" />
 
                             {/* Fare + Distance */}
                             <FareDistanceRow fare={request.fare} distance={request.distance} />
@@ -246,10 +260,10 @@ export default function RideRequestModal() {
                         {/* ROUTE CARD */}
                         <View className={`${glassCard} p-5 mb-4`}>
                             <View className="flex-row items-center mb-4">
-                                <View className="w-7 h-7 rounded-lg bg-[#11E0C5]/10 items-center justify-center mr-2">
-                                    <Ionicons name="map-outline" size={15} color="#11E0C5" />
+                                <View className="w-7 h-7 rounded-lg bg-primary/10 items-center justify-center mr-2">
+                                    <Ionicons name="map-outline" size={15} color={theme.colors.primary} />
                                 </View>
-                                <Text className="text-[#748096] text-[11px] uppercase tracking-wider">
+                                <Text className="text-muted text-[11px] uppercase tracking-wider">
                                     Route Details
                                 </Text>
                             </View>
@@ -263,15 +277,15 @@ export default function RideRequestModal() {
                         <View className={`${glassCard} p-4 mb-6`}>
                             <View className="flex-row justify-between items-center">
                                 <View className="flex-row items-center">
-                                    <Feather name="clock" size={13} color="#748096" />
-                                    <Text className="text-[#748096] text-[11px] ml-1.5">
+                                    <Feather name="clock" size={13} color={theme.colors.textMuted} />
+                                    <Text className="text-muted text-[11px] ml-1.5">
                                         {/* TODO: calculate ETA from driver's current location */}
                                         ~{Math.ceil((request.distance ?? 5) / 0.4)} min drive
                                     </Text>
                                 </View>
                                 <View className="flex-row items-center">
-                                    <Feather name="navigation" size={13} color="#748096" />
-                                    <Text className="text-[#748096] text-[11px] ml-1.5">
+                                    <Feather name="navigation" size={13} color={theme.colors.textMuted} />
+                                    <Text className="text-muted text-[11px] ml-1.5">
                                         {/* TODO: replace with real pickup ETA */}
                                         ~8 min to pickup
                                     </Text>
@@ -294,13 +308,13 @@ export default function RideRequestModal() {
                                 activeOpacity={0.85}
                                 onPress={handleAcceptRide}
                                 disabled={accepting}
-                                className="flex-[2] h-14 bg-[#11E0C5] rounded-2xl items-center justify-center border border-[#6FFFEF]/10"
+                                className="flex-[2] h-14 bg-primary rounded-2xl items-center justify-center border border-[#6FFFEF]/10"
                                 accessibilityLabel="Accept ride request"
                             >
                                 {accepting ? (
                                     <ActivityIndicator size="small" color="#071018" />
                                 ) : (
-                                    <Text className="text-[#071018] text-[15px] font-bold">
+                                    <Text className="text-background text-[15px] font-bold">
                                         Accept Ride
                                     </Text>
                                 )}

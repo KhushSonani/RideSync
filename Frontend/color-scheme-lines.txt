@@ -1,0 +1,153 @@
+f:\Development\Projects\RideSync\Frontend\app\(auth)\_layout.tsx:14: backgroundColor: (colorScheme === 'light' ? '#F3F4F6' : '#070B12'),
+f:\Development\Projects\RideSync\Frontend\app\(driver)\active-ride.tsx:363: <ActivityIndicator size="large" color={(colorScheme === 'light' ? '#0D9488' : '#11E0C5')} />
+f:\Development\Projects\RideSync\Frontend\app\(driver)\documents.tsx:332: <Feather name="file-text" size={20} color={(colorScheme === 'light' ? '#0D9488' : '#11E0C5')} />
+f:\Development\Projects\RideSync\Frontend\app\(driver)\documents.tsx:339: <Feather name="upload-cloud" size={22} color={(colorScheme === 'light' ? '#6B7280' : '#748096')} />
+f:\Development\Projects\RideSync\Frontend\app\(driver)\documents.tsx:402: <Feather name="file-text" size={20} color={(colorScheme === 'light' ? '#0D9488' : '#11E0C5')} />
+f:\Development\Projects\RideSync\Frontend\app\(driver)\documents.tsx:409: <Feather name="upload-cloud" size={22} color={(colorScheme === 'light' ? '#6B7280' : '#748096')} />
+f:\Development\Projects\RideSync\Frontend\app\(driver)\documents.tsx:482: <Feather name="file-text" size={20} color={(colorScheme === 'light' ? '#0D9488' : '#11E0C5')} />
+f:\Development\Projects\RideSync\Frontend\app\(driver)\documents.tsx:489: <Feather name="upload-cloud" size={22} color={(colorScheme === 'light' ? '#6B7280' : '#748096')} />
+f:\Development\Projects\RideSync\Frontend\app\(driver)\documents.tsx:540: <Feather name="file-text" size={20} color={(colorScheme === 'light' ? '#0D9488' : '#11E0C5')} />
+f:\Development\Projects\RideSync\Frontend\app\(driver)\documents.tsx:547: <Feather name="upload-cloud" size={22} color={(colorScheme === 'light' ? '#6B7280' : '#748096')} />
+f:\Development\Projects\RideSync\Frontend\app\(driver)\documents.tsx:609: <Feather name="file-text" size={20} color={(colorScheme === 'light' ? '#0D9488' : '#11E0C5')} />
+f:\Development\Projects\RideSync\Frontend\app\(driver)\documents.tsx:616: <Feather name="upload-cloud" size={22} color={(colorScheme === 'light' ? '#6B7280' : '#748096')} />
+f:\Development\Projects\RideSync\Frontend\app\(driver)\documents.tsx:650: <ActivityIndicator size="large" color={(colorScheme === 'light' ? '#0D9488' : '#11E0C5')} />
+f:\Development\Projects\RideSync\Frontend\app\(driver)\documents.tsx:717: <Feather name="check-circle" size={13} color={(colorScheme === 'light' ? '#0D9488' : '#11E0C5')} className="mr-1" />
+f:\Development\Projects\RideSync\Frontend\app\(driver)\documents.tsx:738: <Feather name={hasUploadedLicense ? "edit-2" : "upload-cloud"} size={14} color={(colorScheme === 'light' ? '#0D9488' : '#11E0C5')} />
+f:\Development\Projects\RideSync\Frontend\app\(driver)\documents.tsx:769: <Feather name="check-circle" size={13} color={(colorScheme === 'light' ? '#0D9488' : '#11E0C5')} className="mr-1" />
+f:\Development\Projects\RideSync\Frontend\app\(driver)\documents.tsx:790: <Feather name={hasUploadedRc ? "edit-2" : "upload-cloud"} size={14} color={(colorScheme === 'light' ? '#0D9488' : '#11E0C5')} />
+f:\Development\Projects\RideSync\Frontend\app\(driver)\documents.tsx:825: <Feather name="check-circle" size={13} color={(colorScheme === 'light' ? '#0D9488' : '#11E0C5')} className="mr-1" />
+f:\Development\Projects\RideSync\Frontend\app\(driver)\documents.tsx:847: <Feather name={hasUploadedIns ? "edit-2" : "upload-cloud"} size={14} color={(colorScheme === 'light' ? '#0D9488' : '#11E0C5')} />
+f:\Development\Projects\RideSync\Frontend\app\(driver)\documents.tsx:874: <Feather name="check-circle" size={13} color={(colorScheme === 'light' ? '#0D9488' : '#11E0C5')} className="mr-1" />
+f:\Development\Projects\RideSync\Frontend\app\(driver)\documents.tsx:894: <Feather name={hasUploadedPuc ? "edit-2" : "upload-cloud"} size={14} color={(colorScheme === 'light' ? '#0D9488' : '#11E0C5')} />
+f:\Development\Projects\RideSync\Frontend\app\(driver)\documents.tsx:927: <Feather name="check-circle" size={13} color={(colorScheme === 'light' ? '#0D9488' : '#11E0C5')} className="mr-1" />
+f:\Development\Projects\RideSync\Frontend\app\(driver)\documents.tsx:948: <Feather name={hasUploadedPermit ? "edit-2" : "upload-cloud"} size={14} color={(colorScheme === 'light' ? '#0D9488' : '#11E0C5')} />
+f:\Development\Projects\RideSync\Frontend\app\(driver)\documents.tsx:985: <Feather name="x" size={18} color={(colorScheme === 'light' ? '#6B7280' : '#748096')} />
+f:\Development\Projects\RideSync\Frontend\app\(driver)\home.tsx:225: <ActivityIndicator size="large" color={(colorScheme === 'light' ? '#0D9488' : '#11E0C5')} />
+f:\Development\Projects\RideSync\Frontend\app\(driver)\home.tsx:304: <ActivityIndicator size="small" color={(colorScheme === 'light' ? '#0D9488' : '#11E0C5')} />
+f:\Development\Projects\RideSync\Frontend\app\(driver)\otp-verify.tsx:127: <Ionicons name="keypad-outline" size={28} color={(colorScheme === 'light' ? '#0D9488' : '#11E0C5')} />
+f:\Development\Projects\RideSync\Frontend\app\(driver)\otp-verify.tsx:172: <Ionicons name="information-circle-outline" size={14} color={(colorScheme === 'light' ? '#0D9488' : '#11E0C5')} />
+f:\Development\Projects\RideSync\Frontend\app\(driver)\profile.tsx:337: <ActivityIndicator size="large" color={(colorScheme === 'light' ? '#0D9488' : '#11E0C5')} />
+f:\Development\Projects\RideSync\Frontend\app\(driver)\profile.tsx:490: <Feather name="lock" size={15} color={(colorScheme === 'light' ? '#0D9488' : '#11E0C5')} />
+f:\Development\Projects\RideSync\Frontend\app\(driver)\profile.tsx:494: <Feather name="chevron-right" size={16} color={(colorScheme === 'light' ? '#6B7280' : '#748096')} />
+f:\Development\Projects\RideSync\Frontend\app\(driver)\profile.tsx:501: <Feather name={isDarkMode ? "moon" : "sun"} size={15} color={(colorScheme === 'light' ? '#6B7280' : '#748096')} />
+f:\Development\Projects\RideSync\Frontend\app\(driver)\profile.tsx:558: backgroundColor: (colorScheme === 'light' ? '#FFFFFF' : '#0D1420'),
+f:\Development\Projects\RideSync\Frontend\app\(driver)\profile.tsx:705: backgroundColor: (colorScheme === 'light' ? '#FFFFFF' : '#0D1420'),
+f:\Development\Projects\RideSync\Frontend\app\(driver)\ride-complete.tsx:227: <Feather name="clock" size={16} color={(colorScheme === 'light' ? '#6B7280' : '#748096')} />
+f:\Development\Projects\RideSync\Frontend\app\(driver)\ride-complete.tsx:235: <Feather name="navigation" size={16} color={(colorScheme === 'light' ? '#6B7280' : '#748096')} />
+f:\Development\Projects\RideSync\Frontend\app\(driver)\ride-request-modal.tsx:163: <ActivityIndicator size="large" color={(colorScheme === 'light' ? '#0D9488' : '#11E0C5')} />
+f:\Development\Projects\RideSync\Frontend\app\(driver)\ride-request-modal.tsx:263: <Ionicons name="map-outline" size={15} color={(colorScheme === 'light' ? '#0D9488' : '#11E0C5')} />
+f:\Development\Projects\RideSync\Frontend\app\(driver)\ride-request-modal.tsx:279: <Feather name="clock" size={13} color={(colorScheme === 'light' ? '#6B7280' : '#748096')} />
+f:\Development\Projects\RideSync\Frontend\app\(driver)\ride-request-modal.tsx:286: <Feather name="navigation" size={13} color={(colorScheme === 'light' ? '#6B7280' : '#748096')} />
+f:\Development\Projects\RideSync\Frontend\app\(driver)\_layout.tsx:16: backgroundColor: (colorScheme === 'light' ? '#FFFFFF' : '#0D1420'),
+f:\Development\Projects\RideSync\Frontend\app\(rider)\create-ride.tsx:235: <View style={{ flex: 1, backgroundColor: (colorScheme === 'light' ? '#F3F4F6' : '#070B12') }}>
+f:\Development\Projects\RideSync\Frontend\app\(rider)\create-ride.tsx:340: backgroundColor: (colorScheme === 'light' ? '#F3F4F6' : '#070B12'),
+f:\Development\Projects\RideSync\Frontend\app\(rider)\create-ride.tsx:342: borderColor: (colorScheme === 'light' ? 'rgba(0,0,0,0.1)' : 'rgba(255,255,255,0.1)'),
+f:\Development\Projects\RideSync\Frontend\app\(rider)\create-ride.tsx:347: <Feather name="arrow-left" size={18} color={(colorScheme === 'light' ? '#111827' : '#FFFFFF')} />
+f:\Development\Projects\RideSync\Frontend\app\(rider)\create-ride.tsx:361: backgroundColor: (colorScheme === 'light' ? '#F3F4F6' : '#070B12'),
+f:\Development\Projects\RideSync\Frontend\app\(rider)\create-ride.tsx:366: borderColor: (colorScheme === 'light' ? 'rgba(0,0,0,0.1)' : 'rgba(255,255,255,0.1)'),
+f:\Development\Projects\RideSync\Frontend\app\(rider)\create-ride.tsx:370: <ActivityIndicator size={12} color={(colorScheme === 'light' ? '#0D9488' : '#11E0C5')} />
+f:\Development\Projects\RideSync\Frontend\app\(rider)\create-ride.tsx:386: backgroundColor: (colorScheme === 'light' ? '#F3F4F6' : '#070B12'),
+f:\Development\Projects\RideSync\Frontend\app\(rider)\create-ride.tsx:409: backgroundColor: (colorScheme === 'light' ? 'rgba(0,0,0,0.1)' : 'rgba(255,255,255,0.1)'),
+f:\Development\Projects\RideSync\Frontend\app\(rider)\create-ride.tsx:430: color: (colorScheme === 'light' ? '#111827' : '#FFFFFF'),
+f:\Development\Projects\RideSync\Frontend\app\(rider)\create-ride.tsx:461: backgroundColor: (colorScheme === 'light' ? 'rgba(0,0,0,0.1)' : 'rgba(255,255,255,0.1)'),
+f:\Development\Projects\RideSync\Frontend\app\(rider)\create-ride.tsx:479: borderColor: (colorScheme === 'light' ? 'rgba(0,0,0,0.1)' : 'rgba(255,255,255,0.1)'),
+f:\Development\Projects\RideSync\Frontend\app\(rider)\create-ride.tsx:508: backgroundColor: (colorScheme === 'light' ? '#FFFFFF' : '#0D1420'),
+f:\Development\Projects\RideSync\Frontend\app\(rider)\create-ride.tsx:510: borderColor: (colorScheme === 'light' ? 'rgba(0,0,0,0.1)' : 'rgba(255,255,255,0.1)'),
+f:\Development\Projects\RideSync\Frontend\app\(rider)\create-ride.tsx:534: <Feather name="tag" size={14} color={(colorScheme === 'light' ? '#0D9488' : '#11E0C5')} />
+f:\Development\Projects\RideSync\Frontend\app\(rider)\create-ride.tsx:563: backgroundColor: (colorScheme === 'light' ? 'rgba(0,0,0,0.1)' : 'rgba(255,255,255,0.1)'),
+f:\Development\Projects\RideSync\Frontend\app\(rider)\create-ride.tsx:571: backgroundColor: (colorScheme === 'light' ? 'rgba(0,0,0,0.1)' : 'rgba(255,255,255,0.1)'),
+f:\Development\Projects\RideSync\Frontend\app\(rider)\create-ride.tsx:597: color: (colorScheme === 'light' ? '#111827' : '#FFFFFF'),
+f:\Development\Projects\RideSync\Frontend\app\(rider)\create-ride.tsx:634: color: (colorScheme === 'light' ? '#0D9488' : '#11E0C5'),
+f:\Development\Projects\RideSync\Frontend\app\(rider)\create-ride.tsx:653: backgroundColor: (colorScheme === 'light' ? '#FFFFFF' : '#0D1420'),
+f:\Development\Projects\RideSync\Frontend\app\(rider)\create-ride.tsx:655: borderColor: (colorScheme === 'light' ? 'rgba(0,0,0,0.1)' : 'rgba(255,255,255,0.1)'),
+f:\Development\Projects\RideSync\Frontend\app\(rider)\create-ride.tsx:675: <Ionicons name="car-sport" size={20} color={(colorScheme === 'light' ? '#0D9488' : '#11E0C5')} />
+f:\Development\Projects\RideSync\Frontend\app\(rider)\create-ride.tsx:680: color: (colorScheme === 'light' ? '#111827' : '#FFFFFF'),
+f:\Development\Projects\RideSync\Frontend\app\(rider)\create-ride.tsx:704: color: (colorScheme === 'light' ? '#0D9488' : '#11E0C5'),
+f:\Development\Projects\RideSync\Frontend\app\(rider)\driver-assigned.tsx:198: <ActivityIndicator size="large" color={(colorScheme === 'light' ? '#0D9488' : '#11E0C5')} />
+f:\Development\Projects\RideSync\Frontend\app\(rider)\driver-assigned.tsx:240: <Ionicons name="navigate-outline" size={18} color={(colorScheme === 'light' ? '#0D9488' : '#11E0C5')} />
+f:\Development\Projects\RideSync\Frontend\app\(rider)\driver-assigned.tsx:257: <Feather name="map-pin" size={13} color={(colorScheme === 'light' ? '#0D9488' : '#11E0C5')} />
+f:\Development\Projects\RideSync\Frontend\app\(rider)\driver-assigned.tsx:285: <Ionicons name="map-outline" size={15} color={(colorScheme === 'light' ? '#0D9488' : '#11E0C5')} />
+f:\Development\Projects\RideSync\Frontend\app\(rider)\home.tsx:188: <View style={{ flex: 1, backgroundColor: (colorScheme === 'light' ? '#F3F4F6' : '#070B12'), justifyContent: "center", alignItems: "center" }}>
+f:\Development\Projects\RideSync\Frontend\app\(rider)\home.tsx:189: <StatusBar barStyle={colorScheme === 'light' ? 'dark-content' : 'light-content'} translucent backgroundColor="transparent" />
+f:\Development\Projects\RideSync\Frontend\app\(rider)\home.tsx:190: <ActivityIndicator size="large" color={(colorScheme === 'light' ? '#0D9488' : '#11E0C5')} />
+f:\Development\Projects\RideSync\Frontend\app\(rider)\home.tsx:196: <View style={{ flex: 1, backgroundColor: (colorScheme === 'light' ? '#F3F4F6' : '#070B12') }}>
+f:\Development\Projects\RideSync\Frontend\app\(rider)\home.tsx:197: <StatusBar barStyle={colorScheme === 'light' ? 'dark-content' : 'light-content'} translucent backgroundColor="transparent" />
+f:\Development\Projects\RideSync\Frontend\app\(rider)\home.tsx:210: customMapStyle={colorScheme === 'light' ? [] : DARK_MAP_STYLE}
+f:\Development\Projects\RideSync\Frontend\app\(rider)\home.tsx:279: backgroundColor: (colorScheme === 'light' ? '#F3F4F6' : '#070B12'),
+f:\Development\Projects\RideSync\Frontend\app\(rider)\home.tsx:284: borderColor: (colorScheme === 'light' ? 'rgba(0,0,0,0.1)' : 'rgba(255,255,255,0.1)'),
+f:\Development\Projects\RideSync\Frontend\app\(rider)\home.tsx:289: <Text style={{ color: (colorScheme === 'light' ? '#6B7280' : '#748096'), fontSize: 11, fontWeight: "600", textTransform: "uppercase", letterSpacing: 1 }}>
+f:\Development\Projects\RideSync\Frontend\app\(rider)\home.tsx:293: style={{ color: (colorScheme === 'light' ? '#111827' : '#FFFFFF'), fontSize: 17, fontWeight: "700", marginTop: 2 }}
+f:\Development\Projects\RideSync\Frontend\app\(rider)\home.tsx:310: backgroundColor: (colorScheme === 'light' ? '#F3F4F6' : '#070B12'),
+f:\Development\Projects\RideSync\Frontend\app\(rider)\home.tsx:312: borderColor: (colorScheme === 'light' ? 'rgba(0,0,0,0.1)' : 'rgba(255,255,255,0.1)'),
+f:\Development\Projects\RideSync\Frontend\app\(rider)\home.tsx:317: <Feather name="layers" size={18} color={(colorScheme === 'light' ? '#0D9488' : '#11E0C5')} />
+f:\Development\Projects\RideSync\Frontend\app\(rider)\home.tsx:331: backgroundColor: (colorScheme === 'light' ? '#F3F4F6' : '#070B12'),
+f:\Development\Projects\RideSync\Frontend\app\(rider)\home.tsx:345: <Text style={{ color: (colorScheme === 'light' ? '#0D9488' : '#11E0C5'), fontSize: 14, fontWeight: "700" }}>
+f:\Development\Projects\RideSync\Frontend\app\(rider)\home.tsx:361: borderColor: (colorScheme === 'light' ? '#F3F4F6' : '#070B12'),
+f:\Development\Projects\RideSync\Frontend\app\(rider)\home.tsx:378: backgroundColor: (colorScheme === 'light' ? '#F3F4F6' : '#070B12'),
+f:\Development\Projects\RideSync\Frontend\app\(rider)\home.tsx:409: backgroundColor: (colorScheme === 'light' ? 'rgba(0,0,0,0.1)' : 'rgba(255,255,255,0.1)'),
+f:\Development\Projects\RideSync\Frontend\app\(rider)\home.tsx:476: backgroundColor: (colorScheme === 'light' ? '#FFFFFF' : '#0D1420'),
+f:\Development\Projects\RideSync\Frontend\app\(rider)\home.tsx:478: borderColor: (colorScheme === 'light' ? 'rgba(0,0,0,0.1)' : 'rgba(255,255,255,0.1)'),
+f:\Development\Projects\RideSync\Frontend\app\(rider)\home.tsx:485: <Feather name={icon} size={15} color={(colorScheme === 'light' ? '#6B7280' : '#748096')} />
+f:\Development\Projects\RideSync\Frontend\app\(rider)\home.tsx:486: <Text style={{ color: (colorScheme === 'light' ? '#111827' : '#FFFFFF'), fontSize: 12, fontWeight: "600" }}>
+f:\Development\Projects\RideSync\Frontend\app\(rider)\home.tsx:497: backgroundColor: (colorScheme === 'light' ? 'rgba(0,0,0,0.1)' : 'rgba(255,255,255,0.1)'),
+f:\Development\Projects\RideSync\Frontend\app\(rider)\home.tsx:513: <Text style={{ color: (colorScheme === 'light' ? '#111827' : '#FFFFFF'), fontSize: 16, fontWeight: "700" }}>
+f:\Development\Projects\RideSync\Frontend\app\(rider)\home.tsx:521: <Text style={{ color: (colorScheme === 'light' ? '#0D9488' : '#11E0C5'), fontSize: 13, fontWeight: "600" }}>
+f:\Development\Projects\RideSync\Frontend\app\(rider)\live-tracking.tsx:334: <ActivityIndicator size="large" color={(colorScheme === 'light' ? '#0D9488' : '#11E0C5')} />
+f:\Development\Projects\RideSync\Frontend\app\(rider)\live-tracking.tsx:423: backgroundColor: (colorScheme === 'light' ? '#F3F4F6' : '#070B12'),
+f:\Development\Projects\RideSync\Frontend\app\(rider)\live-tracking.tsx:428: <ActivityIndicator size="large" color={(colorScheme === 'light' ? '#0D9488' : '#11E0C5')} />
+f:\Development\Projects\RideSync\Frontend\app\(rider)\profile.tsx:270: <ActivityIndicator size="large" color={(colorScheme === 'light' ? '#0D9488' : '#11E0C5')} />
+f:\Development\Projects\RideSync\Frontend\app\(rider)\profile.tsx:366: <Feather name={user?.role === "driver" ? "navigation" : "user"} size={12} color={(colorScheme === 'light' ? '#0D9488' : '#11E0C5')} className="mr-1.5" />
+f:\Development\Projects\RideSync\Frontend\app\(rider)\profile.tsx:381: <Feather name="mail" size={16} color={(colorScheme === 'light' ? '#6B7280' : '#748096')} />
+f:\Development\Projects\RideSync\Frontend\app\(rider)\profile.tsx:390: <Feather name="hash" size={16} color={(colorScheme === 'light' ? '#6B7280' : '#748096')} />
+f:\Development\Projects\RideSync\Frontend\app\(rider)\profile.tsx:399: <Feather name="calendar" size={16} color={(colorScheme === 'light' ? '#6B7280' : '#748096')} />
+f:\Development\Projects\RideSync\Frontend\app\(rider)\profile.tsx:420: <Feather name="edit-3" size={15} color={(colorScheme === 'light' ? '#0D9488' : '#11E0C5')} />
+f:\Development\Projects\RideSync\Frontend\app\(rider)\profile.tsx:424: <Feather name="chevron-right" size={16} color={(colorScheme === 'light' ? '#6B7280' : '#748096')} />
+f:\Development\Projects\RideSync\Frontend\app\(rider)\profile.tsx:435: <Feather name="lock" size={15} color={(colorScheme === 'light' ? '#0D9488' : '#11E0C5')} />
+f:\Development\Projects\RideSync\Frontend\app\(rider)\profile.tsx:439: <Feather name="chevron-right" size={16} color={(colorScheme === 'light' ? '#6B7280' : '#748096')} />
+f:\Development\Projects\RideSync\Frontend\app\(rider)\profile.tsx:453: <Feather name="chevron-right" size={16} color={(colorScheme === 'light' ? '#6B7280' : '#748096')} />
+f:\Development\Projects\RideSync\Frontend\app\(rider)\profile.tsx:467: <Feather name="chevron-right" size={16} color={(colorScheme === 'light' ? '#6B7280' : '#748096')} />
+f:\Development\Projects\RideSync\Frontend\app\(rider)\profile.tsx:481: <Feather name="chevron-right" size={16} color={(colorScheme === 'light' ? '#6B7280' : '#748096')} />
+f:\Development\Projects\RideSync\Frontend\app\(rider)\profile.tsx:488: <Feather name={isDarkMode ? "moon" : "sun"} size={15} color={(colorScheme === 'light' ? '#6B7280' : '#748096')} />
+f:\Development\Projects\RideSync\Frontend\app\(rider)\profile.tsx:545: backgroundColor: (colorScheme === 'light' ? '#FFFFFF' : '#0D1420'),
+f:\Development\Projects\RideSync\Frontend\app\(rider)\profile.tsx:692: backgroundColor: (colorScheme === 'light' ? '#FFFFFF' : '#0D1420'),
+f:\Development\Projects\RideSync\Frontend\app\(rider)\ride-complete.tsx:144: <Ionicons name="checkmark" size={36} color={(colorScheme === 'light' ? '#0D9488' : '#11E0C5')} />
+f:\Development\Projects\RideSync\Frontend\app\(rider)\ride-complete.tsx:158: style={{ backgroundColor: (colorScheme === 'light' ? '#FFFFFF' : '#0D1420') }}
+f:\Development\Projects\RideSync\Frontend\app\(rider)\ride-complete.tsx:167: <Feather name="credit-card" size={12} color={(colorScheme === 'light' ? '#6B7280' : '#748096')} />
+f:\Development\Projects\RideSync\Frontend\app\(rider)\ride-complete.tsx:212: <Feather name="clock" size={12} color={(colorScheme === 'light' ? '#6B7280' : '#748096')} />
+f:\Development\Projects\RideSync\Frontend\app\(rider)\ride-complete.tsx:242: <Feather name="clock" size={16} color={(colorScheme === 'light' ? '#6B7280' : '#748096')} />
+f:\Development\Projects\RideSync\Frontend\app\(rider)\ride-complete.tsx:247: <Feather name="navigation" size={16} color={(colorScheme === 'light' ? '#6B7280' : '#748096')} />
+f:\Development\Projects\RideSync\Frontend\app\(rider)\searching-driver.tsx:294: color={(colorScheme === 'light' ? '#0D9488' : '#11E0C5')}
+f:\Development\Projects\RideSync\Frontend\app\(rider)\searching-driver.tsx:339: <ActivityIndicator size="small" color={(colorScheme === 'light' ? '#0D9488' : '#11E0C5')} />
+f:\Development\Projects\RideSync\Frontend\app\(rider)\_layout.tsx:16: backgroundColor: (colorScheme === 'light' ? '#FFFFFF' : '#0D1420'),
+f:\Development\Projects\RideSync\Frontend\app\index.tsx:112: color={(colorScheme === 'light' ? '#0D9488' : '#11E0C5')}
+f:\Development\Projects\RideSync\Frontend\app\index.tsx:133: <Feather name="layers" size={18} color={(colorScheme === 'light' ? '#0D9488' : '#11E0C5')} />
+f:\Development\Projects\RideSync\Frontend\app\location-search.tsx:251: <Feather name="arrow-left" size={22} color={(colorScheme === 'light' ? 'rgba(0,0,0,0.1)' : 'rgba(255,255,255,0.1)')} />
+f:\Development\Projects\RideSync\Frontend\app\location-search.tsx:281: <Feather name="x" size={16} color={(colorScheme === 'light' ? '#6B7280' : '#748096')} />
+f:\Development\Projects\RideSync\Frontend\app\location-search.tsx:286: <ActivityIndicator size="small" color={(colorScheme === 'light' ? '#6B7280' : '#748096')} style={{ marginLeft: 6 }} />
+f:\Development\Projects\RideSync\Frontend\app\location-search.tsx:313: <ActivityIndicator size="small" color={(colorScheme === 'light' ? '#0D9488' : '#11E0C5')} />
+f:\Development\Projects\RideSync\Frontend\app\location-search.tsx:315: <Ionicons name="locate-outline" size={18} color={(colorScheme === 'light' ? '#0D9488' : '#11E0C5')} />
+f:\Development\Projects\RideSync\Frontend\app\location-search.tsx:345: <Feather name="map-pin" size={24} color={(colorScheme === 'light' ? '#6B7280' : '#748096')} />
+f:\Development\Projects\RideSync\Frontend\app\location-search.tsx:368: borderBottomColor: (colorScheme === 'light' ? 'rgba(0,0,0,0.1)' : 'rgba(255,255,255,0.1)'),
+f:\Development\Projects\RideSync\Frontend\app\location-search.tsx:394: <Feather name="chevron-right" size={16} color={(colorScheme === 'light' ? '#6B7280' : '#748096')} />
+f:\Development\Projects\RideSync\Frontend\app\onboarding.tsx:154: i === activeIndex ? COLORS.primary : (colorScheme === 'light' ? 'rgba(0,0,0,0.1)' : 'rgba(255,255,255,0.1)'),
+f:\Development\Projects\RideSync\Frontend\app\sandbox.tsx:88: <Feather name="arrow-left" size={22} color={(colorScheme === 'light' ? 'rgba(0,0,0,0.1)' : 'rgba(255,255,255,0.1)')} />
+f:\Development\Projects\RideSync\Frontend\app\sandbox.tsx:95: <Feather name="layers" size={16} color={(colorScheme === 'light' ? '#0D9488' : '#11E0C5')} />
+f:\Development\Projects\RideSync\Frontend\app\sandbox.tsx:160: style={{ backgroundColor: (colorScheme === 'light' ? '#FFFFFF' : '#0D1420') }}
+f:\Development\Projects\RideSync\Frontend\app\sandbox.tsx:174: style={{ backgroundColor: (colorScheme === 'light' ? '#FFFFFF' : '#0D1420') }}
+f:\Development\Projects\RideSync\Frontend\app\sandbox.tsx:239: style={{ backgroundColor: (colorScheme === 'light' ? '#FFFFFF' : '#0D1420') }}
+f:\Development\Projects\RideSync\Frontend\app\_layout.tsx:32: <View className={`flex-1 ${colorScheme === 'light' ? 'light' : 'dark'}`}>
+f:\Development\Projects\RideSync\Frontend\app\_layout.tsx:39: backgroundColor: (colorScheme === 'light' ? '#F3F4F6' : '#070B12'),
+f:\Development\Projects\RideSync\Frontend\components\common\RideHistoryCard.tsx:106: <Feather name="clock" size={11} color={(colorScheme === 'light' ? '#6B7280' : '#748096')} />
+f:\Development\Projects\RideSync\Frontend\components\common\RideHistoryCard.tsx:113: <Feather name="user" size={11} color={(colorScheme === 'light' ? '#6B7280' : '#748096')} />
+f:\Development\Projects\RideSync\Frontend\components\ride\DriverInfoCard.tsx:79: <Feather name="phone" size={16} color={(colorScheme === 'light' ? '#0D9488' : '#11E0C5')} />
+f:\Development\Projects\RideSync\Frontend\components\ride\DriverInfoCard.tsx:88: <Feather name="message-square" size={16} color={(colorScheme === 'light' ? '#0D9488' : '#11E0C5')} />
+f:\Development\Projects\RideSync\Frontend\components\ride\LocationSearchInput.tsx:77: <ActivityIndicator size="small" color={(colorScheme === 'light' ? '#6B7280' : '#748096')} />
+f:\Development\Projects\RideSync\Frontend\components\ride\LocationSearchInput.tsx:79: <Feather name="search" size={15} color={(colorScheme === 'light' ? '#6B7280' : '#748096')} />
+f:\Development\Projects\RideSync\Frontend\components\ride\OTPDisplay.tsx:25: <Ionicons name="keypad" size={20} color={(colorScheme === 'light' ? '#0D9488' : '#11E0C5')} />
+f:\Development\Projects\RideSync\Frontend\components\ride\OTPInput.tsx:81: { color: colorScheme === 'light' ? '#111827' : '#FFFFFF' },
+f:\Development\Projects\RideSync\Frontend\components\ride\OTPInput.tsx:84: : [styles.boxEmpty, { borderColor: colorScheme === 'light' ? 'rgba(0,0,0,0.1)' : 'rgba(255,255,255,0.1)' }],
+f:\Development\Projects\RideSync\Frontend\components\ride\RiderInfoCard.tsx:67: <Feather name="phone" size={16} color={(colorScheme === 'light' ? '#0D9488' : '#11E0C5')} />
+f:\Development\Projects\RideSync\Frontend\components\ride\RiderInfoCard.tsx:76: <Feather name="message-square" size={16} color={(colorScheme === 'light' ? '#0D9488' : '#11E0C5')} />
+f:\Development\Projects\RideSync\Frontend\components\ride\RideStatusCard.tsx:32: color: (colorScheme === 'light' ? '#0D9488' : '#11E0C5'),
+f:\Development\Projects\RideSync\Frontend\node_modules\expo-status-bar\src\NativeStatusBarWrapper.tsx:114: resolvedStyle = colorScheme === 'light' ? 'dark' : 'light';
+f:\Development\Projects\RideSync\Frontend\node_modules\expo-status-bar\src\NativeStatusBarWrapper.tsx:116: resolvedStyle = colorScheme === 'light' ? 'light' : 'dark';

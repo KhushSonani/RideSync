@@ -18,10 +18,12 @@ import { api } from "@/services/api";
 import { COLORS } from "@/constants/theme";
 import { glassCard } from "@/constants/styles";
 import OTPInput from "@/components/ride/OTPInput";
+import { useTheme } from "@/store/ThemeContext";
 
 // ─── Screen ──────────────────────────────────────────────────────────────────
 
 export default function OTPVerifyScreen() {
+    const { colorScheme, theme } = useTheme();
     const { rideId } = useLocalSearchParams();
     const [otp, setOtp] = useState("");
     const [verifying, setVerifying] = useState(false);
@@ -71,7 +73,7 @@ export default function OTPVerifyScreen() {
     // ── Render ────────────────────────────────────────────────────────────────
 
     return (
-        <View className="flex-1" style={{ backgroundColor: COLORS.background }}>
+        <View className="flex-1 bg-background">
             <StatusBar barStyle="light-content" translucent backgroundColor="transparent" />
 
             {/* PREMIUM GLOW BACKGROUND */}
@@ -84,7 +86,7 @@ export default function OTPVerifyScreen() {
                     className="absolute top-[280px] -left-20 w-[240px] h-[240px] rounded-full"
                     style={{ backgroundColor: COLORS.glowBlue }}
                 />
-                <View className="absolute bottom-[-100px] right-[-50px] w-[300px] h-[300px] rounded-full bg-[#11E0C5]/5" />
+                <View className="absolute bottom-[-100px] right-[-50px] w-[300px] h-[300px] rounded-full bg-primary/5" />
                 <View
                     className="absolute top-[-20px] right-[-40px] w-[260px] h-[260px] rounded-full items-center justify-center"
                     style={{ backgroundColor: COLORS.glowRing }}
@@ -114,22 +116,22 @@ export default function OTPVerifyScreen() {
                             >
                                 <View className="w-4 h-4 border-l-2 border-t-2 border-white/90 transform -rotate-45 mt-0.5 ml-1" />
                             </TouchableOpacity>
-                            <Text className="text-white text-[24px] italic ml-5 tracking-wide">
+                            <Text className="text-foreground text-[24px] italic ml-5 tracking-wide">
                                 verify otp
                             </Text>
                         </View>
 
                         {/* HERO ICON */}
                         <View className="items-center mb-8">
-                            <View className="w-20 h-20 rounded-[24px] bg-[#0D1420]/90 border border-white/[0.08] items-center justify-center mb-4">
-                                <View className="w-14 h-14 rounded-[18px] bg-[#11E0C5]/15 border border-[#11E0C5]/20 items-center justify-center">
-                                    <Ionicons name="keypad-outline" size={28} color="#11E0C5" />
+                            <View className="w-20 h-20 rounded-[24px] bg-card/90 border border-border items-center justify-center mb-4">
+                                <View className="w-14 h-14 rounded-[18px] bg-primary/15 border border-primary/20 items-center justify-center">
+                                    <Ionicons name="keypad-outline" size={28} color={theme.colors.primary} />
                                 </View>
                             </View>
-                            <Text className="text-white text-[26px] font-bold tracking-tight">
+                            <Text className="text-foreground text-[26px] font-bold tracking-tight">
                                 Start Ride
                             </Text>
-                            <Text className="text-[#748096] text-[14px] text-center mt-2 max-w-[280px] leading-5">
+                            <Text className="text-muted text-[14px] text-center mt-2 max-w-[280px] leading-5">
                                 Ask the rider for the 6-digit OTP shown on their screen to verify and start the trip.
                             </Text>
                         </View>
@@ -139,13 +141,13 @@ export default function OTPVerifyScreen() {
                             className={`${glassCard} p-6 mx-1`}
                             style={{
                                 transform: [{ translateX: shakeAnim }],
-                                shadowColor: "#11E0C5",
+                                shadowColor: theme.colors.primary,
                                 shadowOpacity: 0.06,
                                 shadowRadius: 20,
                                 elevation: 8,
                             }}
                         >
-                            <Text className="text-[#748096] text-[11px] uppercase tracking-wider mb-4">
+                            <Text className="text-muted text-[11px] uppercase tracking-wider mb-4">
                                 Enter OTP
                             </Text>
 
@@ -158,7 +160,7 @@ export default function OTPVerifyScreen() {
                             {/* Error message */}
                             {error ? (
                                 <View className="flex-row items-start mt-4">
-                                    <Feather name="alert-circle" size={13} color="#EF4444" />
+                                    <Feather name="alert-circle" size={13} color={theme.colors.danger} />
                                     <Text className="text-red-400 text-[12px] ml-1.5 flex-1 leading-4">
                                         {error}
                                     </Text>
@@ -167,9 +169,9 @@ export default function OTPVerifyScreen() {
 
                             {/* Info hint */}
                             {!error ? (
-                                <View className="flex-row items-center mt-4 bg-[#11E0C5]/5 border border-[#11E0C5]/10 rounded-xl px-3 py-2.5">
-                                    <Ionicons name="information-circle-outline" size={14} color="#11E0C5" />
-                                    <Text className="text-[#748096] text-[11px] ml-2 flex-1 leading-4">
+                                <View className="flex-row items-center mt-4 bg-primary/5 border border-primary/10 rounded-xl px-3 py-2.5">
+                                    <Ionicons name="information-circle-outline" size={14} color={theme.colors.primary} />
+                                    <Text className="text-muted text-[11px] ml-2 flex-1 leading-4">
                                         The OTP is displayed on the rider's app under the trip details section.
                                     </Text>
                                 </View>
@@ -181,7 +183,7 @@ export default function OTPVerifyScreen() {
                             activeOpacity={0.85}
                             onPress={handleStartRide}
                             disabled={verifying || otp.length < 6}
-                            className="h-14 bg-[#11E0C5] rounded-2xl items-center justify-center border border-[#6FFFEF]/10 mx-1 mt-5"
+                            className="h-14 bg-primary rounded-2xl items-center justify-center border border-[#6FFFEF]/10 mx-1 mt-5"
                             style={{ opacity: otp.length < 6 ? 0.5 : 1 }}
                             accessibilityLabel="Verify OTP and start ride"
                         >
@@ -190,7 +192,7 @@ export default function OTPVerifyScreen() {
                             ) : (
                                 <View className="flex-row items-center gap-x-2">
                                     <Ionicons name="checkmark-circle" size={18} color="#071018" />
-                                    <Text className="text-[#071018] text-[16px] font-bold">
+                                    <Text className="text-background text-[16px] font-bold">
                                         Verify &amp; Start Ride
                                     </Text>
                                 </View>
@@ -198,9 +200,9 @@ export default function OTPVerifyScreen() {
                         </TouchableOpacity>
 
                         {/* Resend / help hint */}
-                        <Text className="text-[#748096] text-[12px] text-center mt-4">
+                        <Text className="text-muted text-[12px] text-center mt-4">
                             Rider not showing OTP?{" "}
-                            <Text className="text-[#11E0C5] font-semibold">
+                            <Text className="text-primary font-semibold">
                                 Ask them to refresh their app.
                             </Text>
                         </Text>

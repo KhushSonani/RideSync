@@ -1,7 +1,7 @@
 export const COLORS = {
     background: '#070B12',
 
-    card: 'rgba(13,20,32,0.82)',
+    card: 'var(--color-card)',
     input: 'rgba(19,29,43,0.95)',
 
     primary: '#11E0C5',
@@ -11,8 +11,8 @@ export const COLORS = {
     textSecondary: '#748096',
     textMuted: '#667085',
 
-    border: 'rgba(255,255,255,0.06)',
-    divider: 'rgba(255,255,255,0.05)',
+    border: 'var(--color-border)',
+    divider: 'var(--color-border)',
 
     glowPrimary: 'rgba(0,203,180,0.18)',
     glowBlue: 'rgba(10,132,255,0.10)',

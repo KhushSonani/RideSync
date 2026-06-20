@@ -92,3 +92,26 @@ export const clearUserRole = async () => {
         console.log("CLEAR USER ROLE ERROR:", error);
     }
 };
+
+// ─── Theme Preference ────────────────────────────────────────────────────────
+
+// SAVE THEME ('light' | 'dark')
+export const saveThemePreference = async (theme: "light" | "dark") => {
+    try {
+        await SecureStore.setItemAsync("themePreference", theme);
+    } catch (error) {
+        console.log("SAVE THEME ERROR:", error);
+    }
+};
+
+// GET THEME
+export const getThemePreference = async (): Promise<"light" | "dark" | null> => {
+    try {
+        const val = await SecureStore.getItemAsync("themePreference");
+        if (val === "light" || val === "dark") return val;
+        return null;
+    } catch (error) {
+        console.log("GET THEME ERROR:", error);
+        return null;
+    }
+};

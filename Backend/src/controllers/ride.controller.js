@@ -420,11 +420,6 @@ export const cancelRide = asyncHandler(async (req, res) => {
             throw new ApiError(400, `Rides with status '${ride.status}' cannot be cancelled`);
         }
 
-        const hadDriver = !!ride.driver;
-        const assignedDriverId = ride.driver?.toString() ?? null;
-        let assignedDriverDoc = null;
-
-        // Fix: Atomic update prevents TOCTOU race conditions
         const updatedRide = await Ride.findOneAndUpdate(
             { _id: rideId, status: { $in: ["requested", "accepted", "arriving"] } },
             {
@@ -441,6 +436,10 @@ export const cancelRide = asyncHandler(async (req, res) => {
         if (!updatedRide) {
             throw new ApiError(400, "Ride state changed before cancellation could complete.");
         }
+
+        const hadDriver = !!updatedRide.driver;
+        const assignedDriverId = updatedRide.driver?.toString() ?? null;
+        let assignedDriverDoc = null;
 
         // If a driver was assigned, free that driver back to available
         if (hadDriver) {

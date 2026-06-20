@@ -58,6 +58,7 @@ import type { RideAcceptedPayload, DriverLocationPayload } from "@/services/sock
 import { getAccessToken } from "@/services/storage";
 
 import { api } from "@/services/api";
+import { useTheme } from "@/store/ThemeContext";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -85,6 +86,7 @@ function buildInitialRegion(
 // ─── Screen ──────────────────────────────────────────────────────────────────
 
 export default function LiveTrackingScreen() {
+    const { colorScheme, theme } = useTheme();
     const [rideData, setRideData] = useState<any>(null);
     const [loading, setLoading] = useState(true);
     const [rideStatus, setRideStatus] = useState<RideStatus>("arriving");
@@ -105,16 +107,26 @@ export default function LiveTrackingScreen() {
     const offCancelledRef      = useRef<(() => void) | undefined>(undefined);
 
     // ── Check socket health ──────────────────────────────────────────
-    // HIGH-4: Do NOT call connectSocket here. The useFocusEffect below already
-    // calls connectSocket inside setupState. Duplicating it causes an extra
-    // SecureStore read and ordering issues during token refresh.
     useEffect(() => {
         setIsOffline(!isSocketConnected());
-        const offConnect = onSocketConnect(() => setIsOffline(false));
-        const offDisconnect = onSocketDisconnect(() => setIsOffline(true));
+        let offConnect: (() => void) | undefined;
+        let offDisconnect: (() => void) | undefined;
+        let isActive = true;
+
+        const setupHealth = async () => {
+            const token = await getAccessToken();
+            if (token && isActive) {
+                try { connectSocket(token); } catch(e) { console.log("Socket connect error:", e); }
+                offConnect = onSocketConnect(() => setIsOffline(false));
+                offDisconnect = onSocketDisconnect(() => setIsOffline(true));
+            }
+        };
+        setupHealth();
+
         return () => {
-            offConnect();
-            offDisconnect();
+            isActive = false;
+            if (offConnect) offConnect();
+            if (offDisconnect) offDisconnect();
         };
     }, []);
 
@@ -319,8 +331,8 @@ export default function LiveTrackingScreen() {
 
     if (loading || !rideData) {
         return (
-            <View className="flex-1 bg-[#131D2B] items-center justify-center">
-                <ActivityIndicator size="large" color="#11E0C5" />
+            <View className="flex-1 bg-input items-center justify-center">
+                <ActivityIndicator size="large" color={theme.colors.primary} />
             </View>
         );
     }
@@ -335,7 +347,7 @@ export default function LiveTrackingScreen() {
     // ── Render ────────────────────────────────────────────────────────────────
 
     return (
-        <View className="flex-1 bg-[#131D2B] relative">
+        <View className="flex-1 bg-input relative">
             <StatusBar barStyle="light-content" translucent backgroundColor="transparent" />
 
             {/* ── LIVE MAP ─────────────────────────────────────────────────── */}
@@ -349,14 +361,14 @@ export default function LiveTrackingScreen() {
                 showsCompass={false}
                 showsScale={false}
                 toolbarEnabled={false}
-                customMapStyle={DARK_MAP_STYLE}
+                customMapStyle={colorScheme === 'light' ? [] : DARK_MAP_STYLE}
             >
                 {/* Rider / Pickup marker */}
                 <Marker
                     coordinate={{ latitude: pickupLat, longitude: pickupLng }}
                     title="Pickup"
                     description={ride.pickup.address}
-                    pinColor="#11E0C5"
+                    pinColor={theme.colors.primary}
                     identifier="pickup-marker"
                 />
 
@@ -386,12 +398,12 @@ export default function LiveTrackingScreen() {
                                 width: 40,
                                 height: 40,
                                 borderRadius: 20,
-                                backgroundColor: "#11E0C5",
+                                backgroundColor: theme.colors.primary,
                                 alignItems: "center",
                                 justifyContent: "center",
                                 borderWidth: 2,
                                 borderColor: "#fff",
-                                shadowColor: "#11E0C5",
+                                shadowColor: theme.colors.primary,
                                 shadowOpacity: 0.8,
                                 shadowRadius: 8,
                                 elevation: 6,
@@ -409,12 +421,12 @@ export default function LiveTrackingScreen() {
                     style={{
                         position: "absolute",
                         top: 0, left: 0, right: 0, bottom: 0,
-                        backgroundColor: "rgba(7,11,18,0.55)",
+                        backgroundColor: theme.colors.background,
                         alignItems: "center",
                         justifyContent: "center",
                     }}
                 >
-                    <ActivityIndicator size="large" color="#11E0C5" />
+                    <ActivityIndicator size="large" color={theme.colors.primary} />
                     <Text style={{ color: "#748096", marginTop: 12, fontSize: 13, fontWeight: "600" }}>
                         Locating your driver…
                     </Text>
@@ -425,7 +437,7 @@ export default function LiveTrackingScreen() {
             {isOffline && (
                 <SafeAreaView className="absolute top-0 left-0 right-0 z-20">
                     <View className="mx-4 mt-2 bg-red-500/20 border border-red-500/40 px-4 py-2 rounded-xl flex-row items-center">
-                        <Feather name="wifi-off" size={13} color="#EF4444" />
+                        <Feather name="wifi-off" size={13} color={theme.colors.danger} />
                         <Text className="text-red-400 text-[11px] font-semibold ml-2">
                             Connection lost — reconnecting…
                         </Text>
@@ -440,7 +452,7 @@ export default function LiveTrackingScreen() {
                     activeOpacity={0.8}
                     onPress={() => router.back()}
                     disabled={rideStatus === "arriving" || rideStatus === "started"}
-                    className="w-10 h-10 rounded-full bg-[#0D1420]/90 border border-white/10 items-center justify-center shadow-lg"
+                    className="w-10 h-10 rounded-full bg-card/90 border border-border items-center justify-center shadow-lg"
                     style={{ opacity: (rideStatus === "arriving" || rideStatus === "started") ? 0.3 : 1 }}
                     accessibilityLabel="Go back"
                 >
@@ -450,22 +462,33 @@ export default function LiveTrackingScreen() {
 
             {/* ── Driver location badge (top-right) ─────────────────────── */}
             <SafeAreaView className="absolute top-4 right-4 z-10">
-                <View className="bg-[#0D1420]/90 border border-white/10 px-3 py-1.5 rounded-xl">
-                    <Text className="text-[#748096] text-[9px] uppercase tracking-wider">
+                <View className="bg-card/90 border border-border px-3 py-1.5 rounded-xl">
+                    <Text className="text-muted text-[9px] uppercase tracking-wider">
                         Driver Location
                     </Text>
                     {driverLocation ? (
-                        <Text className="text-[#11E0C5] text-[10px] font-semibold mt-0.5">
+                        <Text className="text-primary text-[10px] font-semibold mt-0.5">
                             {driverLocation.lat.toFixed(4)}, {driverLocation.lng.toFixed(4)}
                         </Text>
                     ) : (
-                        <Text className="text-[#748096] text-[10px] mt-0.5">Waiting…</Text>
+                        <Text className="text-muted text-[10px] mt-0.5">Waiting…</Text>
                     )}
                 </View>
             </SafeAreaView>
 
             {/* ── BOTTOM SLIDE-UP CARD ──────────────────────────────────── */}
-            <View className="absolute bottom-0 left-0 right-0 z-10">
+            <View 
+                className="absolute bottom-0 left-0 right-0 z-10 bg-background/95 border-t border-border rounded-t-[32px] pt-3"
+                style={{
+                    shadowColor: "#000",
+                    shadowOpacity: 0.6,
+                    shadowRadius: 32,
+                    elevation: 24,
+                }}
+            >
+                {/* Drag handle line */}
+                <View className="w-12 h-1 bg-foreground/20 rounded-full self-center mb-3" />
+                
                 <ScrollView
                     showsVerticalScrollIndicator={false}
                     contentContainerStyle={{ padding: 20, paddingBottom: 36 }}
@@ -476,35 +499,27 @@ export default function LiveTrackingScreen() {
                         <RideStatusCard status={rideStatus} subtitle={statusSubtitle} />
                     </View>
 
-                    <View
-                        className={`${glassCard} p-5`}
-                        style={{
-                            shadowColor: "#000",
-                            shadowOpacity: 0.4,
-                            shadowRadius: 24,
-                            elevation: 20,
-                        }}
-                    >
+                    <View className={`${glassCard} p-5`}>
                         {/* ETA row */}
-                        <View className="flex-row items-center justify-between border-b border-white/[0.05] pb-4 mb-4">
+                        <View className="flex-row items-center justify-between border-b border-border pb-4 mb-4">
                             <View className="flex-row items-center">
-                                <Ionicons name="time-outline" size={16} color="#748096" />
+                                <Ionicons name="time-outline" size={16} color={theme.colors.textMuted} />
                                 <View className="ml-2">
-                                    <Text className="text-[#748096] text-[10px] uppercase tracking-wider">
+                                    <Text className="text-muted text-[10px] uppercase tracking-wider">
                                         ETA
                                     </Text>
-                                    <Text className="text-white text-[17px] font-bold mt-0.5">
+                                    <Text className="text-foreground text-[17px] font-bold mt-0.5">
                                         ~{rideStatus === "arriving" ? "5 min" : "12 min"}
                                     </Text>
                                 </View>
                             </View>
                             <View className="flex-row items-center">
-                                <Ionicons name="navigate-outline" size={16} color="#748096" />
+                                <Ionicons name="navigate-outline" size={16} color={theme.colors.textMuted} />
                                 <View className="ml-2">
-                                    <Text className="text-[#748096] text-[10px] uppercase tracking-wider">
+                                    <Text className="text-muted text-[10px] uppercase tracking-wider">
                                         Distance
                                     </Text>
-                                    <Text className="text-[#11E0C5] text-[17px] font-bold mt-0.5">
+                                    <Text className="text-primary text-[17px] font-bold mt-0.5">
                                         {ride.distance?.toFixed(1)} km
                                     </Text>
                                 </View>
@@ -528,7 +543,7 @@ export default function LiveTrackingScreen() {
                         )}
 
                         {/* Route */}
-                        <View className="border-t border-white/[0.05] pt-4 mb-5">
+                        <View className="border-t border-border pt-4 mb-5">
                             <RouteRow pickup={ride.pickup} drop={ride.drop} />
                         </View>
 
@@ -542,7 +557,7 @@ export default function LiveTrackingScreen() {
                                 accessibilityLabel="Cancel ride"
                             >
                                 {cancelling ? (
-                                    <ActivityIndicator size="small" color="#EF4444" />
+                                    <ActivityIndicator size="small" color={theme.colors.danger} />
                                 ) : (
                                     <Text className="text-red-400 text-[13px] font-bold">
                                         Cancel Ride
@@ -551,7 +566,7 @@ export default function LiveTrackingScreen() {
                             </TouchableOpacity>
                         ) : (
                             <View className="flex-row items-center justify-center py-2 bg-[#10B981]/5 border border-[#10B981]/15 rounded-xl">
-                                <Ionicons name="car-sport" size={16} color="#10B981" />
+                                <Ionicons name="car-sport" size={16} color={theme.colors.success} />
                                 <Text className="text-[#10B981] text-[13px] font-bold ml-2">
                                     Ride in progress — enjoy your trip!
                                 </Text>

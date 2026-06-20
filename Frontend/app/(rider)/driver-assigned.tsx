@@ -24,10 +24,12 @@ import OTPDisplay from "@/components/ride/OTPDisplay";
 import { api } from "@/services/api";
 import { onRideStatusUpdated, onRideCancelled, connectSocket } from "@/services/socket";
 import { getAccessToken } from "@/services/storage";
+import { useTheme } from "@/store/ThemeContext";
 
 // ─── Screen ──────────────────────────────────────────────────────────────────
 
 export default function DriverAssignedScreen() {
+    const { colorScheme, theme } = useTheme();
     const { otp } = useLocalSearchParams();
     const [rideData, setRideData] = useState<any>(null);
     const otpStr = (typeof otp === 'string' && otp) ? otp : (rideData?.otp || '');
@@ -176,7 +178,7 @@ export default function DriverAssignedScreen() {
     // ── Render ────────────────────────────────────────────────────────────────
 
     return (
-        <View className="flex-1" style={{ backgroundColor: COLORS.background }}>
+        <View className="flex-1 bg-background">
             <StatusBar barStyle="light-content" translucent backgroundColor="transparent" />
 
             {/* PREMIUM GLOW BACKGROUND */}
@@ -189,12 +191,12 @@ export default function DriverAssignedScreen() {
                     className="absolute top-[280px] -left-20 w-[240px] h-[240px] rounded-full"
                     style={{ backgroundColor: COLORS.glowBlue }}
                 />
-                <View className="absolute bottom-[-100px] right-[-50px] w-[300px] h-[300px] rounded-full bg-[#11E0C5]/5" />
+                <View className="absolute bottom-[-100px] right-[-50px] w-[300px] h-[300px] rounded-full bg-primary/5" />
             </View>
 
             {loading || !rideData ? (
                 <View className="flex-1 items-center justify-center">
-                    <ActivityIndicator size="large" color="#11E0C5" />
+                    <ActivityIndicator size="large" color={theme.colors.primary} />
                 </View>
             ) : (
             <SafeAreaView className="flex-1 px-5 pt-3">
@@ -207,7 +209,7 @@ export default function DriverAssignedScreen() {
                     >
                         <View className="w-4 h-4 border-l-2 border-t-2 border-white/90 transform -rotate-45 mt-0.5 ml-1" />
                     </TouchableOpacity>
-                    <Text className="text-white text-[24px] italic ml-5 tracking-wide">
+                    <Text className="text-foreground text-[24px] italic ml-5 tracking-wide">
                         driver assigned
                     </Text>
                 </View>
@@ -232,16 +234,16 @@ export default function DriverAssignedScreen() {
 
                         {/* ETA HIGHLIGHT */}
                         <View
-                            className="flex-row items-center justify-between px-5 py-4 rounded-[20px] border border-[#11E0C5]/15 mb-4"
+                            className="flex-row items-center justify-between px-5 py-4 rounded-[20px] border border-primary/15 mb-4"
                             style={{ backgroundColor: "rgba(17,224,197,0.05)" }}
                         >
                             <View className="flex-row items-center">
-                                <Ionicons name="navigate-outline" size={18} color="#11E0C5" />
+                                <Ionicons name="navigate-outline" size={18} color={theme.colors.primary} />
                                 <View className="ml-3">
-                                    <Text className="text-[#748096] text-[10px] uppercase tracking-wider">
+                                    <Text className="text-muted text-[10px] uppercase tracking-wider">
                                         Driver ETA
                                     </Text>
-                                    <Text className="text-white text-[20px] font-bold mt-0.5">
+                                    <Text className="text-foreground text-[20px] font-bold mt-0.5">
                                         {/* TODO: real ETA from driver location + Google Maps */}
                                         ~8 min
                                     </Text>
@@ -250,11 +252,11 @@ export default function DriverAssignedScreen() {
                             <TouchableOpacity
                                 activeOpacity={0.8}
                                 onPress={handleViewLiveTracking}
-                                className="bg-[#11E0C5]/10 border border-[#11E0C5]/20 px-3 py-2 rounded-xl flex-row items-center gap-x-1.5"
+                                className="bg-primary/10 border border-primary/20 px-3 py-2 rounded-xl flex-row items-center gap-x-1.5"
                                 accessibilityLabel="Track driver on map"
                             >
-                                <Feather name="map-pin" size={13} color="#11E0C5" />
-                                <Text className="text-[#11E0C5] text-[12px] font-semibold">
+                                <Feather name="map-pin" size={13} color={theme.colors.primary} />
+                                <Text className="text-primary text-[12px] font-semibold">
                                     Track
                                 </Text>
                             </TouchableOpacity>
@@ -262,7 +264,7 @@ export default function DriverAssignedScreen() {
 
                         {/* DRIVER CARD */}
                         <View className={`${glassCard} p-5 mb-4`}>
-                            <Text className="text-[#748096] text-[11px] uppercase tracking-wider mb-4">
+                            <Text className="text-muted text-[11px] uppercase tracking-wider mb-4">
                                 Your Driver
                             </Text>
                             <DriverInfoCard
@@ -280,17 +282,17 @@ export default function DriverAssignedScreen() {
                         {/* ROUTE CARD */}
                         <View className={`${glassCard} p-5 mb-4`}>
                             <View className="flex-row items-center mb-4">
-                                <View className="w-7 h-7 rounded-lg bg-[#11E0C5]/10 items-center justify-center mr-2">
-                                    <Ionicons name="map-outline" size={15} color="#11E0C5" />
+                                <View className="w-7 h-7 rounded-lg bg-primary/10 items-center justify-center mr-2">
+                                    <Ionicons name="map-outline" size={15} color={theme.colors.primary} />
                                 </View>
-                                <Text className="text-[#748096] text-[11px] uppercase tracking-wider">
+                                <Text className="text-muted text-[11px] uppercase tracking-wider">
                                     Your Route
                                 </Text>
                             </View>
 
                             <RouteRow pickup={ride.pickup} drop={ride.drop} />
 
-                            <View className="h-[1px] bg-white/[0.05] my-4" />
+                            <View className="h-[1px] bg-foreground/[0.05] my-4" />
 
                             <FareDistanceRow fare={ride.fare} distance={ride.distance} />
                         </View>
@@ -304,7 +306,7 @@ export default function DriverAssignedScreen() {
                             accessibilityLabel="Cancel ride"
                         >
                             {cancelling ? (
-                                <ActivityIndicator size="small" color="#EF4444" />
+                                <ActivityIndicator size="small" color={theme.colors.danger} />
                             ) : (
                                 <Text className="text-red-400 text-[14px] font-bold">
                                     Cancel Ride

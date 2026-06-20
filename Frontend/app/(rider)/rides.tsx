@@ -10,6 +10,7 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { router } from "expo-router";
 import { Feather } from "@expo/vector-icons";
+import { useTheme } from "@/store/ThemeContext";
 
 import { COLORS } from "@/constants/theme";
 import EmptyStateCard from "@/components/common/EmptyStateCard";
@@ -18,6 +19,7 @@ import RideHistoryCard from "@/components/common/RideHistoryCard";
 import { api } from "@/services/api";
 
 export default function RiderRidesScreen() {
+    const { theme } = useTheme();
     const [refreshing, setRefreshing] = useState(false);
     const [rides, setRides] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
@@ -55,7 +57,7 @@ export default function RiderRidesScreen() {
     });
 
     return (
-        <View className="flex-1" style={{ backgroundColor: COLORS.background }}>
+        <View className="flex-1 bg-background">
             <StatusBar barStyle="light-content" translucent backgroundColor="transparent" />
 
             {/* Glow background */}
@@ -73,13 +75,13 @@ export default function RiderRidesScreen() {
             <SafeAreaView className="flex-1 px-5 pt-3">
                 <ScrollView
                     showsVerticalScrollIndicator={false}
-                    contentContainerStyle={{ paddingBottom: 40 }}
+                    contentContainerStyle={{ paddingBottom: 90 }}
                     refreshControl={
                         <RefreshControl
                             refreshing={refreshing}
                             onRefresh={handleRefresh}
-                            tintColor="#11E0C5"
-                            colors={["#11E0C5"]}
+                            tintColor={theme.colors.primary}
+                            colors={[theme.colors.primary]}
                         />
                     }
                 >
@@ -94,7 +96,7 @@ export default function RiderRidesScreen() {
                         >
                             <Feather name="arrow-left" size={20} color="white" />
                         </TouchableOpacity>
-                        <Text className="text-white text-[24px] italic ml-4 tracking-wide">
+                        <Text className="text-foreground text-[24px] italic ml-4 tracking-wide">
                             my rides
                         </Text>
                     </View>
@@ -115,13 +117,13 @@ export default function RiderRidesScreen() {
                                 accessibilityLabel={`Filter by ${f}`}
                                 className={`mr-2 px-4 py-2 rounded-full border ${
                                     f === activeFilter
-                                        ? "bg-[#11E0C5]/10 border-[#11E0C5]/30"
-                                        : "bg-white/[0.03] border-white/[0.08]"
+                                        ? "bg-primary/10 border-primary/30"
+                                        : "bg-foreground/[0.03] border-border"
                                 }`}
                             >
                                 <Text
                                     className={`text-[12px] font-semibold ${
-                                        f === activeFilter ? "text-[#11E0C5]" : "text-[#748096]"
+                                        f === activeFilter ? "text-primary" : "text-muted"
                                     }`}
                                 >
                                     {f}
@@ -134,7 +136,7 @@ export default function RiderRidesScreen() {
                     {!loading && filteredRides.length === 0 ? (
                         <EmptyStateCard
                             icon="map"
-                            iconColor="#11E0C5"
+                            iconColor={theme.colors.primary}
                             title={rides.length === 0 ? "No rides yet" : `No ${activeFilter.toLowerCase()} rides`}
                             subtitle={rides.length === 0 ? "Your completed and upcoming rides will appear here once you book your first trip." : ""}
                             ctaLabel={rides.length === 0 ? "Book a Ride" : undefined}

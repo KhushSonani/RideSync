@@ -7,7 +7,6 @@ import {
     removeAccessToken,
     removeRefreshToken
 } from "@/services/storage";
-import { registerPushTokenWithServer } from "@/services/notifications";
 
 const NGROK_URL =
     'https://myspace-clumsy-sprawl.ngrok-free.dev/api/v1';
@@ -50,7 +49,9 @@ export const refreshAccessToken = async () => {
 
         // Re-register push token now that we have a fresh auth token.
         // Fire-and-forget — never blocks or throws.
-        registerPushTokenWithServer();
+        import("@/services/notifications").then(mod => {
+            mod.registerPushTokenWithServer();
+        }).catch(err => console.log("Failed to load notifications module", err));
 
         return newAccessToken;
 

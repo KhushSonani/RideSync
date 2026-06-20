@@ -1,3 +1,4 @@
+import { useTheme } from "@/store/ThemeContext";
 import React, { useState } from 'react';
 import {
     Text,
@@ -20,6 +21,7 @@ import { api } from '@/services/api';
 import { saveAccessToken, saveRefreshToken } from '@/services/storage';
 
 export default function ResetPassword() {
+    const { theme } = useTheme();
     const { token } = useLocalSearchParams<{ token: string }>();
 
     const [password, setPassword] = useState('');
@@ -95,7 +97,7 @@ export default function ResetPassword() {
     };
 
     return (
-        <View className="flex-1" style={{ backgroundColor: COLORS.background }}>
+        <View className="flex-1 bg-background">
             <StatusBar barStyle="light-content" translucent backgroundColor="transparent" />
 
             {/* PREMIUM BACKGROUND */}
@@ -137,16 +139,16 @@ export default function ResetPassword() {
                             >
                                 <View className="w-4 h-4 border-l-2 border-t-2 border-white/90 transform -rotate-45 mt-0.5 ml-1" />
                             </TouchableOpacity>
-                            <Text className="text-white text-[25px] italic ml-5 tracking-wide">
+                            <Text className="text-foreground text-[25px] italic ml-5 tracking-wide">
                                 reset password
                             </Text>
                         </View>
 
                         {/* MAIN CARD */}
                         <View
-                            className={`${glassCard} mt-24 mx-3 px-6 py-8 rounded-[32px] min-h-[420px] justify-center border border-white/[0.08]`}
+                            className={`${glassCard} mt-24 mx-3 px-6 py-8 rounded-[32px] min-h-[420px] justify-center border border-border`}
                             style={{
-                                shadowColor: "#11E0C5",
+                                shadowColor: theme.colors.primary,
                                 shadowOpacity: 0.08,
                                 shadowRadius: 20,
                                 elevation: 10,
@@ -154,10 +156,10 @@ export default function ResetPassword() {
                         >
                             {/* HEADING */}
                             <View className="mb-6">
-                                <Text className="text-white text-[28px] font-bold tracking-tight">
+                                <Text className="text-foreground text-[28px] font-bold tracking-tight">
                                     Create New Password
                                 </Text>
-                                <Text className="text-[#748096] text-[14px] mt-1">
+                                <Text className="text-muted text-[14px] mt-1">
                                     Enter your new password below to reset your credentials
                                 </Text>
                             </View>
@@ -178,7 +180,7 @@ export default function ResetPassword() {
                                         secureTextEntry={!isPasswordVisible}
                                         autoCapitalize="none"
                                         editable={!loading}
-                                        className="flex-1 text-white text-[15px]"
+                                        className="flex-1 text-foreground text-[15px]"
                                     />
                                     <TouchableOpacity
                                         activeOpacity={0.7}
@@ -206,7 +208,7 @@ export default function ResetPassword() {
                                         secureTextEntry={!isConfirmPasswordVisible}
                                         autoCapitalize="none"
                                         editable={!loading}
-                                        className="flex-1 text-white text-[15px]"
+                                        className="flex-1 text-foreground text-[15px]"
                                     />
                                     <TouchableOpacity
                                         activeOpacity={0.7}
@@ -251,7 +253,7 @@ export default function ResetPassword() {
                                 {loading ? (
                                     <ActivityIndicator size="small" color="#071018" />
                                 ) : (
-                                    <Text className="text-[#071018] text-[16px] font-bold">
+                                    <Text className="text-background text-[16px] font-bold">
                                         Update Password
                                     </Text>
                                 )}
@@ -263,8 +265,8 @@ export default function ResetPassword() {
                                 className="align-center items-center mt-6"
                                 onPress={() => router.replace('/(auth)/signin')}
                             >
-                                <Text className="text-[#748096] text-[13px]">
-                                    Go back to <Text className="text-[#11E0C5] font-semibold">Sign in</Text>
+                                <Text className="text-muted text-[13px]">
+                                    Go back to <Text className="text-primary font-semibold">Sign in</Text>
                                 </Text>
                             </TouchableOpacity>
                         </View>

@@ -1,5 +1,6 @@
+import { useTheme } from "@/store/ThemeContext";
 import React, { memo } from "react";
-import { View, Text, TouchableOpacity, ActivityIndicator } from "react-native";
+import { View, Text, TouchableOpacity, ActivityIndicator, useColorScheme } from "react-native";
 import { Feather } from "@expo/vector-icons";
 
 interface LocationSearchInputProps {
@@ -39,10 +40,11 @@ const LocationSearchInput = memo(function LocationSearchInput({
     disabled = false,
     loading = false,
 }: LocationSearchInputProps) {
+    const { colorScheme, theme } = useTheme();
     return (
         <View>
             {label ? (
-                <Text className="text-[#748096] text-[11px] uppercase tracking-wider mb-2 px-1">
+                <Text className="text-muted text-[11px] uppercase tracking-wider mb-2 px-1">
                     {label}
                 </Text>
             ) : null}
@@ -51,7 +53,7 @@ const LocationSearchInput = memo(function LocationSearchInput({
                 activeOpacity={0.8}
                 onPress={onPress}
                 disabled={disabled || loading}
-                className="h-14 bg-[#131D2B]/95 border border-white/[0.06] rounded-2xl px-4 flex-row items-center"
+                className="h-14 bg-input/95 border border-border rounded-2xl px-4 flex-row items-center"
                 accessible
                 accessibilityRole="button"
                 accessibilityLabel={value || placeholder}
@@ -66,7 +68,7 @@ const LocationSearchInput = memo(function LocationSearchInput({
                 {/* Address text */}
                 <Text
                     className="flex-1 text-[15px]"
-                    style={{ color: value ? "#FFFFFF" : "#748096" }}
+                    style={{ color: value ? theme.colors.textPrimary : "#748096" }}
                     numberOfLines={1}
                 >
                     {value || placeholder}
@@ -74,9 +76,9 @@ const LocationSearchInput = memo(function LocationSearchInput({
 
                 {/* Right icon */}
                 {loading ? (
-                    <ActivityIndicator size="small" color="#748096" />
+                    <ActivityIndicator size="small" color={theme.colors.textMuted} />
                 ) : (
-                    <Feather name="search" size={15} color="#748096" />
+                    <Feather name="search" size={15} color={theme.colors.textMuted} />
                 )}
             </TouchableOpacity>
         </View>

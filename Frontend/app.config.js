@@ -87,7 +87,7 @@ export default ({ config }) => ({
   // Replace with your actual EAS project ID from: https://expo.dev
   extra: {
     eas: {
-      projectId: process.env.EXPO_PUBLIC_EAS_PROJECT_ID || "",
+      projectId: process.env.EXPO_PUBLIC_EAS_PROJECT_ID,
     },
   },
 });

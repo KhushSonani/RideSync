@@ -1,3 +1,4 @@
+import { useTheme } from "@/store/ThemeContext";
 import React, { useState } from 'react';
 import {
     Text,
@@ -18,6 +19,7 @@ import { glassCard, inputField, primaryButton } from '@/constants/styles';
 import { api } from '@/services/api';
 
 export default function ForgotPassword() {
+    const { theme } = useTheme();
     const [email, setEmail] = useState('');
     const [loading, setLoading] = useState(false);
     const [errorMessage, setErrorMessage] = useState('');
@@ -74,7 +76,7 @@ export default function ForgotPassword() {
     };
 
     return (
-        <View className="flex-1" style={{ backgroundColor: COLORS.background }}>
+        <View className="flex-1 bg-background">
             <StatusBar barStyle="light-content" translucent backgroundColor="transparent" />
 
             {/* PREMIUM BACKGROUND */}
@@ -116,16 +118,16 @@ export default function ForgotPassword() {
                             >
                                 <View className="w-4 h-4 border-l-2 border-t-2 border-white/90 transform -rotate-45 mt-0.5 ml-1" />
                             </TouchableOpacity>
-                            <Text className="text-white text-[25px] italic ml-5 tracking-wide">
+                            <Text className="text-foreground text-[25px] italic ml-5 tracking-wide">
                                 forgot password
                             </Text>
                         </View>
 
                         {/* MAIN CARD */}
                         <View
-                            className={`${glassCard} mt-24 mx-3 px-6 py-8 rounded-[32px] min-h-[400px] justify-center border border-white/[0.08]`}
+                            className={`${glassCard} mt-24 mx-3 px-6 py-8 rounded-[32px] min-h-[400px] justify-center border border-border`}
                             style={{
-                                shadowColor: "#11E0C5",
+                                shadowColor: theme.colors.primary,
                                 shadowOpacity: 0.08,
                                 shadowRadius: 20,
                                 elevation: 10,
@@ -133,10 +135,10 @@ export default function ForgotPassword() {
                         >
                             {/* HEADING */}
                             <View className="mb-6">
-                                <Text className="text-white text-[28px] font-bold tracking-tight">
+                                <Text className="text-foreground text-[28px] font-bold tracking-tight">
                                     Reset Password
                                 </Text>
-                                <Text className="text-[#748096] text-[14px] mt-1">
+                                <Text className="text-muted text-[14px] mt-1">
                                     Enter your email to receive a password reset link
                                 </Text>
                             </View>
@@ -156,7 +158,7 @@ export default function ForgotPassword() {
                                         keyboardType="email-address"
                                         autoCapitalize="none"
                                         editable={!loading}
-                                        className="flex-1 text-white text-[15px]"
+                                        className="flex-1 text-foreground text-[15px]"
                                     />
                                 </View>
                             </View>
@@ -183,11 +185,11 @@ export default function ForgotPassword() {
 
                             {/* LOCAL DEVELOPMENT CONVENIENCE BLOCK */}
                             {receivedToken ? (
-                                <View className="mt-6 p-4 bg-[#131D2B]/90 border border-[#11E0C5]/20 rounded-2xl">
-                                    <Text className="text-white text-sm font-semibold mb-1">
+                                <View className="mt-6 p-4 bg-input/90 border border-primary/20 rounded-2xl">
+                                    <Text className="text-foreground text-sm font-semibold mb-1">
                                         Demo Bypass / Token Detected:
                                     </Text>
-                                    <Text className="text-[#11E0C5] text-xs font-mono select-all">
+                                    <Text className="text-primary text-xs font-mono select-all">
                                         {receivedToken}
                                     </Text>
                                     <TouchableOpacity
@@ -196,9 +198,9 @@ export default function ForgotPassword() {
                                             pathname: "/(auth)/reset-password/[token]",
                                             params: { token: receivedToken }
                                         })}
-                                        className="mt-3 py-2 bg-[#11E0C5]/10 border border-[#11E0C5]/30 rounded-xl items-center"
+                                        className="mt-3 py-2 bg-primary/10 border border-primary/30 rounded-xl items-center"
                                     >
-                                        <Text className="text-[#11E0C5] text-[13px] font-bold">
+                                        <Text className="text-primary text-[13px] font-bold">
                                             Go to Reset Password Screen
                                         </Text>
                                     </TouchableOpacity>
@@ -215,7 +217,7 @@ export default function ForgotPassword() {
                                 {loading ? (
                                     <ActivityIndicator size="small" color="#071018" />
                                 ) : (
-                                    <Text className="text-[#071018] text-[16px] font-bold">
+                                    <Text className="text-background text-[16px] font-bold">
                                         Send Reset Instructions
                                     </Text>
                                 )}
@@ -227,8 +229,8 @@ export default function ForgotPassword() {
                                 className="align-center items-center mt-6"
                                 onPress={() => router.replace('/(auth)/signin')}
                             >
-                                <Text className="text-[#748096] text-[13px]">
-                                    Remembered your password? <Text className="text-[#11E0C5] font-semibold">Sign in</Text>
+                                <Text className="text-muted text-[13px]">
+                                    Remembered your password? <Text className="text-primary font-semibold">Sign in</Text>
                                 </Text>
                             </TouchableOpacity>
                         </View>

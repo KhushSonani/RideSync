@@ -1,6 +1,6 @@
 import axios from 'axios';
 import { getAccessToken, clearTokens } from './storage';
-import { refreshAccessToken } from './auth';
+
 import { router } from 'expo-router';
 
 
@@ -81,6 +81,7 @@ api.interceptors.response.use(
             originalRequest._retry = true;
             isRefreshing = true;
             try {
+                const { refreshAccessToken } = await import('./auth');
                 const newAccessToken = await refreshAccessToken();
                 if (newAccessToken) {
                     processQueue(null, newAccessToken);

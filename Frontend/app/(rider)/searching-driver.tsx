@@ -22,10 +22,13 @@ import FareDistanceRow from "@/components/ride/FareDistanceRow";
 import { api } from "@/services/api";
 import { onRideAccepted, onRideCancelled, connectSocket } from "@/services/socket";
 import { getAccessToken } from "@/services/storage";
+import { useTheme } from "@/store/ThemeContext";
+import { BlurView } from "expo-blur";
 
 // ─── Screen ──────────────────────────────────────────────────────────────────
 
 export default function SearchingDriverScreen() {
+    const { colorScheme, theme } = useTheme();
     const { otp } = useLocalSearchParams();
     const [cancelling, setCancelling] = useState(false);
     const [elapsedSeconds, setElapsedSeconds] = useState(0);
@@ -36,6 +39,7 @@ export default function SearchingDriverScreen() {
     const ring2 = useRef(new Animated.Value(0)).current;
     const ring3 = useRef(new Animated.Value(0)).current;
     const iconScale = useRef(new Animated.Value(1)).current;
+    const shimmerOpacity = useRef(new Animated.Value(0.3)).current;
 
     // Elapsed search timer
     const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -48,6 +52,13 @@ export default function SearchingDriverScreen() {
     useFocusEffect(
         useCallback(() => {
             let isActive = true;
+
+            // Fix: Reset and start timer only while screen is focused to prevent memory leaks
+            setElapsedSeconds(0);
+            if (timerRef.current) clearInterval(timerRef.current);
+            timerRef.current = setInterval(() => {
+                setElapsedSeconds((prev) => prev + 1);
+            }, 1000);
 
             const setupState = async () => {
                 try {
@@ -119,6 +130,11 @@ export default function SearchingDriverScreen() {
                 if (offCancelledRef.current) offCancelledRef.current();
                 offAcceptedRef.current = undefined;
                 offCancelledRef.current = undefined;
+
+                if (timerRef.current) {
+                    clearInterval(timerRef.current);
+                    timerRef.current = null;
+                }
             };
         }, [otp])
     );
@@ -158,14 +174,14 @@ export default function SearchingDriverScreen() {
             ])
         ).start();
 
-        // Elapsed timer
-        timerRef.current = setInterval(() => {
-            setElapsedSeconds((prev) => prev + 1);
-        }, 1000);
+        // Shimmer effect
+        Animated.loop(
+            Animated.sequence([
+                Animated.timing(shimmerOpacity, { toValue: 0.7, duration: 800, useNativeDriver: true }),
+                Animated.timing(shimmerOpacity, { toValue: 0.3, duration: 800, useNativeDriver: true }),
+            ])
+        ).start();
 
-        return () => {
-            if (timerRef.current) clearInterval(timerRef.current);
-        };
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
@@ -189,10 +205,10 @@ export default function SearchingDriverScreen() {
                     onPress: async () => {
                         if (timerRef.current) clearInterval(timerRef.current);
                         setCancelling(true);
-                        
+
                         try {
                             let rideIdToCancel = currentRide?._id;
-                            
+
                             // Fallback: if user taps cancel before fetch completes
                             if (!rideIdToCancel) {
                                 const res = await api.get("/rides/current");
@@ -230,7 +246,7 @@ export default function SearchingDriverScreen() {
     // ── Render ────────────────────────────────────────────────────────────────
 
     return (
-        <View className="flex-1" style={{ backgroundColor: COLORS.background }}>
+        <View className="flex-1 bg-background">
             <StatusBar barStyle="light-content" translucent backgroundColor="transparent" />
 
             {/* PREMIUM GLOW BACKGROUND */}
@@ -248,11 +264,11 @@ export default function SearchingDriverScreen() {
             <SafeAreaView className="flex-1 px-5 pt-3">
                 {/* HEADER */}
                 <View className="flex-row items-center justify-between mt-2 mb-4">
-                    <Text className="text-white text-[24px] italic tracking-wide">
+                    <Text className="text-foreground text-[24px] italic tracking-wide">
                         searching...
                     </Text>
-                    <View className="bg-[#131D2B]/95 border border-white/[0.06] rounded-xl px-3 py-1.5">
-                        <Text className="text-[#748096] text-[11px]">
+                    <View className="bg-input/95 border border-border rounded-xl px-3 py-1.5">
+                        <Text className="text-muted text-[11px]">
                             {formatElapsed(elapsedSeconds)}
                         </Text>
                     </View>
@@ -271,78 +287,139 @@ export default function SearchingDriverScreen() {
                     <View className="w-[220px] h-[220px] items-center justify-center">
                         {/* Expanding rings */}
                         <Animated.View
-                            className="absolute w-[130px] h-[130px] rounded-full border border-[#11E0C5]/40"
+                            className="absolute w-[130px] h-[130px] rounded-full border border-primary/40"
                             style={ringStyle(ring1)}
                         />
                         <Animated.View
-                            className="absolute w-[130px] h-[130px] rounded-full border border-[#11E0C5]/30"
+                            className="absolute w-[130px] h-[130px] rounded-full border border-primary/30"
                             style={ringStyle(ring2)}
                         />
                         <Animated.View
-                            className="absolute w-[130px] h-[130px] rounded-full border border-[#11E0C5]/20"
+                            className="absolute w-[130px] h-[130px] rounded-full border border-primary/20"
                             style={ringStyle(ring3)}
                         />
 
                         {/* Center icon */}
-                        <View className="w-[130px] h-[130px] rounded-full bg-[#0D1420]/90 border border-white/[0.08] items-center justify-center">
-                            <View className="w-[90px] h-[90px] rounded-full bg-[#11E0C5]/10 border border-[#11E0C5]/20 items-center justify-center">
+                        <View className="w-[130px] h-[130px] rounded-full bg-card/90 border border-border items-center justify-center">
+                            <View className="w-[90px] h-[90px] rounded-full bg-primary/10 border border-primary/20 items-center justify-center">
                                 <Animated.View style={{ transform: [{ scale: iconScale }] }}>
                                     <MaterialCommunityIcons
                                         name="radar"
                                         size={40}
-                                        color="#11E0C5"
+                                        color={theme.colors.primary}
                                     />
                                 </Animated.View>
                             </View>
                         </View>
                     </View>
 
-                    <Text className="text-white text-[18px] font-bold mt-6">
+                    <Text className="text-foreground text-[18px] font-bold mt-6">
                         Finding your driver
                     </Text>
-                    <Text className="text-[#748096] text-[13px] mt-2 text-center max-w-[260px] leading-5">
-                        We're connecting you with the nearest available driver. Please keep the app open.
+                    <Text className="text-muted text-[13px] mt-2 text-center max-w-[260px] leading-5">
+                        We&apos;re connecting you with the nearest available driver. Please keep the app open.
                     </Text>
                 </View>
 
-                {/* RIDE SUMMARY CARD */}
-                {currentRide ? (
-                    <View className={`${glassCard} p-5 mb-4`}>
-                        <View className="mb-4">
-                            <FareDistanceRow
-                                fare={currentRide.fare}
-                                distance={currentRide.distance}
-                            />
-                        </View>
-                        <View className="h-[1px] bg-white/[0.05] mb-4" />
-                        <RouteRow
-                            pickup={currentRide.pickup}
-                            drop={currentRide.drop}
-                        />
-                    </View>
-                ) : (
-                    // Skeleton while loading current ride
-                    <View className={`${glassCard} p-5 mb-4 h-32 justify-center items-center`}>
-                        <ActivityIndicator size="small" color="#11E0C5" />
-                    </View>
-                )}
-
-                {/* CANCEL BUTTON */}
-                <TouchableOpacity
-                    activeOpacity={0.8}
-                    onPress={handleCancelRide}
-                    disabled={cancelling}
-                    className="h-14 bg-red-500/10 border border-red-500/20 rounded-2xl items-center justify-center mb-2"
-                    accessibilityLabel="Cancel ride search"
+                {/* BOTTOM PANEL */}
+                <View
+                    style={{
+                        marginTop: "auto",
+                        marginHorizontal: -20,
+                        marginBottom: -12,
+                        borderTopLeftRadius: 32,
+                        borderTopRightRadius: 32,
+                        overflow: "hidden",
+                        shadowColor: "#000",
+                        shadowOpacity: 0.6,
+                        shadowRadius: 32,
+                        elevation: 24,
+                    }}
                 >
-                    {cancelling ? (
-                        <ActivityIndicator size="small" color="#EF4444" />
-                    ) : (
-                        <Text className="text-red-400 text-[14px] font-bold">
-                            Cancel Search
-                        </Text>
-                    )}
-                </TouchableOpacity>
+                    <BlurView
+                        tint={colorScheme === 'dark' ? 'dark' : 'light'}
+                        intensity={80}
+                        style={{ paddingHorizontal: 20, paddingTop: 16, paddingBottom: 24 }}
+                    >
+                        <View className="w-12 h-1 bg-foreground/20 rounded-full self-center mb-5" />
+
+                        {/* RIDE SUMMARY CARD */}
+                        {currentRide ? (
+                            <View
+                                style={{
+                                    backgroundColor: theme.colors.surface,
+                                    borderRadius: 24,
+                                    padding: 20,
+                                    marginBottom: 16,
+                                    borderWidth: 1,
+                                    borderColor: theme.colors.border,
+                                    shadowColor: "#000",
+                                    shadowOpacity: 0.05,
+                                    shadowRadius: 10,
+                                    shadowOffset: { width: 0, height: 4 },
+                                    elevation: 4,
+                                }}
+                            >
+                                <View className="mb-4">
+                                    <FareDistanceRow
+                                        fare={currentRide.fare}
+                                        distance={currentRide.distance}
+                                    />
+                                </View>
+                                <View className="h-[1px] bg-foreground/[0.05] mb-4" />
+                                <RouteRow
+                                    pickup={currentRide.pickup}
+                                    drop={currentRide.drop}
+                                />
+                            </View>
+                        ) : (
+                            // Skeleton while loading current ride
+                            <View
+                                style={{
+                                    backgroundColor: theme.colors.surface,
+                                    borderRadius: 24,
+                                    padding: 20,
+                                    marginBottom: 16,
+                                    borderWidth: 1,
+                                    borderColor: theme.colors.border,
+                                    height: 140,
+                                    justifyContent: "space-around"
+                                }}
+                            >
+                                <Animated.View style={{ opacity: shimmerOpacity, height: 24, width: '40%', backgroundColor: theme.colors.border, borderRadius: 8 }} />
+                                <Animated.View style={{ opacity: shimmerOpacity, height: 1, width: '100%', backgroundColor: theme.colors.border }} />
+                                <Animated.View style={{ opacity: shimmerOpacity, height: 16, width: '80%', backgroundColor: theme.colors.border, borderRadius: 6 }} />
+                                <Animated.View style={{ opacity: shimmerOpacity, height: 16, width: '60%', backgroundColor: theme.colors.border, borderRadius: 6 }} />
+                            </View>
+                        )}
+
+                        {/* CANCEL BUTTON */}
+                        <TouchableOpacity
+                            activeOpacity={0.8}
+                            onPress={handleCancelRide}
+                            disabled={cancelling}
+                            style={{
+                                height: 60,
+                                backgroundColor: theme.colors.danger + "1A",
+                                borderWidth: 1.5,
+                                borderColor: theme.colors.danger + "33",
+                                borderRadius: 20,
+                                alignItems: "center",
+                                justifyContent: "center",
+                                marginBottom: 8,
+                            }}
+                            accessibilityLabel="Cancel ride search"
+                        >
+                            {cancelling ? (
+                                <ActivityIndicator size="small" color={theme.colors.danger} />
+                            ) : (
+                                <Text style={{ color: theme.colors.danger, fontSize: 16, fontWeight: "800" }}>
+                                    Cancel Search
+                                </Text>
+                            )}
+                        </TouchableOpacity>
+                    </BlurView>
+                </View>
             </SafeAreaView>
         </View>
     );

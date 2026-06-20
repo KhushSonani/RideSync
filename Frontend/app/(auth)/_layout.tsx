@@ -1,8 +1,10 @@
 import "@/global.css";
 
 import { Stack } from "expo-router";
+import { useTheme } from "@/store/ThemeContext";
 
 export default function AuthLayout() {
+    const { colorScheme, theme } = useTheme();
     return (
         <Stack
             screenOptions={{
@@ -10,7 +12,7 @@ export default function AuthLayout() {
                 animation: "fade",
                 animationDuration: 120,
                 contentStyle: {
-                    backgroundColor: "#070B12",
+                    backgroundColor: theme.colors.background,
                 },
             }}
         >

@@ -19,10 +19,10 @@ const FareDistanceRow = memo(function FareDistanceRow({
     return (
         <View className="flex-row items-center">
             <View className="flex-1">
-                <Text className="text-[#748096] text-[10px] uppercase tracking-wider">
+                <Text className="text-muted text-[10px] uppercase tracking-wider">
                     Fare
                 </Text>
-                <Text className="text-white text-[20px] font-bold mt-0.5">
+                <Text className="text-foreground text-[20px] font-bold mt-0.5">
                     {currency}
                     {fare.toFixed(0)}
                 </Text>
@@ -30,12 +30,12 @@ const FareDistanceRow = memo(function FareDistanceRow({
 
             {distance !== null && (
                 <>
-                    <View className="w-[1px] h-8 bg-white/[0.06] mx-4" />
+                    <View className="w-[1px] h-8 bg-foreground/[0.06] mx-4" />
                     <View className="flex-1">
-                        <Text className="text-[#748096] text-[10px] uppercase tracking-wider">
+                        <Text className="text-muted text-[10px] uppercase tracking-wider">
                             Distance
                         </Text>
-                        <Text className="text-[#11E0C5] text-[20px] font-bold mt-0.5">
+                        <Text className="text-primary text-[20px] font-bold mt-0.5">
                             {distance.toFixed(1)} km
                         </Text>
                     </View>

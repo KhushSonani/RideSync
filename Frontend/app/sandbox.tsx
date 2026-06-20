@@ -20,6 +20,7 @@ import RouteRow from "@/components/ride/RouteRow";
 
 import { COLORS } from "@/constants/theme";
 import type { DriverInfo } from "@/services/socket.types";
+import { useTheme } from "@/store/ThemeContext";
 
 // ─── Mock Data ───────────────────────────────────────────────────────────────
 
@@ -46,6 +47,7 @@ const mockDriver: DriverInfo = {
 // ─── Screen ───────────────────────────────────────────────────────────────────
 
 export default function SandboxScreen() {
+    const { colorScheme, theme } = useTheme();
     const [otpValue, setOtpValue] = useState("");
 
     const Section = ({
@@ -57,8 +59,8 @@ export default function SandboxScreen() {
     }) => (
         <View className="mb-8 border-b border-white/[0.07] pb-6">
             <View className="flex-row items-center px-5 mb-4">
-                <View className="w-1 h-4 rounded-full bg-[#11E0C5] mr-3" />
-                <Text className="text-[#11E0C5] text-[12px] font-bold uppercase tracking-widest">
+                <View className="w-1 h-4 rounded-full bg-primary mr-3" />
+                <Text className="text-primary text-[12px] font-bold uppercase tracking-widest">
                     {title}
                 </Text>
             </View>
@@ -67,31 +69,31 @@ export default function SandboxScreen() {
     );
 
     return (
-        <View className="flex-1" style={{ backgroundColor: COLORS.background }}>
+        <View className="flex-1 bg-background">
             <StatusBar barStyle="light-content" translucent backgroundColor="transparent" />
 
             {/* Ambient glow */}
             <View className="absolute inset-0 overflow-hidden pointer-events-none">
-                <View className="absolute -top-24 -right-16 w-[300px] h-[300px] rounded-full bg-[#11E0C5]/6" />
+                <View className="absolute -top-24 -right-16 w-[300px] h-[300px] rounded-full bg-primary/6" />
                 <View className="absolute bottom-0 -left-20 w-[200px] h-[200px] rounded-full bg-[#0A84FF]/6" />
             </View>
 
             <SafeAreaView className="flex-1">
                 {/* Header */}
-                <View className="flex-row items-center px-5 py-3 border-b border-white/[0.08] mb-1">
+                <View className="flex-row items-center px-5 py-3 border-b border-border mb-1">
                     <TouchableOpacity
                         onPress={() => router.back()}
                         className="w-10 h-10 items-center justify-center -ml-2 mr-1"
                         accessibilityLabel="Go back"
                     >
-                        <Feather name="arrow-left" size={22} color="rgba(255,255,255,0.9)" />
+                        <Feather name="arrow-left" size={22} color={(theme.colors.border)} />
                     </TouchableOpacity>
                     <View className="flex-1">
-                        <Text className="text-white text-[17px] font-bold">UI Sandbox</Text>
-                        <Text className="text-[#748096] text-[11px] mt-0.5">All 10 components</Text>
+                        <Text className="text-foreground text-[17px] font-bold">UI Sandbox</Text>
+                        <Text className="text-muted text-[11px] mt-0.5">All 10 components</Text>
                     </View>
-                    <View className="w-8 h-8 rounded-xl bg-[#11E0C5]/10 items-center justify-center">
-                        <Feather name="layers" size={16} color="#11E0C5" />
+                    <View className="w-8 h-8 rounded-xl bg-primary/10 items-center justify-center">
+                        <Feather name="layers" size={16} color={theme.colors.primary} />
                     </View>
                 </View>
 
@@ -141,7 +143,7 @@ export default function SandboxScreen() {
 
                     {/* ── 4. OnboardingSlide ──────────────────────────── */}
                     <Section title="4 · OnboardingSlide">
-                        <View className="h-[360px] rounded-2xl overflow-hidden border border-white/[0.05] bg-black/20">
+                        <View className="h-[360px] rounded-2xl overflow-hidden border border-border bg-foreground/20">
                             <OnboardingSlide
                                 icon="navigation"
                                 iconColor={COLORS.primary}
@@ -156,7 +158,7 @@ export default function SandboxScreen() {
                     <Section title="5 · DriverInfoCard">
                         <View
                             className="p-4 rounded-2xl border border-white/[0.07]"
-                            style={{ backgroundColor: "rgba(13,20,32,0.9)" }}
+                            style={{ backgroundColor: theme.colors.card }}
                         >
                             <DriverInfoCard
                                 driver={mockDriver}
@@ -170,7 +172,7 @@ export default function SandboxScreen() {
                     <Section title="6 · FareDistanceRow">
                         <View
                             className="p-4 rounded-2xl border border-white/[0.07]"
-                            style={{ backgroundColor: "rgba(13,20,32,0.9)" }}
+                            style={{ backgroundColor: theme.colors.card }}
                         >
                             <FareDistanceRow fare={342} distance={14.2} />
                         </View>
@@ -184,7 +186,7 @@ export default function SandboxScreen() {
                                 placeholder="Search pickup location…"
                                 value=""
                                 onPress={() => console.log("Pickup tapped")}
-                                dotColor="#11E0C5"
+                                dotColor={theme.colors.primary}
                             />
                             <LocationSearchInput
                                 label="Destination"
@@ -204,7 +206,7 @@ export default function SandboxScreen() {
 
                     {/* ── 8. OTPInput ─────────────────────────────────── */}
                     <Section title="8 · OTPInput">
-                        <Text className="text-[#748096] text-[12px] mb-3">
+                        <Text className="text-muted text-[12px] mb-3">
                             Type digits to interact:
                         </Text>
                         <OTPInput
@@ -213,7 +215,7 @@ export default function SandboxScreen() {
                             onChange={setOtpValue}
                         />
                         {otpValue.length === 6 && (
-                            <Text className="text-[#11E0C5] text-[12px] text-center mt-3 font-semibold">
+                            <Text className="text-primary text-[12px] text-center mt-3 font-semibold">
                                 OTP entered: {otpValue}
                             </Text>
                         )}
@@ -235,7 +237,7 @@ export default function SandboxScreen() {
                     <Section title="10 · RouteRow">
                         <View
                             className="p-4 rounded-2xl border border-white/[0.07]"
-                            style={{ backgroundColor: "rgba(13,20,32,0.9)" }}
+                            style={{ backgroundColor: theme.colors.card }}
                         >
                             <RouteRow
                                 pickup={{ address: "Chhatrapati Shivaji Maharaj International Airport, Mumbai" }}

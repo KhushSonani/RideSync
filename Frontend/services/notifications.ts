@@ -19,7 +19,7 @@ import * as Device from "expo-device";
 import Constants from "expo-constants";
 import { Platform } from "react-native";
 import { router } from "expo-router";
-import { api } from "@/services/api";
+import { http } from "@/services/http";
 
 // ─── Foreground notification behaviour ───────────────────────────────────────
 // Show alert, play sound, and show badge even when app is in the foreground.
@@ -89,12 +89,10 @@ export async function getExpoPushToken(): Promise<string | null> {
 
         if (!projectId) {
             console.warn("[Push] No EAS projectId found in app.config.js. Push notifications will not work until projectId is configured.");
-            // Still attempt without projectId for local Expo Go testing
+            return null;
         }
 
-        const tokenData = await Notifications.getExpoPushTokenAsync(
-            projectId ? { projectId } : undefined
-        );
+        const tokenData = await Notifications.getExpoPushTokenAsync({ projectId });
         return tokenData.data;
     } catch (err) {
         console.error("[Push] Failed to get Expo push token:", err);
@@ -116,7 +114,7 @@ export async function registerPushTokenWithServer(): Promise<string | null> {
         const token = await getExpoPushToken();
         if (!token) return null;
 
-        await api.post("/users/push-token", { expoPushToken: token });
+        await http.post("/users/push-token", { expoPushToken: token });
         console.log("[Push] Token registered with server:", token);
         return token;
     } catch (err: any) {
@@ -136,7 +134,7 @@ export async function registerPushTokenWithServer(): Promise<string | null> {
  */
 export async function removePushTokenFromServer(): Promise<void> {
     try {
-        await api.delete("/users/push-token");
+        await http.delete("/users/push-token");
         console.log("[Push] Token removed from server.");
     } catch (err: any) {
         console.warn(
@@ -192,7 +190,7 @@ export async function handleNotificationTap(
 
         if (type && rideRelatedTypes.includes(type)) {
             try {
-                const res = await api.get("/rides/current");
+                const res = await http.get("/rides/current");
                 const ride = res.data?.data;
 
                 if (ride) {

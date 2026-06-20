@@ -60,15 +60,15 @@ export default function VerificationBanner({
                 <Text className={`font-bold text-sm ${textColor}`}>
                     {title}
                 </Text>
-                <Text className="text-white/80 text-xs mt-1 leading-4">
+                <Text className="text-foreground/80 text-xs mt-1 leading-4">
                     {description}
                 </Text>
                 <TouchableOpacity
                     activeOpacity={0.7}
                     onPress={handlePress}
-                    className="mt-3 bg-white/5 border border-white/10 px-3 py-1.5 rounded-lg align-self-start self-start"
+                    className="mt-3 bg-foreground/5 border border-border px-3 py-1.5 rounded-lg align-self-start self-start"
                 >
-                    <Text className="text-white text-xs font-semibold">
+                    <Text className="text-foreground text-xs font-semibold">
                         {actionText}
                     </Text>
                 </TouchableOpacity>

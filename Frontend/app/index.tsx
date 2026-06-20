@@ -21,8 +21,10 @@ import { Feather } from "@expo/vector-icons";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { ONBOARDING_KEY } from "@/app/onboarding";
 import { registerPushTokenWithServer } from "@/services/notifications";
+import { useTheme } from "@/store/ThemeContext";
 
 export default function App() {
+    const { colorScheme, theme } = useTheme();
   const [checkingAuth, setCheckingAuth] = useState(true);
   const rootNavigationState = useRootNavigationState();
 
@@ -105,17 +107,17 @@ export default function App() {
 
   if (checkingAuth) {
     return (
-      <View className="flex-1 bg-[#070B12] items-center justify-center">
+      <View className="flex-1 bg-background items-center justify-center">
         <ActivityIndicator
           size="large"
-          color="#11E0C5"
+          color={theme.colors.primary}
         />
       </View>
     );
   }
 
   return (
-    <View className="flex-1 bg-[#070B12]">
+    <View className="flex-1 bg-background">
       <StatusBar
         barStyle="light-content"
         translucent
@@ -125,11 +127,11 @@ export default function App() {
       <SafeAreaView className="absolute top-4 right-4 z-20">
         <Link href="/sandbox" asChild>
           <TouchableOpacity
-            className="w-10 h-10 bg-[#131D2B]/95 rounded-full border border-white/[0.08] items-center justify-center shadow-lg"
+            className="w-10 h-10 bg-input/95 rounded-full border border-border items-center justify-center shadow-lg"
             activeOpacity={0.8}
             accessibilityLabel="View UI Sandbox"
           >
-            <Feather name="layers" size={18} color="#11E0C5" />
+            <Feather name="layers" size={18} color={theme.colors.primary} />
           </TouchableOpacity>
         </Link>
       </SafeAreaView>
@@ -156,10 +158,10 @@ export default function App() {
         <View className="items-center">
 
           {/* OUTER LOGO */}
-          <View className="w-32 h-32 rounded-[38px] bg-[#0D1420]/90 border border-white/[0.08] items-center justify-center shadow-2xl">
+          <View className="w-32 h-32 rounded-[38px] bg-card/90 border border-border items-center justify-center shadow-2xl">
 
             {/* INNER GLOW */}
-            <View className="w-24 h-24 rounded-[28px] bg-[#11E0C5]/15 items-center justify-center border border-[#11E0C5]/20">
+            <View className="w-24 h-24 rounded-[28px] bg-primary/15 items-center justify-center border border-primary/20">
 
               {/* LOGO ICON */}
               <Text className="text-[42px]">
@@ -171,12 +173,12 @@ export default function App() {
           </View>
 
           {/* APP NAME */}
-          <Text className="text-white text-[42px] font-bold tracking-tight mt-8">
+          <Text className="text-foreground text-[42px] font-bold tracking-tight mt-8">
             RideSync
           </Text>
 
           {/* SUBTITLE */}
-          <Text className="text-[#748096] text-[15px] text-center leading-7 mt-4 max-w-[300px]">
+          <Text className="text-muted text-[15px] text-center leading-7 mt-4 max-w-[300px]">
             Premium ride booking experience with modern mobility and seamless travel.
           </Text>
 
@@ -190,10 +192,10 @@ export default function App() {
 
             <TouchableOpacity
               activeOpacity={0.85}
-              className="h-14 bg-[#11E0C5] rounded-2xl items-center justify-center border border-[#6FFFEF]/10"
+              className="h-14 bg-primary rounded-2xl items-center justify-center border border-[#6FFFEF]/10"
             >
 
-              <Text className="text-[#071018] text-[16px] font-bold">
+              <Text className="text-background text-[16px] font-bold">
                 Sign In
               </Text>
 
@@ -206,10 +208,10 @@ export default function App() {
 
             <TouchableOpacity
               activeOpacity={0.85}
-              className="h-14 bg-[#131D2B]/95 border border-white/[0.06] rounded-2xl items-center justify-center mt-4"
+              className="h-14 bg-input/95 border border-border rounded-2xl items-center justify-center mt-4"
             >
 
-              <Text className="text-white text-[16px] font-semibold">
+              <Text className="text-foreground text-[16px] font-semibold">
                 Create Account
               </Text>
 

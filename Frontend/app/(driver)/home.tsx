@@ -24,8 +24,10 @@ import { COLORS } from "@/constants/theme";
 import { glassCard } from "@/constants/styles";
 import VerificationBanner from "@/components/VerificationBanner";
 import EmptyStateCard from "@/components/common/EmptyStateCard";
+import { useTheme } from "@/store/ThemeContext";
 
 export default function DriverHome() {
+    const { colorScheme, theme } = useTheme();
     const [user, setUser] = useState<any>(null);
     const [driverState, setDriverState] = useState<any>(null);
     const [loading, setLoading] = useState(true);
@@ -219,22 +221,22 @@ export default function DriverHome() {
 
     if (loading) {
         return (
-            <View className="flex-1 bg-[#070B12] items-center justify-center">
+            <View className="flex-1 bg-background items-center justify-center">
                 <StatusBar barStyle="light-content" translucent backgroundColor="transparent" />
-                <ActivityIndicator size="large" color="#11E0C5" />
+                <ActivityIndicator size="large" color={theme.colors.primary} />
             </View>
         );
     }
 
     return (
-        <View className="flex-1" style={{ backgroundColor: COLORS.background }}>
+        <View className="flex-1 bg-background">
             <StatusBar barStyle="light-content" translucent backgroundColor="transparent" />
 
             {/* Glow background */}
             <View className="absolute inset-0 overflow-hidden">
                 <View className="absolute -top-32 -right-16 w-[380px] h-[380px] rounded-full" style={{ backgroundColor: COLORS.glowPrimary }} />
                 <View className="absolute top-[280px] -left-20 w-[240px] h-[240px] rounded-full" style={{ backgroundColor: COLORS.glowBlue }} />
-                <View className="absolute bottom-[-100px] right-[-50px] w-[300px] h-[300px] rounded-full bg-[#11E0C5]/5" />
+                <View className="absolute bottom-[-100px] right-[-50px] w-[300px] h-[300px] rounded-full bg-primary/5" />
                 <View className="absolute top-[-20px] right-[-40px] w-[260px] h-[260px] rounded-full items-center justify-center" style={{ backgroundColor: COLORS.glowRing }}>
                     <View className="w-[190px] h-[190px] rounded-full bg-[#1D6B61]/15" />
                 </View>
@@ -243,18 +245,18 @@ export default function DriverHome() {
             <SafeAreaView className="flex-1 px-5 pt-3">
                 <ScrollView
                     showsVerticalScrollIndicator={false}
-                    contentContainerStyle={{ paddingBottom: 40 }}
+                    contentContainerStyle={{ paddingBottom: 120 }}
                     refreshControl={
-                        <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} tintColor="#11E0C5" colors={["#11E0C5"]} />
+                        <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} tintColor={theme.colors.primary} colors={[theme.colors.primary]} />
                     }
                 >
                     {/* ── Header ───────────────────────────────────────────── */}
                     <View className="flex-row items-center justify-between mt-3 mb-6">
                         <View className="flex-1 pr-4">
-                            <Text className="text-[#748096] text-[14px] font-medium uppercase tracking-wider">
+                            <Text className="text-muted text-[14px] font-medium uppercase tracking-wider">
                                 {greeting}
                             </Text>
-                            <Text className="text-white text-[28px] font-bold tracking-tight mt-1" numberOfLines={1}>
+                            <Text className="text-foreground text-[28px] font-bold tracking-tight mt-1" numberOfLines={1}>
                                 {user?.fullname || "RideSync Driver"}
                             </Text>
                         </View>
@@ -266,14 +268,14 @@ export default function DriverHome() {
                             accessibilityLabel="Go to profile"
                             className="relative"
                         >
-                            <View className="w-14 h-14 rounded-full border border-[#11E0C5]/40 items-center justify-center bg-[#131D2B]">
+                            <View className="w-14 h-14 rounded-full border border-primary/40 items-center justify-center bg-input">
                                 {user?.avatar?.url ? (
                                     <Image source={{ uri: user.avatar.url }} className="w-full h-full rounded-full" />
                                 ) : (
-                                    <Text className="text-[#11E0C5] text-[16px] font-bold">{getInitials(user?.fullname)}</Text>
+                                    <Text className="text-primary text-[16px] font-bold">{getInitials(user?.fullname)}</Text>
                                 )}
                             </View>
-                            <View className={`absolute bottom-0 right-0 w-[14px] h-[14px] rounded-full border-2 border-[#070B12] ${isVerified ? "bg-[#10B981]" : "bg-red-500"}`} />
+                            <View className={`absolute bottom-0 right-0 w-[14px] h-[14px] rounded-full border-2 border-background ${isVerified ? "bg-[#10B981]" : "bg-red-500"}`} />
                         </TouchableOpacity>
                     </View>
 
@@ -293,20 +295,20 @@ export default function DriverHome() {
                                     <Feather name="power" size={18} color={isOnline ? "#10B981" : "#EF4444"} />
                                 </View>
                                 <View className="flex-1">
-                                    <Text className="text-[#748096] text-[11px] uppercase tracking-wider">Duty Status</Text>
-                                    <Text className="text-white text-[16px] font-bold mt-0.5">
+                                    <Text className="text-muted text-[11px] uppercase tracking-wider">Duty Status</Text>
+                                    <Text className="text-foreground text-[16px] font-bold mt-0.5">
                                         {isOnline ? "Online & Available" : "Offline"}
                                     </Text>
                                 </View>
                             </View>
                             {togglingStatus ? (
-                                <ActivityIndicator size="small" color="#11E0C5" />
+                                <ActivityIndicator size="small" color={theme.colors.primary} />
                             ) : (
                                 <Switch
                                     value={isOnline}
                                     onValueChange={handleToggleStatus}
-                                    trackColor={{ false: "#1A2536", true: "#11E0C550" }}
-                                    thumbColor={isOnline ? "#11E0C5" : "#748096"}
+                                    trackColor={{ false: theme.colors.border, true: theme.colors.primary + "50" }}
+                                    thumbColor={isOnline ? theme.colors.primary : theme.colors.textMuted}
                                     disabled={driverState?.driverVerified !== "verified" || togglingStatus}
                                     accessibilityRole="switch"
                                     accessibilityLabel="Toggle availability"
@@ -323,14 +325,14 @@ export default function DriverHome() {
                     </View>
 
                     {/* ── Live request state ───────────────────────────────── */}
-                    <Text className="text-white text-[18px] font-bold mb-4 px-1">
+                    <Text className="text-foreground text-[18px] font-bold mb-4 px-1">
                         Live Requests
                     </Text>
 
                     {isOnline ? (
                         <EmptyStateCard
                             icon="radio"
-                            iconColor="#11E0C5"
+                            iconColor={theme.colors.primary}
                             title="Scanning for nearby rides…"
                             subtitle="Keep the app open. You'll be notified the moment a rider books a trip near you."
                             minHeight={150}
@@ -339,7 +341,7 @@ export default function DriverHome() {
                     ) : (
                         <EmptyStateCard
                             icon="moon"
-                            iconColor="#748096"
+                            iconColor={theme.colors.textMuted}
                             title="You're offline"
                             subtitle={
                                 driverState?.driverVerified === "verified"
@@ -353,21 +355,21 @@ export default function DriverHome() {
 
                     {/* ── Recent activity ──────────────────────────────────── */}
                     <View className="flex-row items-center justify-between mb-4 px-1">
-                        <Text className="text-white text-[18px] font-bold">Recent Activity</Text>
+                        <Text className="text-foreground text-[18px] font-bold">Recent Activity</Text>
                         <TouchableOpacity
                             activeOpacity={0.7}
                             onPress={() => router.push("/(driver)/rides")}
                             accessibilityRole="button"
                             accessibilityLabel="See all rides"
                         >
-                            <Text className="text-[#11E0C5] text-[13px] font-semibold">See All</Text>
+                            <Text className="text-primary text-[13px] font-semibold">See All</Text>
                         </TouchableOpacity>
                     </View>
 
                     {recentRides.length === 0 ? (
                         <EmptyStateCard
                             icon="clock"
-                            iconColor="#748096"
+                            iconColor={theme.colors.textMuted}
                             title="No activity yet"
                             subtitle="Your completed rides and earnings will appear here after your first trip."
                             minHeight={120}
@@ -387,11 +389,11 @@ export default function DriverHome() {
 function StatCard({ label, value, sub }: { label: string; value: string; sub: string }) {
     return (
         <View className={`${glassCard} flex-1 p-4 items-center`}>
-            <Text className="text-[#748096] text-[10px] text-center uppercase tracking-wide leading-4">
+            <Text className="text-muted text-[10px] text-center uppercase tracking-wide leading-4">
                 {label}
             </Text>
-            <Text className="text-white text-[18px] font-bold mt-1">{value}</Text>
-            <Text className="text-[#748096] text-[10px] mt-0.5">{sub}</Text>
+            <Text className="text-foreground text-[18px] font-bold mt-1">{value}</Text>
+            <Text className="text-muted text-[10px] mt-0.5">{sub}</Text>
         </View>
     );
 }

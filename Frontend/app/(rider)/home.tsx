@@ -30,6 +30,7 @@ import {
     ScrollView,
     Dimensions,
     ActivityIndicator,
+    Platform,
 } from "react-native";
 import MapView, { PROVIDER_DEFAULT } from "react-native-maps";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -40,8 +41,10 @@ import { api } from "@/services/api";
 import { connectSocket } from "@/services/socket";
 import { getAccessToken } from "@/services/storage";
 import { useRiderLocation } from "@/services/useRiderLocation";
+import { useLocation } from "@/store/LocationContext";
 import EmptyStateCard from "@/components/common/EmptyStateCard";
 import RideHistoryCard from "@/components/common/RideHistoryCard";
+import { useTheme } from "@/store/ThemeContext";
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -54,8 +57,8 @@ const INDIA_REGION = {
 };
 
 const { height: SCREEN_H } = Dimensions.get("window");
-/** Bottom card never exceeds 58% of the screen so the map is always visible */
-const BOTTOM_CARD_MAX_H = Math.round(SCREEN_H * 0.58);
+/** Bottom card never exceeds 65% of the screen so the map is always visible */
+const BOTTOM_CARD_MAX_H = Math.round(SCREEN_H * 0.65);
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -75,15 +78,15 @@ export default function RiderHomeScreen() {
     const [refreshing, setRefreshing] = useState(false);
     const [greeting, setGreeting] = useState("Welcome back");
     const [checkingRide, setCheckingRide] = useState(true);
-
-    // TODO: replace with real rides from GET /rides/history
-    const recentRides: any[] = [];
+    const [recentRides, setRecentRides] = useState<any[]>([]);
 
     const mapRef = useRef<MapView>(null);
     const cameraAnimatedRef = useRef(false);
 
     // ── GPS location (for map centering — does not set LocationContext) ────────
     const { coords: currentLocation, permissionDenied } = useRiderLocation();
+    const { setPickup, setDrop } = useLocation();
+    const { colorScheme, theme } = useTheme();
 
     // ── Animate camera to current location on first GPS fix ───────────────────
     useEffect(() => {
@@ -151,6 +154,13 @@ export default function RiderHomeScreen() {
 
             const res = await api.get("/users/profile");
             if (res.data?.data) setUser(res.data.data);
+
+            const ridesRes = await api.get("/rides/history");
+            if (ridesRes.data?.data?.rides) {
+                // Filter only completed or cancelled rides to show in recent
+                const history = ridesRes.data.data.rides.filter((r: any) => r.status === "completed" || r.status === "cancelled");
+                setRecentRides(history.slice(0, 2));
+            }
         } catch {
             setUser({
                 fullname: "RideSync User",
@@ -159,6 +169,7 @@ export default function RiderHomeScreen() {
                 role: "rider",
                 avatar: null,
             });
+            setRecentRides([]);
         } finally {
             setProfileLoading(false);
             setCheckingRide(false);
@@ -183,16 +194,16 @@ export default function RiderHomeScreen() {
 
     if (checkingRide) {
         return (
-            <View style={{ flex: 1, backgroundColor: "#070B12", justifyContent: "center", alignItems: "center" }}>
-                <StatusBar barStyle="light-content" translucent backgroundColor="transparent" />
-                <ActivityIndicator size="large" color="#11E0C5" />
+            <View style={{ flex: 1, backgroundColor: theme.colors.background, justifyContent: "center", alignItems: "center" }}>
+                <StatusBar barStyle={colorScheme === 'light' ? 'dark-content' : 'light-content'} translucent backgroundColor="transparent" />
+                <ActivityIndicator size="large" color={theme.colors.primary} />
             </View>
         );
     }
 
     return (
-        <View style={{ flex: 1, backgroundColor: "#070B12" }}>
-            <StatusBar barStyle="light-content" translucent backgroundColor="transparent" />
+        <View style={{ flex: 1, backgroundColor: theme.colors.background }}>
+            <StatusBar barStyle={colorScheme === 'light' ? 'dark-content' : 'light-content'} translucent backgroundColor="transparent" />
 
             {/* ── FULL SCREEN MAP ───────────────────────────────────────── */}
             <MapView
@@ -205,8 +216,41 @@ export default function RiderHomeScreen() {
                 showsCompass={false}
                 showsScale={false}
                 toolbarEnabled={false}
-                customMapStyle={DARK_MAP_STYLE}
+                customMapStyle={colorScheme === 'light' ? [] : DARK_MAP_STYLE}
             />
+
+            {/* ── LOCATE ME BUTTON ──────────────────────────────────────── */}
+            <TouchableOpacity
+                onPress={() => {
+                    if (currentLocation) {
+                        mapRef.current?.animateToRegion({
+                            latitude: currentLocation.lat,
+                            longitude: currentLocation.lng,
+                            latitudeDelta: 0.01,
+                            longitudeDelta: 0.01,
+                        }, 1000);
+                    }
+                }}
+                style={{
+                    position: "absolute",
+                    top: 130,
+                    right: 20,
+                    width: 48,
+                    height: 48,
+                    borderRadius: 24,
+                    backgroundColor: theme.colors.card,
+                    alignItems: "center",
+                    justifyContent: "center",
+                    shadowColor: "#000",
+                    shadowOpacity: 0.15,
+                    shadowRadius: 10,
+                    shadowOffset: { width: 0, height: 4 },
+                    elevation: 5,
+                    zIndex: 20,
+                }}
+            >
+                <Feather name="navigation" size={20} color={theme.colors.primary} />
+            </TouchableOpacity>
 
             {/* ── PERMISSION DENIED BANNER ──────────────────────────────── */}
             {permissionDenied && (
@@ -233,7 +277,7 @@ export default function RiderHomeScreen() {
                             alignItems: "center",
                         }}
                     >
-                        <Feather name="map-pin" size={14} color="#EF4444" />
+                        <Feather name="map-pin" size={14} color={theme.colors.danger} />
                         <Text
                             style={{
                                 color: "#EF4444",
@@ -274,12 +318,12 @@ export default function RiderHomeScreen() {
                     {/* Greeting */}
                     <View
                         style={{
-                            backgroundColor: "rgba(7,11,18,0.82)",
+                            backgroundColor: theme.colors.background,
                             paddingHorizontal: 14,
                             paddingVertical: 10,
                             borderRadius: 16,
                             borderWidth: 1,
-                            borderColor: "rgba(255,255,255,0.07)",
+                            borderColor: (theme.colors.border),
                             flex: 1,
                             marginRight: 12,
                         }}
@@ -288,7 +332,7 @@ export default function RiderHomeScreen() {
                             {greeting}
                         </Text>
                         <Text
-                            style={{ color: "#FFFFFF", fontSize: 17, fontWeight: "700", marginTop: 2 }}
+                            style={{ color: theme.colors.textPrimary, fontSize: 17, fontWeight: "700", marginTop: 2 }}
                             numberOfLines={1}
                         >
                             {profileLoading ? "…" : (user?.fullname || "RideSync User")}
@@ -305,14 +349,14 @@ export default function RiderHomeScreen() {
                                 width: 44,
                                 height: 44,
                                 borderRadius: 22,
-                                backgroundColor: "rgba(7,11,18,0.85)",
+                                backgroundColor: theme.colors.background,
                                 borderWidth: 1,
-                                borderColor: "rgba(255,255,255,0.1)",
+                                borderColor: (theme.colors.border),
                                 alignItems: "center",
                                 justifyContent: "center",
                             }}
                         >
-                            <Feather name="layers" size={18} color="#11E0C5" />
+                            <Feather name="layers" size={18} color={theme.colors.primary} />
                         </TouchableOpacity>
 
                         <TouchableOpacity
@@ -326,7 +370,7 @@ export default function RiderHomeScreen() {
                                     width: 44,
                                     height: 44,
                                     borderRadius: 22,
-                                    backgroundColor: "rgba(7,11,18,0.85)",
+                                    backgroundColor: theme.colors.background,
                                     borderWidth: 1.5,
                                     borderColor: "rgba(17,224,197,0.4)",
                                     alignItems: "center",
@@ -340,7 +384,7 @@ export default function RiderHomeScreen() {
                                         style={{ width: 44, height: 44, borderRadius: 22 }}
                                     />
                                 ) : (
-                                    <Text style={{ color: "#11E0C5", fontSize: 14, fontWeight: "700" }}>
+                                    <Text style={{ color: theme.colors.primary, fontSize: 14, fontWeight: "700" }}>
                                         {getInitials(user?.fullname ?? "")}
                                     </Text>
                                 )}
@@ -356,7 +400,7 @@ export default function RiderHomeScreen() {
                                     borderRadius: 7,
                                     backgroundColor: "#10B981",
                                     borderWidth: 2,
-                                    borderColor: "#070B12",
+                                    borderColor: theme.colors.background,
                                 }}
                             />
                         </TouchableOpacity>
@@ -364,7 +408,7 @@ export default function RiderHomeScreen() {
                 </View>
             </SafeAreaView>
 
-            {/* ── BOTTOM FLOATING CARD ─────────────────────────────────── */}
+            {/* ── BOTTOM SHEET PANEL ─────────────────────────────────── */}
             <View
                 style={{
                     position: "absolute",
@@ -372,15 +416,15 @@ export default function RiderHomeScreen() {
                     left: 0,
                     right: 0,
                     maxHeight: BOTTOM_CARD_MAX_H,
-                    zIndex: 10,
-                    backgroundColor: "rgba(7,11,18,0.97)",
-                    borderTopLeftRadius: 28,
-                    borderTopRightRadius: 28,
+                    zIndex: 5,
+                    backgroundColor: theme.colors.background,
+                    borderTopLeftRadius: 32,
+                    borderTopRightRadius: 32,
                     shadowColor: "#000",
-                    shadowOpacity: 0.5,
-                    shadowRadius: 24,
+                    shadowOpacity: 0.15,
+                    shadowRadius: 20,
                     shadowOffset: { width: 0, height: -4 },
-                    elevation: 24,
+                    elevation: 20,
                 }}
             >
                 <ScrollView
@@ -391,165 +435,172 @@ export default function RiderHomeScreen() {
                         <RefreshControl
                             refreshing={refreshing}
                             onRefresh={handleRefresh}
-                            tintColor="#11E0C5"
-                            colors={["#11E0C5"]}
+                            tintColor={theme.colors.primary}
+                            colors={[theme.colors.primary]}
                         />
                     }
-                    contentContainerStyle={{ paddingBottom: 28 }}
+                    contentContainerStyle={{ paddingBottom: Platform.OS === 'ios' ? 120 : 80 }}
                 >
                     {/* Drag handle */}
-                    <View style={{ alignItems: "center", paddingTop: 12, paddingBottom: 20 }}>
+                    <View style={{ alignItems: "center", paddingTop: 14, paddingBottom: 24 }}>
                         <View
                             style={{
-                                width: 40,
-                                height: 4,
-                                borderRadius: 2,
-                                backgroundColor: "rgba(255,255,255,0.15)",
+                                width: 48,
+                                height: 5,
+                                borderRadius: 3,
+                                backgroundColor: theme.colors.border,
                             }}
                         />
                     </View>
 
-                    {/* "Where to?" pill */}
+                    {/* "Where to?" header text (optional premium touch) */}
+                    <Text style={{
+                        color: theme.colors.textPrimary,
+                        fontSize: 22,
+                        fontWeight: "800",
+                        paddingHorizontal: 20,
+                        marginBottom: 16
+                    }}>
+                        Get a ride
+                    </Text>
+
+                    {/* "Where to?" input pill */}
                     <TouchableOpacity
                         activeOpacity={0.85}
                         onPress={() => router.push("/(rider)/create-ride")}
                         accessibilityLabel="Book a ride — where to?"
                         style={{
                             marginHorizontal: 20,
-                            marginBottom: 16,
-                            height: 58,
-                            backgroundColor: "#11E0C5",
+                            marginBottom: 24,
+                            height: 60,
+                            backgroundColor: theme.colors.surface,
                             borderRadius: 20,
                             flexDirection: "row",
                             alignItems: "center",
-                            paddingHorizontal: 18,
-                            shadowColor: "#11E0C5",
-                            shadowOpacity: 0.45,
-                            shadowRadius: 18,
+                            paddingHorizontal: 16,
+                            borderWidth: 1.5,
+                            borderColor: theme.colors.primary,
+                            shadowColor: theme.colors.primary,
+                            shadowOpacity: 0.15,
+                            shadowRadius: 16,
                             shadowOffset: { width: 0, height: 6 },
-                            elevation: 12,
+                            elevation: 8,
                         }}
                     >
                         <View
                             style={{
-                                width: 34,
-                                height: 34,
+                                width: 36,
+                                height: 36,
                                 borderRadius: 12,
-                                backgroundColor: "rgba(7,16,24,0.22)",
+                                backgroundColor: theme.colors.primary + "1A",
                                 alignItems: "center",
                                 justifyContent: "center",
-                                marginRight: 12,
+                                marginRight: 14,
                             }}
                         >
-                            <Feather name="search" size={16} color="#071018" />
+                            <Feather name="search" size={18} color={theme.colors.primary} />
                         </View>
-                        <Text style={{ color: "#071018", fontSize: 16, fontWeight: "700", flex: 1 }}>
+                        <Text style={{ color: theme.colors.textPrimary, fontSize: 17, fontWeight: "600", flex: 1 }}>
                             Where to?
                         </Text>
-                        <Feather name="arrow-right" size={18} color="#071018" />
+                        <View style={{
+                            backgroundColor: theme.colors.primary,
+                            paddingHorizontal: 16,
+                            paddingVertical: 10,
+                            borderRadius: 14,
+                        }}>
+                            <Feather name="arrow-right" size={18} color={theme.colors.background} />
+                        </View>
                     </TouchableOpacity>
 
-                    {/* Quick-access shortcuts */}
-                    <View
-                        style={{
-                            flexDirection: "row",
-                            marginHorizontal: 20,
-                            marginBottom: 20,
-                            gap: 10,
-                        }}
-                    >
-                        {[
-                            { icon: "home" as const, label: "Home", route: "/(rider)/create-ride" as const },
-                            { icon: "briefcase" as const, label: "Work", route: "/(rider)/create-ride" as const },
-                            { icon: "clock" as const, label: "Trips", route: "/(rider)/rides" as const },
-                        ].map(({ icon, label, route }) => (
-                            <TouchableOpacity
-                                key={label}
-                                activeOpacity={0.8}
-                                onPress={() => router.push(route as any)}
+                    {/* Recent Ride */}
+                    <View style={{ paddingHorizontal: 20, marginBottom: 20 }}>
+                        <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
+                            <Text style={{ color: theme.colors.textPrimary, fontSize: 18, fontWeight: "700" }}>
+                                Recent
+                            </Text>
+                        </View>
+
+                        {recentRides.length === 0 ? (
+                            <View
                                 style={{
-                                    flex: 1,
-                                    flexDirection: "row",
                                     alignItems: "center",
-                                    backgroundColor: "#0D1420",
+                                    justifyContent: "center",
+                                    backgroundColor: "transparent",
+                                    paddingVertical: 20,
+                                    borderRadius: 20,
                                     borderWidth: 1,
-                                    borderColor: "rgba(255,255,255,0.07)",
-                                    borderRadius: 16,
-                                    paddingHorizontal: 12,
-                                    paddingVertical: 12,
-                                    gap: 6,
+                                    borderStyle: "dashed",
+                                    borderColor: theme.colors.border,
                                 }}
                             >
-                                <Feather name={icon} size={15} color="#748096" />
-                                <Text style={{ color: "#FFFFFF", fontSize: 12, fontWeight: "600" }}>
-                                    {label}
-                                </Text>
-                            </TouchableOpacity>
-                        ))}
-                    </View>
-
-                    {/* Divider */}
-                    <View
-                        style={{
-                            height: 1,
-                            backgroundColor: "rgba(255,255,255,0.06)",
-                            marginHorizontal: 20,
-                            marginBottom: 18,
-                        }}
-                    />
-
-                    {/* Recent Trips header */}
-                    <View
-                        style={{
-                            flexDirection: "row",
-                            alignItems: "center",
-                            justifyContent: "space-between",
-                            paddingHorizontal: 20,
-                            marginBottom: 14,
-                        }}
-                    >
-                        <Text style={{ color: "#FFFFFF", fontSize: 16, fontWeight: "700" }}>
-                            Recent Trips
-                        </Text>
-                        <TouchableOpacity
-                            activeOpacity={0.7}
-                            onPress={() => router.push("/(rider)/rides")}
-                            accessibilityLabel="See all rides"
-                        >
-                            <Text style={{ color: "#11E0C5", fontSize: 13, fontWeight: "600" }}>
-                                See All
-                            </Text>
-                        </TouchableOpacity>
-                    </View>
-
-                    {/* Recent trips list or empty state */}
-                    <View style={{ paddingHorizontal: 20 }}>
-                        {recentRides.length === 0 ? (
-                            <EmptyStateCard
-                                icon="map"
-                                iconColor="#11E0C5"
-                                title="No trips yet"
-                                subtitle="Your completed rides will appear here after your first trip."
-                                ctaLabel="Book Your First Ride"
-                                onCtaPress={() => router.push("/(rider)/create-ride")}
-                            />
-                        ) : (
-                            <View style={{ gap: 12 }}>
-                                {recentRides.slice(0, 3).map((ride, i) => (
-                                    <RideHistoryCard
-                                        key={ride._id ?? i}
-                                        pickup={ride.pickup?.address ?? "Pickup"}
-                                        drop={ride.drop?.address ?? "Destination"}
-                                        date={ride.createdAt ?? ""}
-                                        fare={`₹${ride.fare ?? 0}`}
-                                        status={ride.status}
-                                        personName={ride.driver?.user?.fullname}
-                                        distance={ride.distance ? `${ride.distance} km` : undefined}
-                                    />
-                                ))}
+                                <Feather name="map" size={24} color={theme.colors.textMuted} style={{ marginBottom: 8 }} />
+                                <Text style={{ color: theme.colors.textSecondary, fontSize: 14, fontWeight: "500" }}>No recent rides found</Text>
                             </View>
+                        ) : (
+                            recentRides.map((ride, idx) => (
+                                <TouchableOpacity
+                                    key={ride._id || idx}
+                                    activeOpacity={0.7}
+                                    onPress={() => {
+                                        if (ride.pickup?.location?.coordinates && ride.drop?.location?.coordinates) {
+                                            setPickup({
+                                                address: ride.pickup.address || "Recent Pickup",
+                                                coords: { lat: ride.pickup.location.coordinates[1], lng: ride.pickup.location.coordinates[0] }
+                                            });
+                                            setDrop({
+                                                address: ride.drop.address || "Recent Destination",
+                                                coords: { lat: ride.drop.location.coordinates[1], lng: ride.drop.location.coordinates[0] }
+                                            });
+                                            router.push("/(rider)/create-ride");
+                                        } else {
+                                            router.push("/(rider)/create-ride");
+                                        }
+                                    }}
+                                    style={{
+                                        flexDirection: "row",
+                                        alignItems: "center",
+                                        backgroundColor: theme.colors.surface,
+                                        padding: 18,
+                                        borderRadius: 20,
+                                        borderWidth: 1,
+                                        borderColor: theme.colors.border,
+                                        shadowColor: "#000",
+                                        shadowOpacity: 0.05,
+                                        shadowRadius: 12,
+                                        shadowOffset: { width: 0, height: 4 },
+                                        elevation: 3,
+                                        marginBottom: idx === recentRides.length - 1 ? 0 : 12,
+                                    }}
+                                >
+                                    <View style={{
+                                        width: 44,
+                                        height: 44,
+                                        borderRadius: 22,
+                                        backgroundColor: theme.colors.background,
+                                        borderWidth: 1,
+                                        borderColor: theme.colors.border,
+                                        alignItems: "center",
+                                        justifyContent: "center",
+                                        marginRight: 16
+                                    }}>
+                                        <Feather name="clock" size={20} color={theme.colors.textSecondary} />
+                                    </View>
+                                    <View style={{ flex: 1 }}>
+                                        <Text style={{ color: theme.colors.textPrimary, fontSize: 16, fontWeight: "700", marginBottom: 3 }} numberOfLines={1}>
+                                            {ride.drop?.address || "Destination"}
+                                        </Text>
+                                        <Text style={{ color: theme.colors.textMuted, fontSize: 13, fontWeight: "500" }} numberOfLines={1}>
+                                            From {ride.pickup?.address || "Pickup"}
+                                        </Text>
+                                    </View>
+                                    <Feather name="chevron-right" size={20} color={theme.colors.textMuted} />
+                                </TouchableOpacity>
+                            ))
                         )}
                     </View>
+
+
                 </ScrollView>
             </View>
         </View>

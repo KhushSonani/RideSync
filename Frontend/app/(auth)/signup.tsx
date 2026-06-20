@@ -1,3 +1,4 @@
+import { useTheme } from "@/store/ThemeContext";
 import React, { useState } from 'react';
 import {
     Text,
@@ -27,6 +28,7 @@ import {
 } from '@/services/storage';
 
 export default function SignUp() {
+    const { theme } = useTheme();
 
     const [step, setStep] = useState(1);
 
@@ -184,10 +186,7 @@ export default function SignUp() {
     };
 
     return (
-        <View
-            className="flex-1"
-            style={{ backgroundColor: COLORS.background }}
-        >
+        <View className="flex-1 bg-background">
 
             <StatusBar
                 barStyle="light-content"
@@ -252,7 +251,7 @@ export default function SignUp() {
                                 <View className="w-4 h-4 border-l-2 border-t-2 border-white/90 transform -rotate-45 mt-0.5 ml-1" />
                             </TouchableOpacity>
 
-                            <Text className="text-white text-[24px] italic ml-5 tracking-wide">
+                            <Text className="text-foreground text-[24px] italic ml-5 tracking-wide">
                                 signup
                             </Text>
 
@@ -266,14 +265,14 @@ export default function SignUp() {
                                 px-6
                                 py-6
                                 min-h-[640px]
-                                bg-[#0D1420]/80
+                                bg-card/80
                                 border
-                                border-white/[0.08]
+                                border-border
                                 rounded-[32px]
                                 shadow-xl
                             "
                             style={{
-                                shadowColor: '#11E0C5',
+                                shadowColor: theme.colors.primary,
                                 shadowOpacity: 0.08,
                                 shadowRadius: 20,
                                 elevation: 10,
@@ -283,7 +282,7 @@ export default function SignUp() {
                             {/* HEADING */}
                             <View className="mb-4">
 
-                                <Text className="text-white text-[26px] font-bold tracking-tight">
+                                <Text className="text-foreground text-[26px] font-bold tracking-tight">
                                     {
                                         step === 1
                                             ? 'Get Started'
@@ -291,7 +290,7 @@ export default function SignUp() {
                                     }
                                 </Text>
 
-                                <Text className="text-[#748096] text-[13px] mt-0.5">
+                                <Text className="text-muted text-[13px] mt-0.5">
                                     {
                                         step === 1
                                             ? 'Step 1 of 2: Create profile credentials'
@@ -314,7 +313,7 @@ export default function SignUp() {
                                         <View className="gap-y-3">
 
                                             {/* ROLE SWITCH */}
-                                            <View className="flex-row bg-[#131D2B]/95 p-1 rounded-xl border border-white/[0.04] mb-1">
+                                            <View className="flex-row bg-input/95 p-1 rounded-xl border border-white/[0.04] mb-1">
 
                                                 <TouchableOpacity
                                                     onPress={() => {
@@ -322,14 +321,14 @@ export default function SignUp() {
                                                         clearMessages();
                                                     }}
                                                     className={`flex-1 py-2 rounded-lg items-center justify-center ${role === 'rider'
-                                                        ? 'bg-[#11E0C5]'
+                                                        ? 'bg-primary'
                                                         : ''
                                                         }`}
                                                 >
                                                     <Text
                                                         className={`text-[13px] font-bold ${role === 'rider'
-                                                            ? 'text-[#071018]'
-                                                            : 'text-[#748096]'
+                                                            ? 'text-background'
+                                                            : 'text-muted'
                                                             }`}
                                                     >
                                                         Rider
@@ -342,14 +341,14 @@ export default function SignUp() {
                                                         clearMessages();
                                                     }}
                                                     className={`flex-1 py-2 rounded-lg items-center justify-center ${role === 'driver'
-                                                        ? 'bg-[#11E0C5]'
+                                                        ? 'bg-primary'
                                                         : ''
                                                         }`}
                                                 >
                                                     <Text
                                                         className={`text-[13px] font-bold ${role === 'driver'
-                                                            ? 'text-[#071018]'
-                                                            : 'text-[#748096]'
+                                                            ? 'text-background'
+                                                            : 'text-muted'
                                                             }`}
                                                     >
                                                         Driver
@@ -359,7 +358,7 @@ export default function SignUp() {
                                             </View>
 
                                             {/* FULL NAME */}
-                                            <View className={`h-13 bg-[#131D2B]/95 rounded-xl px-4 flex-row items-center ${errorMessage ? 'border border-red-500/40' : 'border border-white/[0.06]'}`}>
+                                            <View className={`h-13 bg-input/95 rounded-xl px-4 flex-row items-center ${errorMessage ? 'border border-red-500/40' : 'border border-border'}`}>
 
                                                 <Text className="text-[#667085] text-base mr-2.5">
                                                     👤
@@ -374,13 +373,13 @@ export default function SignUp() {
                                                         clearMessages();
                                                     }}
                                                     editable={!loading}
-                                                    className="flex-1 text-white text-[15px]"
+                                                    className="flex-1 text-foreground text-[15px]"
                                                 />
 
                                             </View>
 
                                             {/* USERNAME */}
-                                            <View className={`h-13 bg-[#131D2B]/95 rounded-xl px-4 flex-row items-center ${errorMessage ? 'border border-red-500/40' : 'border border-white/[0.06]'}`}>
+                                            <View className={`h-13 bg-input/95 rounded-xl px-4 flex-row items-center ${errorMessage ? 'border border-red-500/40' : 'border border-border'}`}>
 
                                                 <Text className="text-[#667085] text-base mr-2.5">
                                                     🏷️
@@ -396,13 +395,13 @@ export default function SignUp() {
                                                     }}
                                                     autoCapitalize="none"
                                                     editable={!loading}
-                                                    className="flex-1 text-white text-[15px]"
+                                                    className="flex-1 text-foreground text-[15px]"
                                                 />
 
                                             </View>
 
                                             {/* EMAIL */}
-                                            <View className={`h-13 bg-[#131D2B]/95 rounded-xl px-4 flex-row items-center ${errorMessage ? 'border border-red-500/40' : 'border border-white/[0.06]'}`}>
+                                            <View className={`h-13 bg-input/95 rounded-xl px-4 flex-row items-center ${errorMessage ? 'border border-red-500/40' : 'border border-border'}`}>
 
                                                 <Text className="text-[#667085] text-base mr-2.5">
                                                     ✉
@@ -419,13 +418,13 @@ export default function SignUp() {
                                                     keyboardType="email-address"
                                                     autoCapitalize="none"
                                                     editable={!loading}
-                                                    className="flex-1 text-white text-[15px]"
+                                                    className="flex-1 text-foreground text-[15px]"
                                                 />
 
                                             </View>
 
                                             {/* PASSWORD */}
-                                            <View className={`h-13 bg-[#131D2B]/95 rounded-xl px-4 flex-row items-center ${errorMessage ? 'border border-red-500/40' : 'border border-white/[0.06]'}`}>
+                                            <View className={`h-13 bg-input/95 rounded-xl px-4 flex-row items-center ${errorMessage ? 'border border-red-500/40' : 'border border-border'}`}>
 
                                                 <Text className="text-[#667085] text-base mr-2.5">
                                                     🔒
@@ -442,7 +441,7 @@ export default function SignUp() {
                                                     secureTextEntry={!isPasswordVisible}
                                                     autoCapitalize="none"
                                                     editable={!loading}
-                                                    className="flex-1 text-white text-[15px]"
+                                                    className="flex-1 text-foreground text-[15px]"
                                                 />
 
                                                 <TouchableOpacity
@@ -459,7 +458,7 @@ export default function SignUp() {
                                             </View>
 
                                             {/* CONFIRM PASSWORD */}
-                                            <View className={`h-13 bg-[#131D2B]/95 rounded-xl px-4 flex-row items-center ${errorMessage ? 'border border-red-500/40' : 'border border-white/[0.06]'}`}>
+                                            <View className={`h-13 bg-input/95 rounded-xl px-4 flex-row items-center ${errorMessage ? 'border border-red-500/40' : 'border border-border'}`}>
 
                                                 <Text className="text-[#667085] text-base mr-2.5">
                                                     🛡️
@@ -476,7 +475,7 @@ export default function SignUp() {
                                                     secureTextEntry={!isConfirmPasswordVisible}
                                                     autoCapitalize="none"
                                                     editable={!loading}
-                                                    className="flex-1 text-white text-[15px]"
+                                                    className="flex-1 text-foreground text-[15px]"
                                                 />
 
                                                 <TouchableOpacity
@@ -503,14 +502,14 @@ export default function SignUp() {
                                                         handleSignup();
                                                     }
                                                 }}
-                                                className="h-13 bg-[#11E0C5] rounded-xl items-center justify-center mt-4 border border-[#6FFFEF]/10"
+                                                className="h-13 bg-primary rounded-xl items-center justify-center mt-4 border border-[#6FFFEF]/10"
                                             >
 
                                                 {
                                                     loading ? (
                                                         <ActivityIndicator color="#071018" />
                                                     ) : (
-                                                        <Text className="text-[#071018] text-[16px] font-bold">
+                                                        <Text className="text-background text-[16px] font-bold">
                                                             {
                                                                 role === 'driver'
                                                                     ? 'Next Step'
@@ -541,7 +540,7 @@ export default function SignUp() {
                                         <View className="gap-y-3">
 
                                             {/* LICENSE */}
-                                            <View className={`h-13 bg-[#131D2B]/95 rounded-xl px-4 flex-row items-center ${errorMessage ? 'border border-red-500/40' : 'border border-white/[0.06]'}`}>
+                                            <View className={`h-13 bg-input/95 rounded-xl px-4 flex-row items-center ${errorMessage ? 'border border-red-500/40' : 'border border-border'}`}>
 
                                                 <Text className="text-[#667085] text-base mr-2.5">
                                                     🪪
@@ -557,7 +556,7 @@ export default function SignUp() {
                                                     }}
                                                     autoCapitalize="characters"
                                                     editable={!loading}
-                                                    className="flex-1 text-white text-[15px]"
+                                                    className="flex-1 text-foreground text-[15px]"
                                                 />
 
                                             </View>
@@ -565,7 +564,7 @@ export default function SignUp() {
                                             {/* MAKE + MODEL */}
                                             <View className="flex-row gap-x-2">
 
-                                                <View className={`flex-1 h-13 bg-[#131D2B]/95 rounded-xl px-4 justify-center ${errorMessage ? 'border border-red-500/40' : 'border border-white/[0.06]'}`}>
+                                                <View className={`flex-1 h-13 bg-input/95 rounded-xl px-4 justify-center ${errorMessage ? 'border border-red-500/40' : 'border border-border'}`}>
 
                                                     <TextInput
                                                         placeholder="Make *"
@@ -576,12 +575,12 @@ export default function SignUp() {
                                                             clearMessages();
                                                         }}
                                                         editable={!loading}
-                                                        className="text-white text-[14px]"
+                                                        className="text-foreground text-[14px]"
                                                     />
 
                                                 </View>
 
-                                                <View className={`flex-1 h-13 bg-[#131D2B]/95 rounded-xl px-4 justify-center ${errorMessage ? 'border border-red-500/40' : 'border border-white/[0.06]'}`}>
+                                                <View className={`flex-1 h-13 bg-input/95 rounded-xl px-4 justify-center ${errorMessage ? 'border border-red-500/40' : 'border border-border'}`}>
 
                                                     <TextInput
                                                         placeholder="Model *"
@@ -592,7 +591,7 @@ export default function SignUp() {
                                                             clearMessages();
                                                         }}
                                                         editable={!loading}
-                                                        className="text-white text-[14px]"
+                                                        className="text-foreground text-[14px]"
                                                     />
 
                                                 </View>
@@ -602,7 +601,7 @@ export default function SignUp() {
                                             {/* COLOR + YEAR */}
                                             <View className="flex-row gap-x-2">
 
-                                                <View className={`flex-1 h-13 bg-[#131D2B]/95 rounded-xl px-4 justify-center ${errorMessage ? 'border border-red-500/40' : 'border border-white/[0.06]'}`}>
+                                                <View className={`flex-1 h-13 bg-input/95 rounded-xl px-4 justify-center ${errorMessage ? 'border border-red-500/40' : 'border border-border'}`}>
 
                                                     <TextInput
                                                         placeholder="Color *"
@@ -613,12 +612,12 @@ export default function SignUp() {
                                                             clearMessages();
                                                         }}
                                                         editable={!loading}
-                                                        className="text-white text-[14px]"
+                                                        className="text-foreground text-[14px]"
                                                     />
 
                                                 </View>
 
-                                                <View className={`flex-1 h-13 bg-[#131D2B]/95 rounded-xl px-4 justify-center ${errorMessage ? 'border border-red-500/40' : 'border border-white/[0.06]'}`}>
+                                                <View className={`flex-1 h-13 bg-input/95 rounded-xl px-4 justify-center ${errorMessage ? 'border border-red-500/40' : 'border border-border'}`}>
 
                                                     <TextInput
                                                         placeholder="Year *"
@@ -630,7 +629,7 @@ export default function SignUp() {
                                                         }}
                                                         keyboardType="numeric"
                                                         editable={!loading}
-                                                        className="text-white text-[14px]"
+                                                        className="text-foreground text-[14px]"
                                                     />
 
                                                 </View>
@@ -640,7 +639,7 @@ export default function SignUp() {
                                             {/* PLATE + CAPACITY */}
                                             <View className="flex-row gap-x-2">
 
-                                                <View className={`flex-1 h-13 bg-[#131D2B]/95 rounded-xl px-4 justify-center ${errorMessage ? 'border border-red-500/40' : 'border border-white/[0.06]'}`}>
+                                                <View className={`flex-1 h-13 bg-input/95 rounded-xl px-4 justify-center ${errorMessage ? 'border border-red-500/40' : 'border border-border'}`}>
 
                                                     <TextInput
                                                         placeholder="Plate *"
@@ -652,12 +651,12 @@ export default function SignUp() {
                                                         }}
                                                         autoCapitalize="characters"
                                                         editable={!loading}
-                                                        className="text-white text-[14px]"
+                                                        className="text-foreground text-[14px]"
                                                     />
 
                                                 </View>
 
-                                                <View className={`flex-1 h-13 bg-[#131D2B]/95 rounded-xl px-4 justify-center ${errorMessage ? 'border border-red-500/40' : 'border border-white/[0.06]'}`}>
+                                                <View className={`flex-1 h-13 bg-input/95 rounded-xl px-4 justify-center ${errorMessage ? 'border border-red-500/40' : 'border border-border'}`}>
 
                                                     <TextInput
                                                         placeholder="Capacity *"
@@ -669,7 +668,7 @@ export default function SignUp() {
                                                         }}
                                                         keyboardType="numeric"
                                                         editable={!loading}
-                                                        className="text-white text-[14px]"
+                                                        className="text-foreground text-[14px]"
                                                     />
 
                                                 </View>
@@ -686,12 +685,12 @@ export default function SignUp() {
                                                             !showVehicleDropdown
                                                         )
                                                     }
-                                                    className={`h-13 bg-[#131D2B]/95 rounded-xl px-4 flex-row items-center justify-between ${errorMessage ? 'border border-red-500/40' : 'border border-white/[0.06]'}`}
+                                                    className={`h-13 bg-input/95 rounded-xl px-4 flex-row items-center justify-between ${errorMessage ? 'border border-red-500/40' : 'border border-border'}`}
                                                 >
 
                                                     <Text
                                                         className={`text-[14px] ${vehicleType
-                                                            ? 'text-white'
+                                                            ? 'text-foreground'
                                                             : 'text-[#667085]'
                                                             }`}
                                                     >
@@ -710,7 +709,7 @@ export default function SignUp() {
 
                                                 {
                                                     showVehicleDropdown && (
-                                                        <View className="mt-2 bg-[#131D2B] border border-white/[0.06] rounded-xl overflow-hidden">
+                                                        <View className="mt-2 bg-input border border-border rounded-xl overflow-hidden">
 
                                                             {
                                                                 vehicleOptions.map((item) => (
@@ -732,7 +731,7 @@ export default function SignUp() {
                                                                         className="px-4 py-3 border-b border-white/[0.04]"
                                                                     >
 
-                                                                        <Text className="text-white text-[14px] capitalize">
+                                                                        <Text className="text-foreground text-[14px] capitalize">
                                                                             {item}
                                                                         </Text>
 
@@ -752,14 +751,14 @@ export default function SignUp() {
                                                 activeOpacity={0.85}
                                                 onPress={handleSignup}
                                                 disabled={loading}
-                                                className="h-13 bg-[#11E0C5] rounded-xl items-center justify-center mt-3 border border-[#6FFFEF]/10"
+                                                className="h-13 bg-primary rounded-xl items-center justify-center mt-3 border border-[#6FFFEF]/10"
                                             >
 
                                                 {
                                                     loading ? (
                                                         <ActivityIndicator color="#071018" />
                                                     ) : (
-                                                        <Text className="text-[#071018] text-[16px] font-bold">
+                                                        <Text className="text-background text-[16px] font-bold">
                                                             Register Profile
                                                         </Text>
                                                     )
@@ -812,20 +811,20 @@ export default function SignUp() {
                             {/* DIVIDER */}
                             <View className="flex-row items-center my-4">
 
-                                <View className="flex-1 h-[1px] bg-white/[0.05]" />
+                                <View className="flex-1 h-[1px] bg-foreground/[0.05]" />
 
                                 <Text className="text-[#667085] text-[11px] px-3 tracking-wide">
                                     or sign up with
                                 </Text>
 
-                                <View className="flex-1 h-[1px] bg-white/[0.05]" />
+                                <View className="flex-1 h-[1px] bg-foreground/[0.05]" />
 
                             </View>
 
                             {/* GOOGLE */}
                             <TouchableOpacity
                                 activeOpacity={0.85}
-                                className="w-full h-12 bg-[#131D2B]/95 border border-white/[0.06] rounded-xl flex-row items-center justify-center"
+                                className="w-full h-12 bg-input/95 border border-border rounded-xl flex-row items-center justify-center"
                             >
 
                                 <View className="w-6 h-6 items-center justify-center mr-2">
@@ -856,7 +855,7 @@ export default function SignUp() {
 
                                 </View>
 
-                                <Text className="text-white text-[14px] font-medium">
+                                <Text className="text-foreground text-[14px] font-medium">
                                     Google
                                 </Text>
 
@@ -865,7 +864,7 @@ export default function SignUp() {
                             {/* FOOTER */}
                             <View className="flex-row justify-center items-center mt-5">
 
-                                <Text className="text-[#748096] text-[13px]">
+                                <Text className="text-muted text-[13px]">
                                     Already have an account?
                                 </Text>
 
@@ -875,7 +874,7 @@ export default function SignUp() {
                                         router.replace('/(auth)/signin')
                                     }
                                 >
-                                    <Text className="text-[#11E0C5] text-[13px] font-semibold ml-1">
+                                    <Text className="text-primary text-[13px] font-semibold ml-1">
                                         Sign in
                                     </Text>
                                 </TouchableOpacity>

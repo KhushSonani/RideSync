@@ -1,3 +1,4 @@
+import { useTheme } from "@/store/ThemeContext";
 import { useState } from 'react';
 import {
     Text,
@@ -32,6 +33,7 @@ import {
 import { registerPushTokenWithServer } from "@/services/notifications";
 
 export default function SignIn() {
+    const { theme } = useTheme();
     const [identifier, setIdentifier] = useState('');
     const [password, setPassword] = useState('');
     const [isPasswordVisible, setIsPasswordVisible] = useState(false);
@@ -109,7 +111,7 @@ export default function SignIn() {
 
 
     return (
-        <View className="flex-1" style={{ backgroundColor: COLORS.background }}>
+        <View className="flex-1 bg-background">
             <StatusBar barStyle="light-content" translucent backgroundColor="transparent" />
 
             {/* PREMIUM BACKGROUND */}
@@ -151,16 +153,16 @@ export default function SignIn() {
                             >
                                 <View className="w-4 h-4 border-l-2 border-t-2 border-white/90 transform -rotate-45 mt-0.5 ml-1" />
                             </TouchableOpacity>
-                            <Text className="text-white text-[25px] italic ml-5 tracking-wide">
+                            <Text className="text-foreground text-[25px] italic ml-5 tracking-wide">
                                 signin
                             </Text>
                         </View>
 
                         {/* MAIN CARD */}
                         <View
-                            className={`${glassCard} mt-24 mx-3 px-6 py-8 rounded-[32px] min-h-[520px] justify-center border border-white/[0.08]`}
+                            className={`${glassCard} mt-24 mx-3 px-6 py-8 rounded-[32px] min-h-[520px] justify-center border border-border`}
                             style={{
-                                shadowColor: "#11E0C5",
+                                shadowColor: theme.colors.primary,
                                 shadowOpacity: 0.08,
                                 shadowRadius: 20,
                                 elevation: 10,
@@ -168,10 +170,10 @@ export default function SignIn() {
                         >
                             {/* HEADING */}
                             <View className="mb-6">
-                                <Text className="text-white text-[30px] font-bold tracking-tight">
+                                <Text className="text-foreground text-[30px] font-bold tracking-tight">
                                     Welcome Back
                                 </Text>
-                                <Text className="text-[#748096] text-[14px] mt-1">
+                                <Text className="text-muted text-[14px] mt-1">
                                     Sign in to continue your journey
                                 </Text>
                             </View>
@@ -192,7 +194,7 @@ export default function SignIn() {
                                         keyboardType="email-address"
                                         autoCapitalize="none"
                                         editable={!loading}
-                                        className="flex-1 text-white text-[15px]"
+                                        className="flex-1 text-foreground text-[15px]"
                                     />
                                 </View>
                                 {/* PASSWORD */}
@@ -209,7 +211,7 @@ export default function SignIn() {
                                         secureTextEntry={!isPasswordVisible}
                                         autoCapitalize="none"
                                         editable={!loading}
-                                        className="flex-1 text-white text-[15px]"
+                                        className="flex-1 text-foreground text-[15px]"
                                     />
                                     <TouchableOpacity
                                         activeOpacity={0.7}
@@ -249,7 +251,7 @@ export default function SignIn() {
                                 onPress={() => router.push("/forgot-password")}
                                 activeOpacity={0.7}
                                 className="self-end mt-4">
-                                <Text className="text-[#11E0C5] text-[13px] font-medium">
+                                <Text className="text-primary text-[13px] font-medium">
                                     Forgot password?
                                 </Text>
                             </TouchableOpacity>
@@ -264,7 +266,7 @@ export default function SignIn() {
                                 {loading ? (
                                     <ActivityIndicator size="small" color="#071018" />
                                 ) : (
-                                    <Text className="text-[#071018] text-[16px] font-bold">
+                                    <Text className="text-background text-[16px] font-bold">
                                         Login
                                     </Text>
                                 )}
@@ -301,21 +303,21 @@ export default function SignIn() {
                                         />
                                     </Svg>
                                 </View>
-                                <Text className="text-white text-[15px] font-medium">
+                                <Text className="text-foreground text-[15px] font-medium">
                                     Continue with Google
                                 </Text>
                             </TouchableOpacity>
 
                             {/* FOOTER */}
                             <View className="flex-row justify-center items-center mt-6">
-                                <Text className="text-[#748096] text-[13px]">
+                                <Text className="text-muted text-[13px]">
                                     {"Don't have an account?"}
                                 </Text>
                                 <TouchableOpacity
                                     activeOpacity={0.7}
                                     onPress={() => router.replace('/(auth)/signup')}
                                 >
-                                    <Text className="text-[#11E0C5] text-[13px] font-semibold ml-1">
+                                    <Text className="text-primary text-[13px] font-semibold ml-1">
                                         Sign up
                                     </Text>
                                 </TouchableOpacity>

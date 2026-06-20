@@ -16,6 +16,7 @@ import { glassCard } from "@/constants/styles";
 import RouteRow from "@/components/ride/RouteRow";
 import FareDistanceRow from "@/components/ride/FareDistanceRow";
 import type { RideCompletedPayload } from "@/services/socket.types";
+import { useTheme } from "@/store/ThemeContext";
 
 // ─── Mock payload (replace with navigation params / context) ──────────────────
 const MOCK_COMPLETED: RideCompletedPayload & {
@@ -63,6 +64,7 @@ function StarRating({
 // ─── Screen ──────────────────────────────────────────────────────────────────
 
 export default function DriverRideComplete() {
+    const { colorScheme, theme } = useTheme();
     const params = useLocalSearchParams();
     const rideData = React.useMemo(() => {
         return {
@@ -117,7 +119,7 @@ export default function DriverRideComplete() {
     // ── Render ────────────────────────────────────────────────────────────────
 
     return (
-        <View className="flex-1" style={{ backgroundColor: COLORS.background }}>
+        <View className="flex-1 bg-background">
             <StatusBar barStyle="light-content" translucent backgroundColor="transparent" />
 
             {/* PREMIUM GLOW BACKGROUND */}
@@ -130,7 +132,7 @@ export default function DriverRideComplete() {
                     className="absolute top-[280px] -left-20 w-[240px] h-[240px] rounded-full"
                     style={{ backgroundColor: COLORS.glowBlue }}
                 />
-                <View className="absolute bottom-[-100px] right-[-50px] w-[300px] h-[300px] rounded-full bg-[#11E0C5]/5" />
+                <View className="absolute bottom-[-100px] right-[-50px] w-[300px] h-[300px] rounded-full bg-primary/5" />
             </View>
 
             <SafeAreaView className="flex-1 px-5 pt-3">
@@ -148,13 +150,13 @@ export default function DriverRideComplete() {
                         <View className="items-center mt-6 mb-8">
                             <View className="w-24 h-24 rounded-full bg-[#10B981]/10 border border-[#10B981]/25 items-center justify-center mb-5">
                                 <View className="w-16 h-16 rounded-full bg-[#10B981]/20 items-center justify-center">
-                                    <Ionicons name="checkmark" size={36} color="#10B981" />
+                                    <Ionicons name="checkmark" size={36} color={theme.colors.success} />
                                 </View>
                             </View>
-                            <Text className="text-white text-[28px] font-bold tracking-tight">
+                            <Text className="text-foreground text-[28px] font-bold tracking-tight">
                                 Ride Complete!
                             </Text>
-                            <Text className="text-[#748096] text-[14px] mt-1">
+                            <Text className="text-muted text-[14px] mt-1">
                                 Trip ended at {completedTime}
                             </Text>
                         </View>
@@ -164,10 +166,10 @@ export default function DriverRideComplete() {
                             className="items-center py-6 mb-5 rounded-[30px] border border-[#10B981]/20"
                             style={{ backgroundColor: "rgba(16,185,129,0.06)" }}
                         >
-                            <Text className="text-[#748096] text-[11px] uppercase tracking-wider mb-1">
+                            <Text className="text-muted text-[11px] uppercase tracking-wider mb-1">
                                 Trip Earnings
                             </Text>
-                            <Text className="text-white text-[42px] font-bold tracking-tight">
+                            <Text className="text-foreground text-[42px] font-bold tracking-tight">
                                 ₹{rideData.fare.toFixed(0)}
                             </Text>
                             <Text className="text-[#10B981] text-[13px] font-semibold mt-1">
@@ -177,7 +179,7 @@ export default function DriverRideComplete() {
 
                         {/* TRIP SUMMARY */}
                         <View className={`${glassCard} p-5 mb-4`}>
-                            <Text className="text-[#748096] text-[11px] uppercase tracking-wider mb-4">
+                            <Text className="text-muted text-[11px] uppercase tracking-wider mb-4">
                                 Trip Summary
                             </Text>
 
@@ -186,7 +188,7 @@ export default function DriverRideComplete() {
                                 distance={rideData.distance || 0}
                             />
 
-                            <View className="h-[1px] bg-white/[0.05] my-4" />
+                            <View className="h-[1px] bg-foreground/[0.05] my-4" />
 
                             <RouteRow
                                 pickup={rideData.pickup}
@@ -200,7 +202,7 @@ export default function DriverRideComplete() {
                                 <View className="w-7 h-7 rounded-lg bg-[#FFC107]/10 items-center justify-center mr-2">
                                     <Ionicons name="star" size={15} color="#FFC107" />
                                 </View>
-                                <Text className="text-[#748096] text-[11px] uppercase tracking-wider">
+                                <Text className="text-muted text-[11px] uppercase tracking-wider">
                                     Rate Your Rider
                                 </Text>
                             </View>
@@ -208,13 +210,13 @@ export default function DriverRideComplete() {
                             <StarRating rating={riderRating} onRate={handleRateRider} />
 
                             {riderRating > 0 ? (
-                                <Text className="text-[#748096] text-[12px] text-center mt-3">
+                                <Text className="text-muted text-[12px] text-center mt-3">
                                     {riderRating === 5 ? "Excellent rider! 🎉" :
                                      riderRating >= 4 ? "Good experience 👍" :
                                      riderRating >= 3 ? "It was okay" : "Could be better"}
                                 </Text>
                             ) : (
-                                <Text className="text-[#748096] text-[12px] text-center mt-3">
+                                <Text className="text-muted text-[12px] text-center mt-3">
                                     Tap to rate
                                 </Text>
                             )}
@@ -223,25 +225,25 @@ export default function DriverRideComplete() {
                         {/* QUICK STATS ROW */}
                         <View className="flex-row gap-x-4 mb-6">
                             <View className={`${glassCard} flex-1 p-4 items-center`}>
-                                <Feather name="clock" size={16} color="#748096" />
-                                <Text className="text-[#748096] text-[10px] mt-1">Duration</Text>
+                                <Feather name="clock" size={16} color={theme.colors.textMuted} />
+                                <Text className="text-muted text-[10px] mt-1">Duration</Text>
                                 {/* TODO: calculate from ride.startedAt → ride.completedAt */}
-                                <Text className="text-white text-[15px] font-bold mt-0.5">
+                                <Text className="text-foreground text-[15px] font-bold mt-0.5">
                                     —
                                 </Text>
                             </View>
                             <View className={`${glassCard} flex-1 p-4 items-center`}>
-                                <Feather name="navigation" size={16} color="#748096" />
-                                <Text className="text-[#748096] text-[10px] mt-1">Distance</Text>
-                                <Text className="text-white text-[15px] font-bold mt-0.5">
+                                <Feather name="navigation" size={16} color={theme.colors.textMuted} />
+                                <Text className="text-muted text-[10px] mt-1">Distance</Text>
+                                <Text className="text-foreground text-[15px] font-bold mt-0.5">
                                     {(rideData.distance || 0).toFixed(1)} km
                                 </Text>
                             </View>
                             <View className={`${glassCard} flex-1 p-4 items-center`}>
                                 <Ionicons name="star" size={16} color="#FFC107" />
-                                <Text className="text-[#748096] text-[10px] mt-1">Your Rating</Text>
+                                <Text className="text-muted text-[10px] mt-1">Your Rating</Text>
                                 {/* TODO: fetch actual driver rating */}
-                                <Text className="text-white text-[15px] font-bold mt-0.5">
+                                <Text className="text-foreground text-[15px] font-bold mt-0.5">
                                     4.9
                                 </Text>
                             </View>
@@ -251,10 +253,10 @@ export default function DriverRideComplete() {
                         <TouchableOpacity
                             activeOpacity={0.85}
                             onPress={handleGoHome}
-                            className="h-14 bg-[#11E0C5] rounded-2xl items-center justify-center border border-[#6FFFEF]/10"
+                            className="h-14 bg-primary rounded-2xl items-center justify-center border border-[#6FFFEF]/10"
                             accessibilityLabel="Return to home screen"
                         >
-                            <Text className="text-[#071018] text-[16px] font-bold">
+                            <Text className="text-background text-[16px] font-bold">
                                 Back to Dashboard
                             </Text>
                         </TouchableOpacity>

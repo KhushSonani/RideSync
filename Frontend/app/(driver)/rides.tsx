@@ -10,6 +10,7 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Feather } from "@expo/vector-icons";
 import { router } from "expo-router";
+import { useTheme } from "@/store/ThemeContext";
 
 import { api } from "@/services/api";
 import { COLORS } from "@/constants/theme";
@@ -18,6 +19,7 @@ import EmptyStateCard from "@/components/common/EmptyStateCard";
 import RideHistoryCard from "@/components/common/RideHistoryCard";
 
 export default function DriverRidesScreen() {
+    const { theme } = useTheme();
     const [refreshing, setRefreshing] = useState(false);
     const [activeFilter, setActiveFilter] = useState("All");
     const [rides, setRides] = useState<any[]>([]);
@@ -60,7 +62,7 @@ export default function DriverRidesScreen() {
     const totalRides = completedRides.length;
 
     return (
-        <View className="flex-1" style={{ backgroundColor: COLORS.background }}>
+        <View className="flex-1 bg-background">
             <StatusBar barStyle="light-content" translucent backgroundColor="transparent" />
 
             {/* Glow background */}
@@ -70,20 +72,20 @@ export default function DriverRidesScreen() {
                     style={{ backgroundColor: COLORS.glowPrimary }}
                 />
                 <View
-                    className="absolute bottom-[-100px] -left-20 w-[300px] h-[300px] rounded-full bg-[#11E0C5]/5"
+                    className="absolute bottom-[-100px] -left-20 w-[300px] h-[300px] rounded-full bg-primary/5"
                 />
             </View>
 
             <SafeAreaView className="flex-1 px-5 pt-3">
                 <ScrollView
                     showsVerticalScrollIndicator={false}
-                    contentContainerStyle={{ paddingBottom: 40 }}
+                    contentContainerStyle={{ paddingBottom: 90 }}
                     refreshControl={
                         <RefreshControl
                             refreshing={refreshing}
                             onRefresh={handleRefresh}
-                            tintColor="#11E0C5"
-                            colors={["#11E0C5"]}
+                            tintColor={theme.colors.primary}
+                            colors={[theme.colors.primary]}
                         />
                     }
                 >
@@ -98,32 +100,32 @@ export default function DriverRidesScreen() {
                         >
                             <Feather name="arrow-left" size={20} color="white" />
                         </TouchableOpacity>
-                        <Text className="text-white text-[24px] italic ml-4 tracking-wide">
+                        <Text className="text-foreground text-[24px] italic ml-4 tracking-wide">
                             my rides
                         </Text>
                     </View>
 
                     {/* Earnings summary card */}
                     <View className={`${glassCard} p-5 mb-5 flex-row`}>
-                        <View className="flex-1 items-center border-r border-white/[0.05] pr-4">
-                            <Text className="text-[#748096] text-[11px] uppercase tracking-wider mb-1">
+                        <View className="flex-1 items-center border-r border-border pr-4">
+                            <Text className="text-muted text-[11px] uppercase tracking-wider mb-1">
                                 Total Earned
                             </Text>
-                            <Text className="text-white text-[22px] font-bold">
+                            <Text className="text-foreground text-[22px] font-bold">
                                 ₹{totalEarnings}
                             </Text>
-                            <Text className="text-[#748096] text-[10px] mt-0.5">
+                            <Text className="text-muted text-[10px] mt-0.5">
                                 Lifetime earnings
                             </Text>
                         </View>
                         <View className="flex-1 items-center pl-4">
-                            <Text className="text-[#748096] text-[11px] uppercase tracking-wider mb-1">
+                            <Text className="text-muted text-[11px] uppercase tracking-wider mb-1">
                                 Rides Done
                             </Text>
-                            <Text className="text-white text-[22px] font-bold">
+                            <Text className="text-foreground text-[22px] font-bold">
                                 {totalRides}
                             </Text>
-                            <Text className="text-[#748096] text-[10px] mt-0.5">
+                            <Text className="text-muted text-[10px] mt-0.5">
                                 Total completed
                             </Text>
                         </View>
@@ -147,13 +149,13 @@ export default function DriverRidesScreen() {
                                     accessibilityLabel={`Filter by ${f}`}
                                     className={`mr-2 px-4 py-2 rounded-full border ${
                                         active
-                                            ? "bg-[#11E0C5]/10 border-[#11E0C5]/30"
-                                            : "bg-white/[0.03] border-white/[0.08]"
+                                            ? "bg-primary/10 border-primary/30"
+                                            : "bg-foreground/[0.03] border-border"
                                     }`}
                                 >
                                     <Text
                                         className={`text-[12px] font-semibold ${
-                                            active ? "text-[#11E0C5]" : "text-[#748096]"
+                                            active ? "text-primary" : "text-muted"
                                         }`}
                                     >
                                         {f}
@@ -167,7 +169,7 @@ export default function DriverRidesScreen() {
                     {!loading && filteredRides.length === 0 ? (
                         <EmptyStateCard
                             icon="briefcase"
-                            iconColor="#11E0C5"
+                            iconColor={theme.colors.primary}
                             title={rides.length === 0 ? "No rides yet" : `No ${activeFilter.toLowerCase()} rides`}
                             subtitle={rides.length === 0 ? "Go online and complete your first ride. Your earnings and trip history will appear here." : ""}
                             ctaLabel={rides.length === 0 ? "Go to Dashboard" : undefined}

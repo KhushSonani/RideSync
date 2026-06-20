@@ -62,6 +62,7 @@ import LocationSearchInput from "@/components/ride/LocationSearchInput";
 import { useLocation } from "@/store/LocationContext";
 import { useRiderLocation } from "@/services/useRiderLocation";
 import { useRouteInfo } from "@/services/useRouteInfo";
+import { useTheme } from "@/store/ThemeContext";
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -74,6 +75,7 @@ const MAP_BOTTOM_PAD = Math.round(SCREEN_H * 0.6);
 // ─── Screen ──────────────────────────────────────────────────────────────────
 
 export default function CreateRideScreen() {
+    const { colorScheme, theme } = useTheme();
     const { pickup, drop, setPickup, setDrop, clearLocations } = useLocation();
     const [creating, setCreating] = useState(false);
     const [createError, setCreateError] = useState<string | null>(null);
@@ -231,7 +233,7 @@ export default function CreateRideScreen() {
     // ── Render ────────────────────────────────────────────────────────────────
 
     return (
-        <View style={{ flex: 1, backgroundColor: "#070B12" }}>
+        <View style={{ flex: 1, backgroundColor: theme.colors.background }}>
             <StatusBar barStyle="light-content" translucent backgroundColor="transparent" />
 
             {/* ── FULL SCREEN MAP ───────────────────────────────────────── */}
@@ -243,7 +245,7 @@ export default function CreateRideScreen() {
                 showsCompass={false}
                 showsScale={false}
                 toolbarEnabled={false}
-                customMapStyle={DARK_MAP_STYLE}
+                customMapStyle={colorScheme === 'light' ? [] : DARK_MAP_STYLE}
             >
                 {/* Pickup marker */}
                 {pickup.coords && (
@@ -261,12 +263,12 @@ export default function CreateRideScreen() {
                                 width: 36,
                                 height: 36,
                                 borderRadius: 18,
-                                backgroundColor: "#11E0C5",
+                                backgroundColor: theme.colors.primary,
                                 alignItems: "center",
                                 justifyContent: "center",
                                 borderWidth: 2.5,
                                 borderColor: "#fff",
-                                shadowColor: "#11E0C5",
+                                shadowColor: theme.colors.primary,
                                 shadowOpacity: 0.7,
                                 shadowRadius: 10,
                                 elevation: 6,
@@ -298,7 +300,7 @@ export default function CreateRideScreen() {
                                 justifyContent: "center",
                                 borderWidth: 2.5,
                                 borderColor: "#fff",
-                                shadowColor: "#EF4444",
+                                shadowColor: theme.colors.danger,
                                 shadowOpacity: 0.7,
                                 shadowRadius: 10,
                                 elevation: 6,
@@ -313,7 +315,7 @@ export default function CreateRideScreen() {
                 {routeInfo && routeInfo.polyline.length > 1 && (
                     <Polyline
                         coordinates={routeInfo.polyline}
-                        strokeColor="#11E0C5"
+                        strokeColor={theme.colors.primary}
                         strokeWidth={4}
                         lineDashPattern={undefined}
                         lineCap="round"
@@ -336,14 +338,14 @@ export default function CreateRideScreen() {
                         width: 42,
                         height: 42,
                         borderRadius: 21,
-                        backgroundColor: "rgba(7,11,18,0.90)",
+                        backgroundColor: theme.colors.background,
                         borderWidth: 1,
-                        borderColor: "rgba(255,255,255,0.1)",
+                        borderColor: (theme.colors.border),
                         alignItems: "center",
                         justifyContent: "center",
                     }}
                 >
-                    <Feather name="arrow-left" size={18} color="#FFFFFF" />
+                    <Feather name="arrow-left" size={18} color={theme.colors.textPrimary} />
                 </TouchableOpacity>
             </SafeAreaView>
 
@@ -357,16 +359,16 @@ export default function CreateRideScreen() {
                         zIndex: 15,
                         flexDirection: "row",
                         alignItems: "center",
-                        backgroundColor: "rgba(7,11,18,0.88)",
+                        backgroundColor: theme.colors.background,
                         borderRadius: 20,
                         paddingHorizontal: 14,
                         paddingVertical: 8,
                         borderWidth: 1,
-                        borderColor: "rgba(255,255,255,0.08)",
+                        borderColor: (theme.colors.border),
                         gap: 8,
                     }}
                 >
-                    <ActivityIndicator size={12} color="#11E0C5" />
+                    <ActivityIndicator size={12} color={theme.colors.primary} />
                     <Text style={{ color: "#748096", fontSize: 12, fontWeight: "600" }}>
                         Calculating route…
                     </Text>
@@ -382,7 +384,7 @@ export default function CreateRideScreen() {
                     right: 0,
                     maxHeight: BOTTOM_CARD_MAX_H,
                     zIndex: 10,
-                    backgroundColor: "rgba(7,11,18,0.97)",
+                    backgroundColor: theme.colors.background,
                     borderTopLeftRadius: 28,
                     borderTopRightRadius: 28,
                     shadowColor: "#000",
@@ -396,16 +398,16 @@ export default function CreateRideScreen() {
                     bounces={false}
                     showsVerticalScrollIndicator={false}
                     keyboardShouldPersistTaps="handled"
-                    contentContainerStyle={{ paddingBottom: 32 }}
+                    contentContainerStyle={{ paddingBottom: 80 }}
                 >
                     {/* Drag handle */}
-                    <View style={{ alignItems: "center", paddingTop: 12, paddingBottom: 20 }}>
+                    <View style={{ alignItems: "center", paddingTop: 12, paddingBottom: 40 }}>
                         <View
                             style={{
                                 width: 40,
                                 height: 4,
                                 borderRadius: 2,
-                                backgroundColor: "rgba(255,255,255,0.15)",
+                                backgroundColor: (theme.colors.border),
                             }}
                         />
                     </View>
@@ -426,7 +428,7 @@ export default function CreateRideScreen() {
                         </Text>
                         <Text
                             style={{
-                                color: "#FFFFFF",
+                                color: theme.colors.textPrimary,
                                 fontSize: 22,
                                 fontWeight: "700",
                                 letterSpacing: -0.3,
@@ -445,7 +447,7 @@ export default function CreateRideScreen() {
                                 placeholder="Search pickup location…"
                                 value={pickup.address}
                                 onPress={handlePickupPress}
-                                dotColor="#11E0C5"
+                                dotColor={theme.colors.primary}
                                 loading={gpsLoading && !pickup.coords}
                             />
 
@@ -457,7 +459,7 @@ export default function CreateRideScreen() {
                                     top: 72,
                                     height: 34,
                                     width: 1,
-                                    backgroundColor: "rgba(255,255,255,0.1)",
+                                    backgroundColor: (theme.colors.border),
                                 }}
                             />
 
@@ -475,7 +477,7 @@ export default function CreateRideScreen() {
                                     borderRadius: 16,
                                     backgroundColor: "#131D2B",
                                     borderWidth: 1,
-                                    borderColor: "rgba(255,255,255,0.08)",
+                                    borderColor: (theme.colors.border),
                                     alignItems: "center",
                                     justifyContent: "center",
                                     zIndex: 10,
@@ -484,7 +486,7 @@ export default function CreateRideScreen() {
                                 <MaterialCommunityIcons
                                     name="swap-vertical"
                                     size={16}
-                                    color="#748096"
+                                    color={theme.colors.textMuted}
                                 />
                             </TouchableOpacity>
 
@@ -504,11 +506,16 @@ export default function CreateRideScreen() {
                         <View style={{ paddingHorizontal: 20, marginBottom: 16 }}>
                             <View
                                 style={{
-                                    backgroundColor: "#0D1420",
+                                    backgroundColor: theme.colors.surface,
                                     borderWidth: 1,
-                                    borderColor: "rgba(255,255,255,0.07)",
-                                    borderRadius: 20,
-                                    padding: 18,
+                                    borderColor: theme.colors.border,
+                                    borderRadius: 24,
+                                    padding: 20,
+                                    shadowColor: "#000",
+                                    shadowOpacity: 0.05,
+                                    shadowRadius: 10,
+                                    shadowOffset: { width: 0, height: 4 },
+                                    elevation: 4,
                                 }}
                             >
                                 {/* Card header */}
@@ -516,68 +523,70 @@ export default function CreateRideScreen() {
                                     style={{
                                         flexDirection: "row",
                                         alignItems: "center",
-                                        marginBottom: 14,
+                                        marginBottom: 16,
                                     }}
                                 >
                                     <View
                                         style={{
-                                            width: 30,
-                                            height: 30,
-                                            borderRadius: 10,
-                                            backgroundColor: "rgba(17,224,197,0.1)",
+                                            width: 32,
+                                            height: 32,
+                                            borderRadius: 12,
+                                            backgroundColor: theme.colors.primary + "1A",
                                             alignItems: "center",
                                             justifyContent: "center",
-                                            marginRight: 8,
+                                            marginRight: 10,
+                                            borderWidth: 1,
+                                            borderColor: theme.colors.primary + "33",
                                         }}
                                     >
-                                        <Feather name="tag" size={14} color="#11E0C5" />
+                                        <Feather name="activity" size={14} color={theme.colors.primary} />
                                     </View>
                                     <Text
                                         style={{
-                                            color: "#748096",
-                                            fontSize: 11,
-                                            fontWeight: "600",
+                                            color: theme.colors.textSecondary,
+                                            fontSize: 12,
+                                            fontWeight: "700",
                                             textTransform: "uppercase",
-                                            letterSpacing: 1,
+                                            letterSpacing: 1.2,
                                         }}
                                     >
-                                        Fare Estimate
+                                        Trip Estimate
                                     </Text>
                                     {routeLoading && (
                                         <ActivityIndicator
-                                            size={12}
-                                            color="#748096"
-                                            style={{ marginLeft: 8 }}
+                                            size={14}
+                                            color={theme.colors.primary}
+                                            style={{ marginLeft: "auto" }}
                                         />
                                     )}
                                 </View>
 
                                 {routeLoading && !routeInfo ? (
                                     // Skeleton while fetching
-                                    <View style={{ gap: 8 }}>
+                                    <View style={{ gap: 12 }}>
                                         <View
                                             style={{
-                                                height: 36,
-                                                width: "50%",
-                                                backgroundColor: "rgba(255,255,255,0.06)",
-                                                borderRadius: 10,
+                                                height: 40,
+                                                width: "45%",
+                                                backgroundColor: theme.colors.border,
+                                                borderRadius: 12,
                                             }}
                                         />
                                         <View
                                             style={{
-                                                height: 16,
-                                                width: "70%",
-                                                backgroundColor: "rgba(255,255,255,0.04)",
+                                                height: 18,
+                                                width: "60%",
+                                                backgroundColor: theme.colors.border,
                                                 borderRadius: 8,
                                             }}
                                         />
                                     </View>
                                 ) : routeError ? (
                                     <View
-                                        style={{ flexDirection: "row", alignItems: "center", gap: 8 }}
+                                        style={{ flexDirection: "row", alignItems: "center", gap: 10, backgroundColor: theme.colors.danger + "1A", padding: 12, borderRadius: 12 }}
                                     >
-                                        <Feather name="alert-circle" size={14} color="#EF4444" />
-                                        <Text style={{ color: "#EF4444", fontSize: 12, flex: 1 }}>
+                                        <Feather name="alert-triangle" size={16} color={theme.colors.danger} />
+                                        <Text style={{ color: theme.colors.danger, fontSize: 13, fontWeight: "500", flex: 1 }}>
                                             {routeError}
                                         </Text>
                                     </View>
@@ -586,56 +595,51 @@ export default function CreateRideScreen() {
                                     <View
                                         style={{
                                             flexDirection: "row",
-                                            alignItems: "center",
+                                            alignItems: "flex-end",
                                             justifyContent: "space-between",
                                         }}
                                     >
                                         <View>
                                             <Text
                                                 style={{
-                                                    color: "#FFFFFF",
-                                                    fontSize: 30,
-                                                    fontWeight: "700",
-                                                    letterSpacing: -0.5,
+                                                    color: theme.colors.textPrimary,
+                                                    fontSize: 34,
+                                                    fontWeight: "800",
+                                                    letterSpacing: -1,
                                                 }}
                                             >
                                                 ₹{routeInfo.fare}
                                             </Text>
-                                            <Text style={{ color: "#748096", fontSize: 12, marginTop: 3 }}>
-                                                Standard · {routeInfo.distanceKm} km
-                                            </Text>
-                                        </View>
-                                        <View style={{ alignItems: "flex-end", gap: 6 }}>
-                                            <View
-                                                style={{
-                                                    flexDirection: "row",
-                                                    alignItems: "center",
-                                                    gap: 4,
-                                                }}
-                                            >
-                                                <Feather name="clock" size={12} color="#748096" />
-                                                <Text style={{ color: "#748096", fontSize: 12 }}>
-                                                    ~{routeInfo.durationMin} min
+                                            <View style={{ flexDirection: "row", alignItems: "center", marginTop: 4 }}>
+                                                <Feather name="map-pin" size={12} color={theme.colors.textMuted} style={{ marginRight: 6 }} />
+                                                <Text style={{ color: theme.colors.textMuted, fontSize: 13, fontWeight: "500" }}>
+                                                    {routeInfo.distanceKm} km
                                                 </Text>
                                             </View>
+                                        </View>
+                                        <View style={{ alignItems: "flex-end", gap: 8 }}>
                                             <View
                                                 style={{
-                                                    backgroundColor: "rgba(17,224,197,0.1)",
+                                                    backgroundColor: theme.colors.background,
                                                     borderWidth: 1,
-                                                    borderColor: "rgba(17,224,197,0.2)",
-                                                    borderRadius: 20,
-                                                    paddingHorizontal: 10,
-                                                    paddingVertical: 4,
+                                                    borderColor: theme.colors.border,
+                                                    borderRadius: 16,
+                                                    paddingHorizontal: 12,
+                                                    paddingVertical: 6,
+                                                    flexDirection: "row",
+                                                    alignItems: "center",
+                                                    shadowColor: "#000",
+                                                    shadowOpacity: 0.1,
+                                                    shadowRadius: 5,
+                                                    shadowOffset: { width: 0, height: 2 },
+                                                    elevation: 2,
                                                 }}
                                             >
-                                                <Text
-                                                    style={{
-                                                        color: "#11E0C5",
-                                                        fontSize: 11,
-                                                        fontWeight: "600",
-                                                    }}
-                                                >
-                                                    Estimate
+                                                <Text style={{ color: theme.colors.textPrimary, fontSize: 14, fontWeight: "700" }}>
+                                                    {routeInfo.durationMin}
+                                                </Text>
+                                                <Text style={{ color: theme.colors.textSecondary, fontSize: 12, fontWeight: "600", marginLeft: 4 }}>
+                                                    min
                                                 </Text>
                                             </View>
                                         </View>
@@ -647,68 +651,77 @@ export default function CreateRideScreen() {
 
                     {/* ── Ride type pill ────────────────────────────────── */}
                     <View style={{ paddingHorizontal: 20, marginBottom: 20 }}>
-                        <View
+                        <TouchableOpacity
+                            activeOpacity={0.9}
                             style={{
-                                backgroundColor: "#0D1420",
-                                borderWidth: 1,
-                                borderColor: "rgba(255,255,255,0.07)",
-                                borderRadius: 20,
-                                padding: 14,
+                                backgroundColor: theme.colors.primary + "0A",
+                                borderWidth: 1.5,
+                                borderColor: theme.colors.primary + "66",
+                                borderRadius: 24,
+                                padding: 18,
                                 flexDirection: "row",
                                 alignItems: "center",
                                 justifyContent: "space-between",
+                                shadowColor: theme.colors.primary,
+                                shadowOpacity: 0.1,
+                                shadowRadius: 12,
+                                shadowOffset: { width: 0, height: 4 },
+                                elevation: 3,
                             }}
                         >
                             <View style={{ flexDirection: "row", alignItems: "center" }}>
                                 <View
                                     style={{
-                                        width: 40,
-                                        height: 40,
-                                        borderRadius: 14,
-                                        backgroundColor: "rgba(17,224,197,0.1)",
+                                        width: 44,
+                                        height: 44,
+                                        borderRadius: 16,
+                                        backgroundColor: theme.colors.primary + "1A",
                                         alignItems: "center",
                                         justifyContent: "center",
-                                        marginRight: 12,
+                                        marginRight: 14,
                                     }}
                                 >
-                                    <Ionicons name="car-sport" size={20} color="#11E0C5" />
+                                    <Ionicons name="car-sport" size={24} color={theme.colors.primary} />
                                 </View>
                                 <View>
                                     <Text
                                         style={{
-                                            color: "#FFFFFF",
-                                            fontSize: 14,
-                                            fontWeight: "600",
+                                            color: theme.colors.textPrimary,
+                                            fontSize: 16,
+                                            fontWeight: "700",
+                                            marginBottom: 2,
                                         }}
                                     >
                                         Standard
                                     </Text>
-                                    <Text style={{ color: "#748096", fontSize: 11, marginTop: 2 }}>
+                                    <Text style={{ color: theme.colors.textMuted, fontSize: 13, fontWeight: "500" }}>
                                         Affordable everyday ride
                                     </Text>
                                 </View>
                             </View>
                             <View
                                 style={{
-                                    backgroundColor: "rgba(17,224,197,0.1)",
-                                    borderWidth: 1,
-                                    borderColor: "rgba(17,224,197,0.25)",
+                                    backgroundColor: theme.colors.primary,
                                     borderRadius: 20,
-                                    paddingHorizontal: 10,
-                                    paddingVertical: 4,
+                                    paddingHorizontal: 12,
+                                    paddingVertical: 6,
+                                    shadowColor: theme.colors.primary,
+                                    shadowOpacity: 0.4,
+                                    shadowRadius: 8,
+                                    shadowOffset: { width: 0, height: 2 },
                                 }}
                             >
                                 <Text
                                     style={{
-                                        color: "#11E0C5",
+                                        color: theme.colors.background,
                                         fontSize: 11,
-                                        fontWeight: "700",
+                                        fontWeight: "800",
                                     }}
                                 >
-                                    Selected
+                                    SELECTED
                                 </Text>
                             </View>
-                        </View>
+                        </TouchableOpacity>
                     </View>
 
                     {/* ── Error banner ──────────────────────────────────── */}
@@ -727,7 +740,7 @@ export default function CreateRideScreen() {
                                 gap: 10,
                             }}
                         >
-                            <Feather name="alert-circle" size={15} color="#EF4444" />
+                            <Feather name="alert-circle" size={15} color={theme.colors.danger} />
                             <Text
                                 style={{ color: "#EF4444", fontSize: 13, flex: 1 }}
                             >
@@ -737,7 +750,7 @@ export default function CreateRideScreen() {
                                 onPress={() => setCreateError(null)}
                                 accessibilityLabel="Dismiss error"
                             >
-                                <Feather name="x" size={15} color="#EF4444" />
+                                <Feather name="x" size={15} color={theme.colors.danger} />
                             </TouchableOpacity>
                         </View>
                     )}
@@ -750,19 +763,17 @@ export default function CreateRideScreen() {
                             disabled={!canCreate}
                             accessibilityLabel="Confirm and request ride"
                             style={{
-                                height: 56,
-                                backgroundColor: "#11E0C5",
+                                height: 60,
+                                backgroundColor: theme.colors.primary,
                                 borderRadius: 20,
                                 alignItems: "center",
                                 justifyContent: "center",
-                                borderWidth: 1,
-                                borderColor: "rgba(111,255,239,0.1)",
-                                opacity: canCreate ? 1 : 0.4,
-                                shadowColor: "#11E0C5",
-                                shadowOpacity: canCreate ? 0.35 : 0,
-                                shadowRadius: 16,
-                                shadowOffset: { width: 0, height: 6 },
-                                elevation: canCreate ? 10 : 0,
+                                opacity: canCreate ? 1 : 0.6,
+                                shadowColor: theme.colors.primary,
+                                shadowOpacity: canCreate ? 0.4 : 0,
+                                shadowRadius: 20,
+                                shadowOffset: { width: 0, height: 8 },
+                                elevation: canCreate ? 12 : 0,
                             }}
                         >
                             {creating ? (
@@ -772,15 +783,16 @@ export default function CreateRideScreen() {
                                     style={{
                                         flexDirection: "row",
                                         alignItems: "center",
-                                        gap: 8,
+                                        gap: 10,
                                     }}
                                 >
-                                    <Ionicons name="car-sport" size={18} color="#071018" />
+                                    <Ionicons name="car-sport" size={20} color="#071018" />
                                     <Text
                                         style={{
                                             color: "#071018",
-                                            fontSize: 16,
-                                            fontWeight: "700",
+                                            fontSize: 18,
+                                            fontWeight: "800",
+                                            letterSpacing: 0.5,
                                         }}
                                     >
                                         {pickup.coords && drop.coords && !routeInfo && routeLoading

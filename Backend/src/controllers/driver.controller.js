@@ -2,6 +2,7 @@ import { asyncHandler } from "../utils/asyncHandler.js";
 import { ApiError } from "../utils/ApiError.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
 import { Driver } from "../models/driver.model.js";
+import { Ride } from "../models/ride.model.js";
 import { uploadToCloudinary, deleteFromCloudinary } from "../utils/cloudinary.js";
 
 // Route  : GET /api/driver/profile
@@ -71,6 +72,16 @@ export const updateDriverStatus = asyncHandler(async (req, res) => {
     }
     // Driver Attached by Verify middleware
     const driver = req.driver;
+
+    // Fix: Prevent status updates if driver is currently on an active ride
+    const hasActiveRide = await Ride.exists({
+        driver: driver._id,
+        status: { $in: ["accepted", "arriving", "started"] }
+    });
+
+    if (hasActiveRide) {
+        throw new ApiError(400, "Cannot change status while on an active ride");
+    }
 
     driver.status = status;
     await driver.save();

@@ -41,3 +41,11 @@ app-example
 # generated native folders
 /ios
 /android
+
+# scratch files & logs
+color-scheme-lines.txt
+fix-*.js
+refactor-*.js
+
+# env
+.env

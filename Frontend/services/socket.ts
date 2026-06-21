@@ -29,6 +29,7 @@ import {
     type SocketErrorPayload,
     type UpdateLocationPayload,
     type RideUnavailablePayload,
+    type PaymentReceivedPayload,
 } from "./socket.types";
 
 // ─── Config ─────────────────────────────────────────────────────────────────
@@ -199,6 +200,18 @@ export const onRideCompleted = (
     const s = getSocket();
     s.on(SOCKET_EVENTS.RIDE_COMPLETED, callback);
     return () => s.off(SOCKET_EVENTS.RIDE_COMPLETED, callback);
+};
+
+/**
+ * Listen for payment received event (fired for both rider and driver).
+ * @returns Unsubscribe function
+ */
+export const onPaymentReceived = (
+    callback: (payload: PaymentReceivedPayload) => void
+): (() => void) => {
+    const s = getSocket();
+    s.on(SOCKET_EVENTS.PAYMENT_RECEIVED, callback);
+    return () => s.off(SOCKET_EVENTS.PAYMENT_RECEIVED, callback);
 };
 
 /**

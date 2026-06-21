@@ -150,14 +150,7 @@ export default function LiveTrackingScreen() {
                         } else if (ride.status === "completed") {
                             router.replace({
                                 pathname: "/(rider)/ride-complete",
-                                params: {
-                                    fare: ride.fare,
-                                    completedAt: ride.completedAt,
-                                    pickupAddress: ride.pickup.address,
-                                    dropAddress: ride.drop.address,
-                                    distance: ride.distance,
-                                    driverName: ride.driver?.user?.fullname
-                                }
+                                params: { rideId: ride._id }
                             });
                             return;
                         } else if (ride.status === "cancelled") {
@@ -228,14 +221,7 @@ export default function LiveTrackingScreen() {
                             offCompletedRef.current = onRideCompleted((payload) => {
                                 router.replace({
                                     pathname: "/(rider)/ride-complete",
-                                    params: {
-                                        fare: payload.fare,
-                                        completedAt: payload.completedAt,
-                                        pickupAddress: ride.pickup.address,
-                                        dropAddress: ride.drop.address,
-                                        distance: payload.distance || ride.distance,
-                                        driverName: ride.driver?.user?.fullname || "Driver"
-                                    }
+                                    params: { rideId: payload._id }
                                 });
                             });
 

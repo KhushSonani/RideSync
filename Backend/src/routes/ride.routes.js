@@ -8,7 +8,9 @@ import {
     completeRide,
     cancelRide,
     getCurrentRide,
-    getRideHistory
+    getRideHistory,
+    selectPaymentMethod,
+    confirmCashPayment
 } from "../controllers/ride.controller.js";
 import { verifyJWT } from "../middlewares/auth.middleware.js";
 import { requireDriver, requireRider } from "../middlewares/role.middleware.js";
@@ -18,7 +20,9 @@ import {
     startRideValidator,
     rideIdParamValidator,
     cancelRideValidator,
-    getRideHistoryValidator
+    getRideHistoryValidator,
+    selectPaymentMethodValidator,
+    confirmCashPaymentValidator
 } from "../validators/ride.validator.js";
 
 const router = Router();
@@ -103,6 +107,25 @@ router.post(
     verifyJWT,
     cancelRideValidator,
     cancelRide
+);
+
+// Select payment method (Rider only)
+router.post(
+    "/:id/payment-method",
+    verifyJWT,
+    requireRider,
+    selectPaymentMethodValidator,
+    selectPaymentMethod
+);
+
+// Confirm cash payment (Driver only)
+router.post(
+    "/:id/confirm-cash",
+    verifyJWT,
+    requireDriver,
+    requireVerifiedDriver,
+    confirmCashPaymentValidator,
+    confirmCashPayment
 );
 
 export default router;

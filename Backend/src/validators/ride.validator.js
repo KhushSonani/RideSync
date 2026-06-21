@@ -42,6 +42,11 @@ export const createRideValidator = [
     body("distance")
         .optional()
         .isFloat({ min: 0 }).withMessage("Distance must be a positive number"),
+
+    body("paymentMethod")
+        .optional()
+        .trim()
+        .isIn(["cash", "upi", "card"]).withMessage("Payment method must be cash, upi, or card"),
 ];
 
 export const startRideValidator = [
@@ -72,4 +77,17 @@ export const getRideHistoryValidator = [
     query("limit")
         .optional()
         .isInt({ min: 1, max: 100 }).withMessage("Limit must be a positive integer between 1 and 100"),
+];
+
+export const selectPaymentMethodValidator = [
+    param("id")
+        .isMongoId().withMessage("Invalid ride ID format"),
+    body("method")
+        .trim()
+        .isIn(["cash", "upi", "card"]).withMessage("Payment method must be cash, upi, or card"),
+];
+
+export const confirmCashPaymentValidator = [
+    param("id")
+        .isMongoId().withMessage("Invalid ride ID format"),
 ];

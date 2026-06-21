@@ -104,7 +104,24 @@ const rideSchema = new mongoose.Schema({
         default: null,
         trim: true,
     },
-
+    paymentMethod: {
+        type: String,
+        enum: ["cash", "upi", "card"],
+        default: "cash",
+    },
+    paymentStatus: {
+        type: String,
+        enum: ["pending", "paid", "failed"],
+        default: "pending",
+    },
+    razorpayOrderId: {
+        type: String,
+        default: null,
+    },
+    razorpayPaymentId: {
+        type: String,
+        default: null,
+    },
 },{timestamps:true});
 
 // rideSchema.index({rider:1});

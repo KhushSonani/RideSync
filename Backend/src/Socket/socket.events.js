@@ -57,6 +57,9 @@ export const SOCKET_EVENTS = {
      */
     RIDE_UNAVAILABLE: "ride:unavailable",
 
+    /** Sent to ride:{id} room when payment is successfully verified */
+    PAYMENT_RECEIVED: "payment:received",
+
     /** Sent to the socket that caused an error (auth, validation, etc.) */
     ERROR: "socket:error",
 };

@@ -310,3 +310,27 @@ export async function sendRideCancelled(recipientUserId, cancelledBy, ride) {
         console.error("[Push] sendRideCancelled failed:", err);
     }
 }
+
+/**
+ * Notify the rider that their payment was received successfully.
+ *
+ * @param {string} riderUserId   - User._id of the rider
+ * @param {object} ride
+ */
+export async function sendPaymentReceived(riderUserId, ride) {
+    try {
+        const token = await getTokenForUser(riderUserId);
+        await sendPushNotification(
+            token,
+            "💸 Payment Received",
+            `Your payment of ₹${ride.fare} has been confirmed. Thank you!`,
+            {
+                type: "payment_received",
+                rideId: ride._id.toString(),
+                screen: "/(rider)/home",
+            }
+        );
+    } catch (err) {
+        console.error("[Push] sendPaymentReceived failed:", err);
+    }
+}

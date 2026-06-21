@@ -4,6 +4,7 @@ import cors from "cors";
 import userRoutes from "./src/routes/user.routes.js";
 import driverRoutes from "./src/routes/driver.routes.js";
 import rideRoutes from "./src/routes/ride.routes.js";
+import paymentRoutes from "./src/routes/payment.routes.js";
 
 import { multerErrorHandler } from "./src/middlewares/multer.middleware.js";
 import cookieParser from "cookie-parser";
@@ -26,6 +27,7 @@ app.get('/', (req, res) => {
 app.use("/api/v1/users", userRoutes);
 app.use("/api/v1/drivers", driverRoutes);
 app.use("/api/v1/rides", rideRoutes);
+app.use("/api/v1/payments", paymentRoutes);
 
 app.use(multerErrorHandler);
 app.use((err, req, res, next) => {

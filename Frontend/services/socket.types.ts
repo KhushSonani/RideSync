@@ -108,6 +108,17 @@ export interface RideCompletedPayload {
 }
 
 /**
+ * payment:received
+ * Received by both rider and driver inside ride:{rideId} when payment completes.
+ */
+export interface PaymentReceivedPayload {
+    _id: string;
+    paymentStatus: "paid" | "pending";
+    paymentMethod: "card" | "upi" | "cash" | string;
+    fare: number;
+}
+
+/**
  * ride:cancelled
  * Received by both rider and driver inside ride:{rideId}.
  */
@@ -180,6 +191,7 @@ export const SOCKET_EVENTS = {
     RIDE_CANCELLED:      "ride:cancelled",
     DRIVER_LOCATION:     "driver:location_update",
     RIDE_UNAVAILABLE:    "ride:unavailable",
+    PAYMENT_RECEIVED:    "payment:received",
     ERROR:               "socket:error",
 } as const;
 

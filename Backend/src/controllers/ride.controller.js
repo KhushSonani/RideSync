@@ -16,6 +16,7 @@ import {
     sendRideStarted,
     sendRideCompleted,
     sendRideCancelled,
+    sendPaymentReceived,
 } from "../services/notification.service.js";
 
 // ─── Create a new ride request ───────────────────────────────────────────────
@@ -26,7 +27,7 @@ export const createRide = asyncHandler(async (req, res) => {
         throw new ApiError(400, "Validation failed", errors.array());
     }
 
-    const { pickup, drop, fare, distance } = req.body;
+    const { pickup, drop, fare, distance, paymentMethod } = req.body;
 
     // Check if the rider already has an active request or ongoing ride
     const activeRide = await Ride.findOne({
@@ -47,7 +48,8 @@ export const createRide = asyncHandler(async (req, res) => {
         drop,
         fare,
         distance,
-        otp
+        otp,
+        ...(paymentMethod && { paymentMethod }),
     });
 
     // Populate rider for the socket payload
@@ -247,23 +249,30 @@ export const arrivingRide = asyncHandler(async (req, res) => {
     }
 
     const rideId = req.params.id;
-    const ride = await Ride.findById(rideId).populate("rider", "username fullname avatar");
+
+    // Atomic update to prevent race conditions (e.g., rider cancels concurrently)
+    const ride = await Ride.findOneAndUpdate(
+        {
+            _id: rideId,
+            driver: req.driver._id,
+            status: "accepted"
+        },
+        {
+            status: "arriving",
+            arrivedAt: new Date()
+        },
+        { new: true }
+    ).populate("rider", "username fullname avatar");
 
     if (!ride) {
-        throw new ApiError(404, "Ride not found");
+        // Fallback checks to return appropriate error
+        const existingRide = await Ride.findById(rideId);
+        if (!existingRide) throw new ApiError(404, "Ride not found");
+        if (existingRide.driver?.toString() !== req.driver._id.toString()) {
+            throw new ApiError(403, "You are not authorized for this ride");
+        }
+        throw new ApiError(400, `Cannot mark ride as arriving. Current status: ${existingRide.status}`);
     }
-
-    if (!ride.driver || ride.driver.toString() !== req.driver._id.toString()) {
-        throw new ApiError(403, "You are not authorized for this ride");
-    }
-
-    if (ride.status !== "accepted") {
-        throw new ApiError(400, `Cannot mark ride as arriving. Current status: ${ride.status}`);
-    }
-
-    ride.status = "arriving";
-    ride.arrivedAt = new Date();
-    await ride.save();
 
     // Emit to the ride room — both rider and driver are already members
     getIO().to(`ride:${rideId}`).emit(SOCKET_EVENTS.RIDE_STATUS_UPDATED, {
@@ -293,31 +302,44 @@ export const startRide = asyncHandler(async (req, res) => {
     const rideId = req.params.id;
 
     // OTP is set with select: false, so we must fetch it explicitly
-    const ride = await Ride.findById(rideId).select("+otp").populate("rider", "username fullname avatar");
+    const existingRide = await Ride.findById(rideId).select("+otp");
 
-    if (!ride) {
+    if (!existingRide) {
         throw new ApiError(404, "Ride not found");
     }
 
-    if (!ride.driver || ride.driver.toString() !== req.driver._id.toString()) {
+    if (!existingRide.driver || existingRide.driver.toString() !== req.driver._id.toString()) {
         throw new ApiError(403, "You are not authorized to start this ride");
     }
 
-    if (ride.status !== "arriving") {
-        throw new ApiError(400, `Cannot start a ride in status: ${ride.status}. Must be arriving first.`);
+    if (existingRide.status !== "arriving") {
+        throw new ApiError(400, `Cannot start a ride in status: ${existingRide.status}. Must be arriving first.`);
     }
 
-    if (ride.otp !== otp) {
+    if (existingRide.otp !== otp) {
         throw new ApiError(400, "Invalid OTP");
     }
 
-    ride.status = "started";
-    ride.otp = null; // Clear OTP once successfully verified and started
-    ride.startedAt = new Date();
-    await ride.save();
+    // Atomic update to ensure ride hasn't been cancelled concurrently
+    const ride = await Ride.findOneAndUpdate(
+        {
+            _id: rideId,
+            driver: req.driver._id,
+            status: "arriving"
+        },
+        {
+            status: "started",
+            $unset: { otp: 1 }, // Clear OTP once successfully verified and started
+            startedAt: new Date()
+        },
+        { new: true }
+    ).populate("rider", "username fullname avatar");
+
+    if (!ride) {
+        throw new ApiError(400, "Ride state changed before it could be started.");
+    }
 
     const rideObj = ride.toObject();
-    delete rideObj?.otp;
 
     // Emit to the ride room
     getIO().to(`ride:${rideId}`).emit(SOCKET_EVENTS.RIDE_STATUS_UPDATED, {
@@ -526,9 +548,8 @@ export const cancelRide = asyncHandler(async (req, res) => {
         // Re-populate rider for the broadcast payload
         await updatedRide.populate("rider", "username fullname avatar");
 
-        // Make the driver available again
-        driver.status = "available";
-        await driver.save();
+        // Make the driver available again (atomic to prevent overwriting location/status)
+        await Driver.findByIdAndUpdate(driver._id, { status: "available" });
 
         const cancelPayload = {
             _id: updatedRide._id,
@@ -675,5 +696,99 @@ export const getRideHistory = asyncHandler(async (req, res) => {
             },
             "Ride history fetched successfully"
         )
+    );
+});
+
+// ─── Select payment method (Rider only) ──────────────────────────────────────
+// POST /api/v1/rides/:id/payment-method
+export const selectPaymentMethod = asyncHandler(async (req, res) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+        throw new ApiError(400, "Validation failed", errors.array());
+    }
+
+    const { method } = req.body;
+    const rideId = req.params.id;
+
+    const ride = await Ride.findOneAndUpdate(
+        {
+            _id: rideId,
+            rider: req.user._id,
+            status: { $nin: ["completed", "cancelled"] }
+        },
+        { paymentMethod: method },
+        { new: true }
+    );
+
+    if (!ride) {
+        // Fallback to provide accurate error
+        const existingRide = await Ride.findOne({ _id: rideId, rider: req.user._id });
+        if (!existingRide) throw new ApiError(404, "Ride not found");
+        throw new ApiError(400, "Cannot change payment method after the ride is completed or cancelled");
+    }
+
+    return res.status(200).json(
+        new ApiResponse(200, ride, "Payment method updated successfully")
+    );
+});
+
+// ─── Confirm cash payment (Driver only) ──────────────────────────────────────
+// POST /api/v1/rides/:id/confirm-cash
+export const confirmCashPayment = asyncHandler(async (req, res) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+        throw new ApiError(400, "Validation failed", errors.array());
+    }
+
+    const rideId = req.params.id;
+
+    // Use an atomic update to guard against double-processing
+    const updatedRide = await Ride.findOneAndUpdate(
+        {
+            _id: rideId,
+            driver: req.driver._id, // strict ownership
+            status: "completed",
+            paymentMethod: "cash",
+            paymentStatus: { $ne: "paid" }
+        },
+        {
+            $set: { paymentStatus: "paid" }
+        },
+        { new: true }
+    ).populate("rider", "username fullname avatar");
+
+    if (!updatedRide) {
+        // Find out why it failed to return an informative response or exit cleanly
+        const existingRide = await Ride.findById(rideId);
+        if (!existingRide) {
+            throw new ApiError(404, "Ride not found");
+        }
+        if (existingRide.driver?.toString() !== req.driver._id.toString()) {
+            throw new ApiError(403, "You are not assigned to this ride");
+        }
+        if (existingRide.paymentStatus === "paid") {
+            // Idempotent: Already paid. Exit cleanly without re-emitting events.
+            return res.status(200).json(
+                new ApiResponse(200, existingRide, "Payment was already confirmed")
+            );
+        }
+        throw new ApiError(400, "Ride must be completed and payment method must be cash");
+    }
+
+    const riderIdStr = updatedRide.rider._id.toString();
+
+    // Broadcast payment received event to the ride room
+    getIO().to(`ride:${rideId}`).emit(SOCKET_EVENTS.PAYMENT_RECEIVED, {
+        _id: updatedRide._id,
+        paymentStatus: updatedRide.paymentStatus,
+        paymentMethod: updatedRide.paymentMethod,
+        fare: updatedRide.fare,
+    });
+
+    // Send push notification to rider (fire-and-forget)
+    sendPaymentReceived(riderIdStr, updatedRide);
+
+    return res.status(200).json(
+        new ApiResponse(200, updatedRide, "Cash payment confirmed successfully")
     );
 });

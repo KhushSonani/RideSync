@@ -6,16 +6,23 @@ import {
     TouchableOpacity,
     ScrollView,
     Animated,
+    ActivityIndicator,
+    Alert,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { router, useLocalSearchParams } from "expo-router";
+import { router, useLocalSearchParams, useFocusEffect } from "expo-router";
 import { Feather, Ionicons } from "@expo/vector-icons";
+import RazorpayCheckout from "react-native-razorpay";
 
 import { COLORS } from "@/constants/theme";
 import { glassCard } from "@/constants/styles";
 import RouteRow from "@/components/ride/RouteRow";
 import FareDistanceRow from "@/components/ride/FareDistanceRow";
 import { useTheme } from "@/store/ThemeContext";
+
+import { api } from "@/services/api";
+import { onPaymentReceived } from "@/services/socket";
+import { createPaymentOrder, verifyPaymentSignature } from "@/services/payment";
 
 // ─── Star rating component ─────────────────────────────────────────────────────
 function StarRating({
@@ -51,29 +58,64 @@ function StarRating({
 export default function RiderRideComplete() {
     const { colorScheme, theme } = useTheme();
     const params = useLocalSearchParams();
+    const rideId = params.rideId as string;
 
-    // Map params back to the expected shape
-    const rideData = {
-        fare: Number(params.fare) || 0,
-        completedAt: (params.completedAt as string) || new Date().toISOString(),
-        pickup: { address: (params.pickupAddress as string) || "Pickup Location" },
-        drop: { address: (params.dropAddress as string) || "Drop Location" },
-        distance: Number(params.distance) || 0,
-        driverName: (params.driverName as string) || "Driver",
-    };
-
+    const [rideData, setRideData] = useState<any>(null);
+    const [loading, setLoading] = useState(true);
     const [driverRating, setDriverRating] = useState(0);
+    const [paying, setPaying] = useState(false);
 
     // Entry animation
     const fadeAnim = useRef(new Animated.Value(0)).current;
     const slideAnim = useRef(new Animated.Value(30)).current;
+
+    // Fetch ride data on mount or focus
+    const fetchRide = useCallback(async () => {
+        if (!rideId) return;
+        try {
+            const res = await api.get('/rides/history?limit=10');
+            const rides = res.data?.data?.rides || [];
+            const targetRide = rides.find((r: any) => r._id === rideId);
+
+            if (targetRide) {
+                setRideData(targetRide);
+            } else {
+                // If it's not in history yet, maybe it's still current
+                const currentRes = await api.get('/rides/current');
+                if (currentRes.data?.data?._id === rideId) {
+                    setRideData(currentRes.data.data);
+                }
+            }
+        } catch (error) {
+            console.error("Error fetching ride:", error);
+            Alert.alert("Error", "Could not fetch ride details.");
+        } finally {
+            setLoading(false);
+        }
+    }, [rideId]);
+
+    useFocusEffect(
+        useCallback(() => {
+            fetchRide();
+        }, [fetchRide])
+    );
 
     useEffect(() => {
         Animated.parallel([
             Animated.timing(fadeAnim, { toValue: 1, duration: 500, useNativeDriver: true }),
             Animated.timing(slideAnim, { toValue: 0, duration: 420, useNativeDriver: true }),
         ]).start();
-    }, []);
+    }, [fadeAnim, slideAnim]);
+
+    // Socket listener for payment
+    useEffect(() => {
+        const offPayment = onPaymentReceived((payload) => {
+            if (payload._id === rideId) {
+                fetchRide(); // Always refetch latest state from backend as source of truth
+            }
+        });
+        return offPayment;
+    }, [rideId, fetchRide]);
 
     // ── Handlers ──────────────────────────────────────────────────────────────
 
@@ -83,30 +125,87 @@ export default function RiderRideComplete() {
     }, []);
 
     const handleBookAnother = useCallback(() => {
-        // TODO: clear active ride state from context/store
         router.replace("/(rider)/create-ride");
     }, []);
 
     const handleGoHome = useCallback(() => {
-        // TODO: clear active ride state from context/store
         router.replace("/(rider)/home");
     }, []);
 
-    const completedTime = new Date(rideData.completedAt).toLocaleTimeString([], {
+    const handleRazorpayPayment = async () => {
+        if (paying || !rideData) return; // Prevent duplicate checkouts
+        setPaying(true);
+
+        try {
+            const order = await createPaymentOrder(rideId, rideData.fare);
+
+            const options = {
+                description: 'Ride Fare',
+                image: 'https://i.imgur.com/3g7nmJC.png', // Or use rideSync logo
+                currency: order.currency,
+                key: process.env.EXPO_PUBLIC_RAZORPAY_KEY || 'rzp_test_T3vvWOZt29qLC7',
+                amount: order.amount.toString(),
+                name: 'RideSync',
+                order_id: order.id,
+                theme: { color: COLORS.primary },
+                prefill: {
+                    email: rideData.rider?.email || '',
+                    contact: '',
+                    name: rideData.rider?.fullname || ''
+                }
+            };
+
+            const data = await RazorpayCheckout.open(options);
+
+            // Verify payment on backend
+            await verifyPaymentSignature({
+                razorpay_order_id: data.razorpay_order_id,
+                razorpay_payment_id: data.razorpay_payment_id,
+                razorpay_signature: data.razorpay_signature,
+                rideId: rideId
+            });
+
+            // Fetch latest ride state after verification
+            await fetchRide();
+
+        } catch (error: any) {
+            console.error("Payment Error:", error);
+            // Razorpay error can be an object with code and description
+            const errorMsg = typeof error === 'string' ? error : error.description || error.message || "Payment cancelled or failed.";
+            Alert.alert("Payment", errorMsg);
+        } finally {
+            setPaying(false);
+        }
+    };
+
+    if (loading || !rideData) {
+        return (
+            <View className="flex-1 bg-background items-center justify-center">
+                <ActivityIndicator size="large" color={theme.colors.primary} />
+            </View>
+        );
+    }
+
+    const completedTime = rideData.completedAt ? new Date(rideData.completedAt).toLocaleTimeString([], {
         hour: "2-digit",
         minute: "2-digit",
-    });
+    }) : "--:--";
+
+    const driverName = rideData.driver?.user?.fullname || "Driver";
 
     const ratingLabel =
         driverRating === 5
             ? "Amazing driver! 🎉"
             : driverRating >= 4
-            ? "Great ride 👍"
-            : driverRating >= 3
-            ? "It was okay"
-            : driverRating > 0
-            ? "Could be better"
-            : "Tap a star to rate";
+                ? "Great ride 👍"
+                : driverRating >= 3
+                    ? "It was okay"
+                    : driverRating > 0
+                        ? "Could be better"
+                        : "Tap a star to rate";
+
+    const isPaid = rideData.paymentStatus === "paid";
+    const paymentMethodDisplay = rideData.paymentMethod === "cash" ? "Cash" : "Razorpay Online";
 
     // ── Render ────────────────────────────────────────────────────────────────
 
@@ -162,13 +261,20 @@ export default function RiderRideComplete() {
                                 Total Fare
                             </Text>
                             <Text className="text-foreground text-[44px] font-bold tracking-tight">
-                                ₹{rideData.fare.toFixed(0)}
+                                ₹{(rideData.fare || 0).toFixed(0)}
                             </Text>
+
                             <View className="flex-row items-center mt-2 gap-x-1.5">
                                 <Feather name="credit-card" size={12} color={theme.colors.textMuted} />
                                 <Text className="text-muted text-[12px]">
-                                    {/* TODO: show payment method */}
-                                    Cash payment
+                                    {paymentMethodDisplay}
+                                </Text>
+                            </View>
+
+                            {/* Payment Status Badge */}
+                            <View className={`mt-3 px-3 py-1 rounded-full ${isPaid ? 'bg-green-500/20' : 'bg-orange-500/20'}`}>
+                                <Text className={`${isPaid ? 'text-green-500' : 'text-orange-500'} text-[12px] font-bold uppercase`}>
+                                    {isPaid ? "Paid" : "Pending Payment"}
                                 </Text>
                             </View>
                         </View>
@@ -193,62 +299,52 @@ export default function RiderRideComplete() {
 
                             <View className="h-[1px] bg-foreground/[0.05] mt-4 mb-3" />
 
-                            {/* Driver + duration */}
+                            {/* Driver info */}
                             <View className="flex-row items-center justify-between">
                                 <View className="flex-row items-center">
                                     <View className="w-8 h-8 rounded-full bg-input border border-border items-center justify-center mr-2">
                                         <Text className="text-primary text-[10px] font-bold">
-                                            {rideData.driverName
+                                            {driverName
                                                 .split(" ")
-                                                .map((n) => n[0])
+                                                .map((n: string) => n[0])
                                                 .join("")
                                                 .toUpperCase()}
                                         </Text>
                                     </View>
                                     <Text className="text-foreground text-[13px] font-semibold">
-                                        {rideData.driverName}
-                                    </Text>
-                                </View>
-                                <View className="flex-row items-center">
-                                    <Feather name="clock" size={12} color={theme.colors.textMuted} />
-                                    <Text className="text-muted text-[12px] ml-1">
-                                        {/* TODO: calculate from ride.startedAt → completedAt */}
-                                        ~32 min
+                                        {driverName}
                                     </Text>
                                 </View>
                             </View>
                         </View>
 
                         {/* RATE DRIVER */}
-                        <View className={`${glassCard} p-5 mb-5`}>
-                            <View className="flex-row items-center mb-4">
-                                <View className="w-7 h-7 rounded-lg bg-[#FFC107]/10 items-center justify-center mr-2">
-                                    <Ionicons name="star" size={15} color="#FFC107" />
+                        {isPaid && (
+                            <View className={`${glassCard} p-5 mb-5`}>
+                                <View className="flex-row items-center mb-4">
+                                    <View className="w-7 h-7 rounded-lg bg-[#FFC107]/10 items-center justify-center mr-2">
+                                        <Ionicons name="star" size={15} color="#FFC107" />
+                                    </View>
+                                    <Text className="text-muted text-[11px] uppercase tracking-wider">
+                                        Rate Your Driver
+                                    </Text>
                                 </View>
-                                <Text className="text-muted text-[11px] uppercase tracking-wider">
-                                    Rate Your Driver
+
+                                <StarRating rating={driverRating} onRate={handleRateDriver} />
+
+                                <Text className="text-muted text-[12px] text-center mt-3">
+                                    {ratingLabel}
                                 </Text>
                             </View>
-
-                            <StarRating rating={driverRating} onRate={handleRateDriver} />
-
-                            <Text className="text-muted text-[12px] text-center mt-3">
-                                {ratingLabel}
-                            </Text>
-                        </View>
+                        )}
 
                         {/* QUICK STATS */}
                         <View className="flex-row gap-x-3 mb-6">
                             <View className={`${glassCard} flex-1 p-4 items-center`}>
-                                <Feather name="clock" size={16} color={theme.colors.textMuted} />
-                                <Text className="text-muted text-[10px] mt-1">Duration</Text>
-                                <Text className="text-foreground text-[15px] font-bold mt-0.5">—</Text>
-                            </View>
-                            <View className={`${glassCard} flex-1 p-4 items-center`}>
                                 <Feather name="navigation" size={16} color={theme.colors.textMuted} />
                                 <Text className="text-muted text-[10px] mt-1">Distance</Text>
                                 <Text className="text-foreground text-[15px] font-bold mt-0.5">
-                                    {rideData.distance.toFixed(1)} km
+                                    {(rideData.distance || 0).toFixed(1)} km
                                 </Text>
                             </View>
                             <View className={`${glassCard} flex-1 p-4 items-center`}>
@@ -260,19 +356,43 @@ export default function RiderRideComplete() {
 
                         {/* ACTION BUTTONS */}
                         <View className="gap-y-3">
-                            <TouchableOpacity
-                                activeOpacity={0.85}
-                                onPress={handleBookAnother}
-                                className="h-14 bg-primary rounded-2xl items-center justify-center border border-[#6FFFEF]/10"
-                                accessibilityLabel="Book another ride"
-                            >
-                                <View className="flex-row items-center gap-x-2">
-                                    <Ionicons name="car-sport" size={18} color="#071018" />
-                                    <Text className="text-background text-[16px] font-bold">
-                                        Book Another Ride
-                                    </Text>
-                                </View>
-                            </TouchableOpacity>
+                            {/* Payment action if not paid */}
+                            {!isPaid && rideData.paymentMethod !== "cash" && (
+                                <TouchableOpacity
+                                    activeOpacity={0.85}
+                                    onPress={handleRazorpayPayment}
+                                    disabled={paying}
+                                    className="h-14 bg-blue-600 rounded-2xl items-center justify-center border border-blue-500 shadow-lg"
+                                    accessibilityLabel="Pay with Razorpay"
+                                >
+                                    {paying ? (
+                                        <ActivityIndicator size="small" color="#ffffff" />
+                                    ) : (
+                                        <View className="flex-row items-center gap-x-2">
+                                            <Ionicons name="card" size={20} color="#ffffff" />
+                                            <Text className="text-white text-[16px] font-bold">
+                                                Pay ₹{(rideData.fare || 0).toFixed(0)} Online
+                                            </Text>
+                                        </View>
+                                    )}
+                                </TouchableOpacity>
+                            )}
+
+                            {isPaid && (
+                                <TouchableOpacity
+                                    activeOpacity={0.85}
+                                    onPress={handleBookAnother}
+                                    className="h-14 bg-primary rounded-2xl items-center justify-center border border-[#6FFFEF]/10"
+                                    accessibilityLabel="Book another ride"
+                                >
+                                    <View className="flex-row items-center gap-x-2">
+                                        <Ionicons name="car-sport" size={18} color="#071018" />
+                                        <Text className="text-background text-[16px] font-bold">
+                                            Book Another Ride
+                                        </Text>
+                                    </View>
+                                </TouchableOpacity>
+                            )}
 
                             <TouchableOpacity
                                 activeOpacity={0.8}
